@@ -1,0 +1,27 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "traceResolution": true,
+    "extendedDiagnostics": true,
+    "baseUrl": ".",
+    "paths": {
+      "@enclaveid/ui": ["libs/ui/src/index.ts"],
+      "@enclaveid/ui-utils": ["libs/ui-utils/src"],
+      "@enclaveid/ui-utils/*": ["libs/ui-utils/src/*"],
+      "@enclaveid/ui/*": ["libs/ui/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}
