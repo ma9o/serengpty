@@ -2,9 +2,9 @@ import DiscordIcon from '~icons/mdi/discord.tsx';
 import GitHubIcon from '~icons/mdi/github.tsx';
 import Image from 'next/image';
 import { Logo } from '../../../../libs/ui/src/logo';
-import LandingVideo from './components/landing-video';
 import { Button } from '@enclaveid/ui/button';
 import Link from 'next/link';
+import { LandingGuidance } from './components/landing-guidance';
 
 export default function Index() {
   return (
@@ -27,7 +27,7 @@ function Header() {
           {/* Logo / Company Name */}
           <div className="flex items-center gap-1 font-bold text-2xl text-content-primary">
             <Logo />
-            EnclaveID
+            SerenGPTy
           </div>
 
           {/* Navigation / Social Icons */}
@@ -73,27 +73,26 @@ function Hero() {
               advanced personalization and intelligent social features that
               drive engagement
             </p>
-            <Link href="/dashboard/home">
-              <Button size="lg">Get Started</Button>
-            </Link>
           </div>
 
           {/* Video Container */}
-          <div className="w-full md:w-1/2 mb-8 md:mb-0">
+          {/* <div className="w-full md:w-1/2 mb-8 md:mb-0">
             <LandingVideo />
             <div className="relative text-center text-sm text-gray-400 mt-4">
               Click / touch to pause and unpause
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 
-      <div
+      <LandingGuidance />
+
+      {/* <div
         className="absolute bottom-0 left-0 right-0 md:h-[500px] h-[250px] bg-white"
         style={{
           clipPath: 'polygon(0 100%, 100% 100%, 100% 50%, 0 75%)',
         }}
-      />
+      /> */}
     </section>
   );
 }

@@ -86,6 +86,7 @@
     "@babel/preset-react": "^7.14.5",
     "@eslint/compat": "^1.1.1",
     "@eslint/js": "^9.8.0",
+    "@iconify-json/material-symbols": "^1.2.14",
     "@iconify-json/mdi": "^1.2.2",
     "@nx-extend/shadcn-ui": "^4.2.1",
     "@nx-tools/nx-prisma": "^6.5.0",
