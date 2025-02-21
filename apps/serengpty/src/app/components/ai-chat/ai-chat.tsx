@@ -166,7 +166,6 @@ export function AiChat() {
           <Button type="submit" disabled={isLoading}>
             <DoubleArrowRightIcon />
           </Button>
-
         </form>
       </CardContent>
     </Card>

@@ -1,7 +1,7 @@
 {
-  "name": "webapp",
+  "name": "serengpty",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "apps/webapp",
+  "sourceRoot": "apps/serengpty",
   "projectType": "application",
   "dependencies": {
     "@enclaveid/ui-utils": "*"
@@ -41,7 +41,7 @@
     "prisma-post-migrate": {
       "executor": "@nx-tools/nx-prisma:seed",
       "options": {
-        "script": "apps/webapp/prisma/postMigrate.ts"
+        "script": "apps/serengpty/prisma/postMigrate.ts"
       }
     },
     "prisma-status": {
@@ -56,7 +56,7 @@
     "prisma-nuke": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "apps/webapp",
+        "cwd": "apps/serengpty",
         "commands": [
           "rm -rf prisma/migrations",
           "yes | nx run webapp:prisma-migrate",

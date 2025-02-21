@@ -1,6 +1,5 @@
 //@ts-check
 
-
 const { composePlugins, withNx } = require('@nx/next');
 
 /**
@@ -28,7 +27,7 @@ module.exports = {
         jsx: 'react',
         autoInstall: true,
       })
-    )
+    );
 
     if (isServer) {
       config.externals.push({ 'nodejs-polars': 'commonjs nodejs-polars' });
