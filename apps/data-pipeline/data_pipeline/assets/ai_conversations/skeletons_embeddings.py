@@ -55,7 +55,7 @@ async def skeletons_embeddings(
     )
 
     # Get embeddings for combined texts
-    cost, embeddings = await embedder.get_embeddings(combined_texts)
+    cost, embeddings = await embedder.get_embeddings(combined_texts, api_batch_size=10)
     context.log.info(f"Embedding cost: ${cost:.2f}")
 
     # Add embedding column to the result DataFrame

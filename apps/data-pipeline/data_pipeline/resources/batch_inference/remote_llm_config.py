@@ -11,3 +11,4 @@ class RemoteLlmConfig(Config):
     output_cpm: float
     context_length: int
     provider: dict | None = None
+    rate_limit_tpm: int | None = None

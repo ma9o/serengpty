@@ -26,6 +26,7 @@ gpt4o_mini_config_azure = LlmConfig(
         input_cpm=0.15,
         output_cpm=0.6,
         context_length=128_000,
+        rate_limit_tpm=2_000_000,
     ),
 )
 

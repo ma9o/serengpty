@@ -29,13 +29,13 @@ openrouter_config = RemoteLlmConfig(
     api_key=EnvVar("OPENROUTER_API_KEY"),
     inference_url="https://openrouter.ai/api/v1/chat/completions",
     inference_config={
-        "model": "google/gemini-flash-1.5",  # nb: different from config above
+        "model": "google/gemini-2.0-flash-001",  # nb: different from config above
     },
     context_length=1_000_000,
     concurrency_limit=200,
     timeout=300,
-    input_cpm=0.3,
-    output_cpm=0.3,
+    input_cpm=0.1,
+    output_cpm=0.4,
 )
 
 gemini_flash_config = LlmConfig(

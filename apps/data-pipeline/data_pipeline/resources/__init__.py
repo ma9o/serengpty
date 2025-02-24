@@ -10,6 +10,9 @@ from data_pipeline.resources.batch_inference.llms.deepseek_r1 import (
 from data_pipeline.resources.batch_inference.llms.deepseek_v3 import (
     create_deepseek_v3_resource,
 )
+from data_pipeline.resources.batch_inference.llms.gemini_flash import (
+    gemini_flash_resource,
+)
 from data_pipeline.resources.batch_inference.llms.gemini_pro import gemini_pro_resource
 from data_pipeline.resources.batch_inference.llms.gpt4o import create_gpt4o_resource
 from data_pipeline.resources.batch_inference.llms.gpt4o_mini import (
@@ -35,6 +38,7 @@ resources = {
     "llama70b": create_llama70b_resource(),
     "llama8b": create_llama8b_resource(),
     "gemini_pro": gemini_pro_resource(),
+    "gemini_flash": gemini_flash_resource(),
     "gpt4o": create_gpt4o_resource(),
     "gpt4o_mini": create_gpt4o_mini_resource(),
     "o1_mini": create_o1_mini_resource(),

@@ -8,7 +8,7 @@ from dagster import (
 )
 from json_repair import repair_json
 
-from data_pipeline.constants.environments import get_environment
+from data_pipeline.constants.custom_config import RowLimitConfig
 from data_pipeline.partitions import user_partitions_def
 from data_pipeline.resources.batch_inference.base_llm_resource import (
     BaseLlmResource,
@@ -21,57 +21,44 @@ def get_conversation_skeleton_prompt_sequence(conversation: str) -> PromptSequen
         # NB: do not use "user" or "assistant" in the prompt or it will throw a 500
         dedent(
             f"""
-              Provide an essential summary of the conversation that preserves the user's unique perspective and thought process.
-              The goal is to maintain maximum fidelity to the user's original voice while keeping the summary readable and focused.
+              You will be given a conversation between a user and an AI assistant.
+              Sometimes, users paste content from an external source into their questions, such as articles, code snippets, etc.
 
-              1. User's Voice and Context
-              - Preserve direct quotes or distinctive phrasings that reveal their thought process
-              - Maintain their specific examples, analogies, or personal experiences
-              - Keep emotional markers or signs of uncertainty/confidence
-
-              2. Question Structure and Length Handling
-              For concise questions:
-              - Preserve the entire question as written, maintaining all personal context and details
-
-              For longer questions with distinct sections:
-              - Preserve verbatim: The portions containing personal reasoning, experiences, or thought processes
-              - Summarize only: Large blocks of external content (like pasted articles, code snippets, or reference materials)
-              - Use the format: [Preserved personal content] + [Summary of external content]
-
-              Example of handling a long question:
-              Original question: "I've been struggling with my sourdough starter for weeks now - it just doesn't seem to rise like the ones I see online. I've tried feeding it twice a day but nothing helps. Here's the full recipe I've been following: [3 paragraphs of technical baking instructions pasted from a website]"
-
-              Should become:
-              Q: "I've been struggling with my sourdough starter for weeks now - it just doesn't seem to rise like the ones I see online. I've tried feeding it twice a day but nothing helps" + References a standard sourdough starter recipe with twice-daily feeding instructions
-
-              3. Translate to English
-              If the conversation is not in English, translate it to English.
-
-              4. Answer Format
-              Represent the assistant's responses concisely, focusing only on key points that influenced the user's subsequent questions.
+              Your job is to provide a summary of the conversation that:
+              - only preserves verbatim the user's manually written text
+              - summarizes the assistant's responses and content that the user is likely to have pasted from an external source
 
               Format each exchange as:
-              Q: [Complete question if concise] OR [Preserved personal content + Summarized external content]
-              A: [Concise summary of main response points]
+              Q: what the user wrote in the question + [a concise summary of what the user pasted in the question, if any]
+              A: concise summary of main response points
 
               Examples:
-              Short question:
+
+              For a question with no pasted content, just return the input verbatim and summarize the response:
               Q: "I've always stored my tomatoes in the fridge like my mom taught me - is this the best way to keep them fresh?"
               A: Recommends room temperature storage instead of refrigeration
 
-              Long question with external content:
+              For a question with pasted content, return only the manually written part verbatim, summarize the external content, and summarize the response:
               Q: "My garden tomatoes are getting spots and I'm really worried about losing the whole crop. My grandfather taught me to always check the leaves first" + [Includes lengthy paste of disease identification guide from gardening website]
               A: Identifies likely early blight and suggests organic treatment options
 
-              5. Output schema
-              Provide the output in the following JSON format:
-              [
-                  {{
-                      "question": str,
-                      "answer": str
-                  }},
-                  ...
-              ]
+              Additionally:
+              1. If the conversation is not in English, translate it to English.
+              2. Determine if the conversation is highly sensitive, containing topics such as physicial and mental health problems, relationship advice and private legal matters.
+              3. Provide a descriptive summary of the conversation.
+
+              Use this output schema:
+              {{
+                  "summary": str,
+                  "is_sensitive": bool,
+                  "skeleton": [
+                      {{
+                          "question": str,
+                          "answer": str
+                      }},
+                      ...
+                  ]
+              }}
 
               Here is the conversation:
               {conversation}
@@ -80,12 +67,21 @@ def get_conversation_skeleton_prompt_sequence(conversation: str) -> PromptSequen
     ]
 
 
-def parse_conversation_skeletons(completion: str) -> list[dict] | None:
+def parse_conversation_skeletons(completion: str) -> dict | None:
     try:
         res = repair_json(completion, return_objects=True)
 
-        if isinstance(res, list) and all(
-            isinstance(x, dict) and "question" in x and "answer" in x for x in res
+        # Now expect a JSON object with an "is_sensitive" field and a "skeleton" list of Q/A dicts.
+        if (
+            isinstance(res, dict)
+            and "is_sensitive" in res
+            and "skeleton" in res
+            and "summary" in res
+            and isinstance(res["skeleton"], list)
+            and all(
+                isinstance(x, dict) and "question" in x and "answer" in x
+                for x in res["skeleton"]
+            )
         ):
             return res
         else:
@@ -94,7 +90,8 @@ def parse_conversation_skeletons(completion: str) -> list[dict] | None:
         return None
 
 
-TEST_LIMIT = None if get_environment() == "LOCAL" else None
+class ConversationSkeletonsConfig(RowLimitConfig):
+    row_limit: int = 3000
 
 
 @asset(
@@ -109,10 +106,11 @@ TEST_LIMIT = None if get_environment() == "LOCAL" else None
 )
 async def conversation_skeletons(
     context: AssetExecutionContext,
-    gpt4o: BaseLlmResource,
+    config: ConversationSkeletonsConfig,
+    gpt4o_mini: BaseLlmResource,
     parsed_conversations: pl.DataFrame,
 ):
-    llm = gpt4o
+    llm = gpt4o_mini
     logger = context.log
 
     df = (
@@ -145,13 +143,13 @@ async def conversation_skeletons(
                 pl.col("datetime_question").alias("datetime_questions"),
             ]
         )
-        .sort("start_date", "start_time")
+        .sort("start_date", "start_time", descending=True)
         # TODO: why are there nulls?
         .filter(
             pl.col("datetime_conversations").is_not_null()
             & (pl.col("datetime_conversations").str.len_chars() > 1)
         )
-        .slice(0, TEST_LIMIT)
+        .slice(0, config.row_limit)
     )
 
     prompt_sequences = [
@@ -180,7 +178,7 @@ async def conversation_skeletons(
         for completion in summaries_completions
     ]
 
-    result = df.hstack(pl.DataFrame(results))
+    result = df.hstack(pl.DataFrame(results, strict=False))
 
     invalid_results = result.filter(pl.col("raw_skeleton").is_null())
 
@@ -190,19 +188,29 @@ async def conversation_skeletons(
     result = (
         result.join(invalid_results, on="conversation_id", how="anti")
         .with_columns(
-            pl.struct(["datetime_questions", "raw_skeleton"])
-            .map_elements(
-                lambda row: [
-                    {
-                        "question": skel["question"],
-                        "answer": skel["answer"],
-                        "date": dtq["date"],
-                        "time": dtq["time"],
-                    }
-                    for dtq, skel in zip(row["datetime_questions"], row["raw_skeleton"])
-                ]
-            )
-            .alias("skeleton")
+            [
+                pl.col("raw_skeleton")
+                .map_elements(lambda rs: rs["is_sensitive"])
+                .alias("is_sensitive"),
+                pl.col("raw_skeleton")
+                .map_elements(lambda rs: rs["summary"])
+                .alias("summary"),
+                pl.struct(["datetime_questions", "raw_skeleton"])
+                .map_elements(
+                    lambda row: [
+                        {
+                            "question": skel["question"],
+                            "answer": skel["answer"],
+                            "date": dtq["date"],
+                            "time": dtq["time"],
+                        }
+                        for dtq, skel in zip(
+                            row["datetime_questions"], row["raw_skeleton"]["skeleton"]
+                        )
+                    ],
+                )
+                .alias("skeleton"),
+            ]
         )
         .drop("raw_skeleton")
     )

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Callable, List, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Callable, Union
 
 from dagster import Config, ConfigurableResource
 
@@ -27,7 +28,7 @@ class BaseLlmResource(ConfigurableResource, ABC):
     @abstractmethod
     def get_prompt_sequences_completions_batch(
         self, prompt_sequences: Sequence[PromptSequence]
-    ) -> Tuple[List[List[str]], float]:
+    ) -> tuple[list[list[str]], float]:
         """
         Returns a tuple of the results for each prompt sequence and the cost of the inference.
         """

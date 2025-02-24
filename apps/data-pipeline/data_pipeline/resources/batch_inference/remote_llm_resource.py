@@ -2,7 +2,7 @@ import asyncio
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable
 
 import httpx
 from dagster import InitResourceContext, get_dagster_logger
@@ -31,7 +31,8 @@ class RemoteLlmResource(BaseLlmResource):
     _retry_event: asyncio.Event = PrivateAttr(default_factory=asyncio.Event)
     _remaining_reqs: int = PrivateAttr()
     _loop: asyncio.AbstractEventLoop = PrivateAttr()
-    _sequence_metrics: Dict[int, SequenceMetrics] = PrivateAttr(default_factory=dict)
+    _sequence_metrics: dict[int, SequenceMetrics] = PrivateAttr(default_factory=dict)
+    _retry_count: int = PrivateAttr(default=0)
 
     def _create_client(self) -> httpx.AsyncClient:
         return httpx.AsyncClient(
@@ -59,7 +60,7 @@ class RemoteLlmResource(BaseLlmResource):
             log_mgs = f"{self._remaining_reqs} requests remaining"
 
             if completed_metrics:
-                avg_duration = sum(m.duration for m in completed_metrics) / len(  # type: ignore
+                avg_duration = sum(m.duration for m in completed_metrics) / len(
                     completed_metrics
                 )
                 avg_input_tokens = sum(m.input_tokens for m in completed_metrics) / len(
@@ -69,15 +70,22 @@ class RemoteLlmResource(BaseLlmResource):
                     m.output_tokens for m in completed_metrics
                 ) / len(completed_metrics)
 
-                log_mgs += f" | Avg seq duration: {avg_duration:.2f}s | Avg seq in tokens: {avg_input_tokens:.1f} | Avg seq out tokens: {avg_output_tokens:.1f}"
+                log_mgs += (
+                    f" | Avg seq duration: {avg_duration:.2f}s | Avg seq in tokens: {avg_input_tokens:.1f} "
+                    f"| Avg seq out tokens: {avg_output_tokens:.1f}"
+                )
+
+            if self._retry_count:
+                log_mgs += f" | Total retries: {self._retry_count}"
+                # Optionally, you can reset the counter after logging:
+                self._retry_count = 0
 
             logger.info(log_mgs)
-
             await asyncio.sleep(60)
 
     async def _get_completion(
         self,
-        conversation: List[Dict[str, str]],
+        conversation: list[dict[str, str]],
         conversation_id: int,
     ) -> tuple[str | None, float, tuple[int, int]]:
         # If a message has with_memory set to False, remove all previous messages from the payload
@@ -120,8 +128,10 @@ class RemoteLlmResource(BaseLlmResource):
                 # Providers often return 500s for rate limits
                 if response.status_code == 429 or response.status_code >= 500:
                     retry_after = response.headers.get("Retry-After") or (2**_)
-                    logger.info(
-                        f"LLM completion #{conversation_id} returned status code {response.status_code}: {response.text}. Retrying in {retry_after}s..."
+                    # Increment the retry counter instead of logging an info message for each request
+                    self._retry_count += 1
+                    logger.debug(
+                        f"LLM completion #{conversation_id} got status {response.status_code}. Retrying in {retry_after}s..."
                     )
                     wait_time = int(retry_after)
                     self._retry_event.clear()  # Block further requests
@@ -160,7 +170,7 @@ class RemoteLlmResource(BaseLlmResource):
 
     async def _get_prompt_sequence_completion(
         self, prompts_sequence: PromptSequence, conversation_id: int
-    ) -> tuple[list[Dict[str, str]], float]:
+    ) -> tuple[list[dict[str, str]], float]:
         self._sequence_metrics[conversation_id] = SequenceMetrics(
             start_time=time.time()
         )
@@ -207,8 +217,8 @@ class RemoteLlmResource(BaseLlmResource):
         return conversation, total_cost
 
     async def _get_prompt_sequences_completions_batch_async(
-        self, prompt_sequences: List[PromptSequence]
-    ) -> tuple[List[List[str]], float]:
+        self, prompt_sequences: list[PromptSequence]
+    ) -> tuple[list[list[str]], float]:
         self._remaining_reqs = len(prompt_sequences) * len(prompt_sequences[0])
         self._status_printer_task = asyncio.create_task(self._periodic_status_printer())
         """
@@ -242,8 +252,8 @@ class RemoteLlmResource(BaseLlmResource):
         ), sum(costs)
 
     def get_prompt_sequences_completions_batch(
-        self, prompt_sequences: List[PromptSequence]
-    ) -> Tuple[List[PromptSequence], float]:
+        self, prompt_sequences: list[PromptSequence]
+    ) -> tuple[list[PromptSequence], float]:
         """
         Synchronous wrapper for the async get_prompt_sequences_completions_batch function.
         Uses a thread to run the async function in a new event loop.
@@ -252,7 +262,7 @@ class RemoteLlmResource(BaseLlmResource):
         if self._client.is_closed:
             self._client = self._create_client()
 
-        def run_async_in_thread(async_func: Any, *args) -> Any:
+        def run_async_in_thread(async_func: Callable, *args) -> Any:
             # Use the existing event loop instead of creating a new one
             return self._loop.run_until_complete(async_func(*args))
 
