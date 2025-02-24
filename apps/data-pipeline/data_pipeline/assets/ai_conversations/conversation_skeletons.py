@@ -45,7 +45,7 @@ def get_conversation_skeleton_prompt_sequence(conversation: str) -> PromptSequen
               Additionally:
               1. If the conversation is not in English, translate it to English.
               2. Determine if the conversation is highly sensitive, containing topics such as physicial and mental health problems, relationship advice and private legal matters.
-              3. Provide a descriptive summary of the conversation.
+              3. Descriptively summarize what the user wants to do, without mentioning the AI assistant.
 
               Use this output schema:
               {{
@@ -91,7 +91,7 @@ def parse_conversation_skeletons(completion: str) -> dict | None:
 
 
 class ConversationSkeletonsConfig(RowLimitConfig):
-    row_limit: int = 3000
+    row_limit: int = 300
 
 
 @asset(

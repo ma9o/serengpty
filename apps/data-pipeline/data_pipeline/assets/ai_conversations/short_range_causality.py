@@ -1,6 +1,8 @@
 from textwrap import dedent
 from typing import Optional
 
+import faiss
+import numpy as np
 import polars as pl
 from dagster import (
     AssetExecutionContext,
@@ -34,22 +36,25 @@ def build_short_range_prompt(current_summary: str, candidates: list) -> PromptSe
     """
     # Summaries of top K preceding conversations:
     preceding_text = "\n".join(
-        f"- row_id={c['row_id']}, summary={c['summary']}" for c in candidates
+        f"- id:{c['row_id']}, summary:{c['summary']}" for c in candidates
     )
 
     prompt = dedent(f"""
     You are given a *current* conversation summary, plus a list of candidate preceding conversations (with row_id and summary).
+    These candidate conversations all occurred within the past week.
+
+    Task:
+    - Identify which of these candidate preceding conversations (if any) likely prompted or inspired the user to start the *current* conversation.
+    - Look for thematic continuations, or contextual links that suggest the current conversation builds upon or responds to an earlier one.
+
+    After your analysis, return a JSON array of row_ids for conversations that appear to have meaningful connections to the current one.
+    If none apply, return an empty JSON list "[]".
 
     Current conversation summary:
     {current_summary}
 
     Candidate preceding conversations:
     {preceding_text}
-
-    Task:
-    - Which of these candidate preceding conversations (if any) seem to have caused the user to start the *current* conversation?
-      "Caused" means the user is continuing or referencing the content/ideas/context from that earlier conversation.
-    - After your reasoning, return a JSON array of row_ids. If none apply, return an empty JSON list "[]".
     """).strip()
 
     return [prompt]
@@ -75,6 +80,8 @@ class ShortRangeCausalityConfig(RowLimitConfig):
     days_to_look_back: int = 7
     # How many preceding conversations to pass to LLM
     top_k_preceding: int = 20
+    # Similarity threshold for filtering candidates
+    similarity_threshold: float = 0.5
 
     save_llm_io: bool = get_environment() == "LOCAL"
 
@@ -136,21 +143,85 @@ async def short_range_causality(
             & (pl.col("row_idx") < curr_idx)
         )
 
-        # 2) Sort descending by date/time and pick top_k_preceding
         if time_filtered.height == 0:
             row_idxs.append(curr_idx)
             prompt_sequences.append(None)
             preceding_candidates_list.append([])
             continue
 
+        # 2) Sort descending by date/time
         time_filtered = time_filtered.sort(
             ["start_date", "start_time"], descending=True
         )
-        candidates = time_filtered.head(config.top_k_preceding)
 
-        # Build the list for the prompt using row_idx as row_id
+        # 3) Use FAISS to filter based on embedding similarity.
+        # (Assumes a column "embedding" is present on the DataFrame.)
+
+        # Get candidate embeddings as a numpy array and normalize them.
+        candidate_embeddings = np.array(
+            time_filtered["embedding"].to_list(), dtype=np.float32
+        )
+        if candidate_embeddings.shape[0] > 0:
+            candidate_norms = np.linalg.norm(
+                candidate_embeddings, axis=1, keepdims=True
+            )
+            candidate_embeddings = candidate_embeddings / (candidate_norms + 1e-9)
+
+        # Get the current conversation's embedding and normalize it.
+        current_embedding = np.array(row["embedding"], dtype=np.float32)
+        current_norm = np.linalg.norm(current_embedding)
+        if current_norm > 0:
+            current_embedding = current_embedding / (current_norm + 1e-9)
+
+        # Compute similarity scores using FAISS.
+        if candidate_embeddings.shape[0] > 0 and candidate_embeddings.shape[1] > 0:
+            d = candidate_embeddings.shape[1]
+            index = faiss.IndexFlatIP(
+                d
+            )  # inner product index (assumes cosine similarity when vectors are normalized)
+            index.add(candidate_embeddings)
+            # Query using the current embedding. We use k equal to the number of candidates.
+            k_candidates = candidate_embeddings.shape[0]
+            D, I_order = index.search(current_embedding.reshape(1, d), k_candidates)
+            # FAISS returns candidates sorted by decreasing similarity.
+            # Rearrange the similarity scores to match the order of time_filtered.
+            similarity_scores = np.empty(k_candidates, dtype=np.float32)
+            for order, orig_idx in enumerate(I_order[0]):
+                similarity_scores[orig_idx] = D[0, order]
+        else:
+            similarity_scores = np.array([])
+
+        # 4) Select candidates that meet the similarity threshold.
+        # First, pick the high-quality candidates.
+        high_quality_idx = [
+            i
+            for i, sim in enumerate(similarity_scores)
+            if sim >= config.similarity_threshold
+        ]
+        # Then, if necessary, use additional candidates that did not meet the threshold.
+        low_quality_idx = [
+            i
+            for i, sim in enumerate(similarity_scores)
+            if sim < config.similarity_threshold
+        ]
+        final_indices = high_quality_idx.copy()
+        if len(final_indices) < config.top_k_preceding:
+            needed = config.top_k_preceding - len(final_indices)
+            final_indices.extend(low_quality_idx[:needed])
+
+        # If no candidates selected (unlikely), then skip this conversation.
+        if not final_indices:
+            row_idxs.append(curr_idx)
+            prompt_sequences.append(None)
+            preceding_candidates_list.append([])
+            continue
+
+        # Select the candidates based on the computed indices.
+        selected_candidates = time_filtered[final_indices]
+
+        # Build the list for the prompt using row_idx as row_id.
         cand_list = []
-        for cand_row in candidates.iter_rows(named=True):
+        for cand_row in selected_candidates.iter_rows(named=True):
             cand_list.append(
                 {
                     "row_id": cand_row["row_idx"],
@@ -160,13 +231,12 @@ async def short_range_causality(
             )
 
         preceding_candidates_list.append(cand_list)
-
+        # Create the prompt sequence only if we have candidates.
         if len(cand_list) == 0:
             row_idxs.append(curr_idx)
             prompt_sequences.append(None)
             continue
 
-        # Construct prompt using the conversation summary
         prompt_seq = build_short_range_prompt(
             current_summary=curr_summary,
             candidates=cand_list,

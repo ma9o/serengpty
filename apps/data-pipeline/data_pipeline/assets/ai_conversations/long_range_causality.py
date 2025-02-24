@@ -13,6 +13,8 @@ from data_pipeline.resources.batch_inference.base_llm_resource import (
     BaseLlmResource,
     PromptSequence,
 )
+from data_pipeline.utils.graph.build_graph_from_df import build_graph_from_df
+from data_pipeline.utils.graph.save_graph import save_graph
 
 
 def get_all_ancestors(node_id: int, caused_by_map: Dict[int, List[int]]) -> Set[int]:
@@ -43,8 +45,7 @@ def build_long_range_prompt(current_summary: str, candidates: list) -> PromptSeq
     )
 
     prompt = f"""\
-You are given a *current* conversation (in summary and skeleton form),
-plus a list of older candidate conversations (each with a row_id and summary).
+You are given a *current* conversation, plus a list of older candidate conversations (each with a row_id and summary).
 These candidate conversations are not currently in the causal chain for the current conversation.
 
 Current conversation summary:
@@ -78,9 +79,10 @@ class LongRangeCausalityConfig(RowLimitConfig):
     # How many top results from FAISS for each conversation
     top_k_similar: int = 15
     # Similarity threshold (if using dot-product or cosine, adapt your logic)
-    similarity_threshold: float = 0.6
+    similarity_threshold: float = 0.7
     # Save raw LLM IO data if in local environment; used to attach the raw prompts and outputs.
     save_llm_io: bool = get_environment() == "LOCAL"
+    save_graphml: bool = get_environment() == "LOCAL"
 
 
 @asset(
@@ -123,7 +125,7 @@ async def long_range_causality(
     embeddings_list = df["embedding"].to_list()
 
     dim = len(embeddings_list[0])
-    index = faiss.IndexFlatIP(dim)  # Using dot-product / inner product.
+    index = faiss.IndexFlatIP(dim)
     embedding_matrix = np.array(embeddings_list, dtype=np.float32)
     index.add(embedding_matrix)
 
@@ -248,5 +250,20 @@ async def long_range_causality(
                 pl.Series(name="llm_raw_prompts", values=raw_prompts),
             ]
         )
+
+    if config.save_graphml:
+        # Add relationships col
+        graph_df = df_out.with_columns(
+            relationships=pl.concat_list(
+                pl.col("row_idx"), pl.col("caused_by")
+            ).map_elements(
+                lambda pair: [{"source": pair[0], "target": i} for i in pair[1:]]
+            ),
+            start_date=pl.col("start_date").dt.to_string(),
+        )
+        G = build_graph_from_df(
+            graph_df, "relationships", "summary", ["start_date", "start_time"]
+        )
+        save_graph(G, context)
 
     return df_out
