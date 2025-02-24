@@ -91,7 +91,7 @@ def parse_conversation_skeletons(completion: str) -> dict | None:
 
 
 class ConversationSkeletonsConfig(RowLimitConfig):
-    row_limit: int = 300
+    row_limit: int = 1500
 
 
 @asset(

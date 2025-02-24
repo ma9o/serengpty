@@ -77,9 +77,9 @@ def parse_caused_by_llm_output(completion: str) -> List[int]:
 
 class LongRangeCausalityConfig(RowLimitConfig):
     # How many top results from FAISS for each conversation
-    top_k_similar: int = 15
+    top_k_similar: int = 20
     # Similarity threshold (if using dot-product or cosine, adapt your logic)
-    similarity_threshold: float = 0.7
+    similarity_threshold: float = 0.6
     # Save raw LLM IO data if in local environment; used to attach the raw prompts and outputs.
     save_llm_io: bool = get_environment() == "LOCAL"
     save_graphml: bool = get_environment() == "LOCAL"
@@ -154,7 +154,8 @@ async def long_range_causality(
         distances, indices = index.search(current_embed, k=config.top_k_similar + 10)
         # (Extra candidates are fetched in case many are filtered out.)
 
-        # 3) Filter out candidates: skip self, not strictly older, below threshold, or in ancestors.
+        # 3) Filter out candidates: skip self, not strictly older, below threshold, in ancestors,
+        #    OR occurring in the time window already analyzed by short-range.
         candidate_ids = []
         top_distances = distances[0]
         top_indices = indices[0]
@@ -165,6 +166,9 @@ async def long_range_causality(
                 continue
             if idx_i >= current_idx:
                 continue  # Must be strictly older.
+            cand_row = df.row(int(idx_i), named=True)
+            if cand_row["start_date_int"] >= row["short_range_cutoff"]:
+                continue
             if int(idx_i) in ancestors:
                 continue
             candidate_ids.append((int(idx_i), dist_i))
@@ -262,7 +266,10 @@ async def long_range_causality(
             start_date=pl.col("start_date").dt.to_string(),
         )
         G = build_graph_from_df(
-            graph_df, "relationships", "summary", ["start_date", "start_time"]
+            graph_df,
+            "relationships",
+            "row_idx",
+            ["summary", "start_date", "start_time"],
         )
         save_graph(G, context)
 

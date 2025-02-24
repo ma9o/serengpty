@@ -1,5 +1,4 @@
 from textwrap import dedent
-from typing import Optional
 
 import faiss
 import numpy as np
@@ -30,8 +29,7 @@ def build_short_range_prompt(current_summary: str, candidates: list) -> PromptSe
     Each candidate is something like:
       {
          "row_id": int,
-         "title": str,  # optional
-         "summary": str
+         "title": str,
       }
     """
     # Summaries of top K preceding conversations:
@@ -40,14 +38,10 @@ def build_short_range_prompt(current_summary: str, candidates: list) -> PromptSe
     )
 
     prompt = dedent(f"""
-    You are given a *current* conversation summary, plus a list of candidate preceding conversations (with row_id and summary).
-    These candidate conversations all occurred within the past week.
+    Identify which of these candidate preceding conversations (if any) likely prompted or inspired the user to start the *current* conversation.
+    The preceding candidate conversations all occurred within the past week, so even weak connections can be meaningful.
 
-    Task:
-    - Identify which of these candidate preceding conversations (if any) likely prompted or inspired the user to start the *current* conversation.
-    - Look for thematic continuations, or contextual links that suggest the current conversation builds upon or responds to an earlier one.
-
-    After your analysis, return a JSON array of row_ids for conversations that appear to have meaningful connections to the current one.
+    After your analysis, return a JSON array of row_ids for conversations that could have caused the current one.
     If none apply, return an empty JSON list "[]".
 
     Current conversation summary:
@@ -75,13 +69,12 @@ def parse_caused_by_llm_output(completion: str) -> list[int]:
 
 
 class ShortRangeCausalityConfig(RowLimitConfig):
-    row_limit: Optional[int] = 300 if get_environment() == "LOCAL" else None
     # How many days to look back
     days_to_look_back: int = 7
     # How many preceding conversations to pass to LLM
     top_k_preceding: int = 20
     # Similarity threshold for filtering candidates
-    similarity_threshold: float = 0.5
+    similarity_threshold: float = 0.4
 
     save_llm_io: bool = get_environment() == "LOCAL"
 
@@ -110,10 +103,8 @@ async def short_range_causality(
     llm = gpt4o_mini
     logger = context.log
 
-    df = (
-        skeletons_embeddings.filter(pl.col("summary").is_not_null())
-        .sort(["start_date", "start_time"])
-        .slice(0, config.row_limit)
+    df = skeletons_embeddings.filter(pl.col("summary").is_not_null()).sort(
+        ["start_date", "start_time"]
     )
 
     # Convert start_date to a pl.Date if not already
@@ -293,5 +284,13 @@ async def short_range_causality(
             ]
         )
 
-    # Return columns relevant for next step. Keep everything or filter as needed.
+    # Add the short_range_cutoff column, computed as the lower bound used in short-range filtering.
+    # Here we assume start_date_int is an integer representation of the date,
+    # so the cutoff is: current row's start_date_int - config.days_to_look_back.
+    df_out = df_out.with_columns(
+        (pl.col("start_date_int") - config.days_to_look_back).alias(
+            "short_range_cutoff"
+        )
+    )
+
     return df_out
