@@ -14,8 +14,9 @@ export const getCurrentUser = cache(async () => {
 
     return {
       id: session.user.id!,
-      email: session.user.email!,
-      name: session.user.name!,
+      // Email may be null for anonymous users
+      email: session.user.email || undefined,
+      name: session.user.name || undefined,
     };
   } catch (error) {
     console.error('Error getting current user:', error);

@@ -86,29 +86,45 @@ export function OnboardingForm() {
     }
     
     try {
+      setStatus('Creating your account...');
+      setProcessing(true);
+      
       // Create FormData with only the cleaned data
       const formData = new FormData();
       // Only add the cleaned conversations.json data to the form
       formData.append('conversations', JSON.stringify(cleanedConversations));
       formData.append('password', password);
       
-      // Here you would implement actual API call with the FormData
-      console.log('Signing up with cleaned data and password');
+      // Send the data to our signup API
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        body: formData,
+      });
       
-      // Example of how you might send the data
-      // const response = await fetch('/api/signup', {
-      //   method: 'POST',
-      //   body: formData,
-      // });
-      // 
-      // if (!response.ok) {
-      //   throw new Error('Failed to sign up');
-      // }
-      //
-      // Handle successful signup
-    } catch (err) {
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to sign up');
+      }
+      
+      // Get the response
+      const data = await response.json();
+      
+      // Success - redirect to login page
+      toast({
+        title: "Account created!",
+        description: "Your account has been created successfully. You can now log in.",
+        duration: 5000,
+      });
+      
+      // Redirect to login page after a short delay
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 2000);
+    } catch (err: any) {
       console.error(err);
-      setError('An error occurred during sign up.');
+      setError(err.message || 'An error occurred during sign up.');
+    } finally {
+      setProcessing(false);
     }
   }
 

@@ -6,7 +6,7 @@ import { Input } from '@enclaveid/ui/input';
 import { Label } from '@enclaveid/ui/label';
 import GitHubIcon from '~icons/mdi/github';
 import { Logo } from '@enclaveid/ui/logo';
-import { emailSignIn } from '../actions/auth/emailSignIn';
+import { signIn } from 'next-auth/react';
 import { githubSignIn } from '../actions/auth/githubSignIn';
 
 export function LoginForm({
@@ -19,7 +19,11 @@ export function LoginForm({
         onSubmit={async (e) => {
           e.preventDefault();
           const formData = new FormData(e.currentTarget);
-          await emailSignIn(formData.get('email') as string);
+          // Call SignIn with our credentials provider and password
+          await signIn('credentials', {
+            password: formData.get('password') as string,
+            callbackUrl: '/dashboard/home'
+          });
         }}
       >
         <div className="flex flex-col gap-6">
@@ -38,12 +42,12 @@ export function LoginForm({
           </div>
           <div className="flex flex-col gap-6">
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="john.doe@example.com"
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Enter your password"
                 required
               />
             </div>
