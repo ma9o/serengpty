@@ -6,6 +6,7 @@ User understanding for the AI era
 
 - [Architecture](docs/architecture.md)
 - [Verification](docs/verification.md)
+- [Monorepo Structure](docs/monorepo-structure.md)
 
 ## Getting started
 
