@@ -17,6 +17,7 @@
 - Format: `type(scope): description`
 - Types: `feat`, `fix`, `refactor`, `docs`, `style`, `test`, `chore`
 - Scope: Optional component/module name in parentheses
+- Do not add co-author information or external tool attribution
 - Examples:
   - `feat(web): add user dashboard`
   - `fix(data): handle branching in OpenAI conversations`
