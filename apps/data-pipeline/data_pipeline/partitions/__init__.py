@@ -15,5 +15,6 @@ if get_environment() == "LOCAL":
         partitions_def_name=user_partitions_def.name,
         partition_keys=[
             "cm0i27jdj0000aqpa73ghpcxf",
+            "cm0i27jdj0000aqpa73ghpcxd",
         ],
     )
