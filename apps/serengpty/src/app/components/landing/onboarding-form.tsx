@@ -2,14 +2,13 @@
 
 import { useState } from 'react';
 import { ZipDropzone } from './zip-dropzone';
-// Import the cleanArchive server action.
-// Adjust the import path as needed.
-import { cleanArchive } from '../../actions/cleanArchive';
 import { Button } from '@enclaveid/ui/button';
 import { Input } from '@enclaveid/ui/input';
 import { FileArchive, Loader2, XCircle } from 'lucide-react';
 import { useToast } from '@enclaveid/ui/hooks/use-toast';
 import { Toaster } from '@enclaveid/ui/toaster';
+import { processZipFile } from '../../utils/clientZipUtils';
+
 /**
  * generatePassword function for client-side password generation.
  */
@@ -25,9 +24,9 @@ function generatePassword(length = 24): string {
 
 /**
  * OnboardingForm component wraps the ZipDropzone.
- * When a file is dropped, we call the cleanArchive action,
+ * When a file is dropped, we process it on the client side,
  * generate a password, update UI feedback statuses, and then
- * reveal a sign-up button that will handle the final sign-up with the complete form data.
+ * reveal a sign-up button that will handle the final sign-up with just the cleaned conversations data.
  */
 export function OnboardingForm() {
   const { toast } = useToast();
@@ -37,7 +36,7 @@ export function OnboardingForm() {
   const [error, setError] = useState('');
   const [password, setPassword] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  // Add other form fields and states as needed
+  const [cleanedConversations, setCleanedConversations] = useState<any>(null);
 
   async function handleFileDrop(files: File[]) {
     const file = files[0];
@@ -45,23 +44,25 @@ export function OnboardingForm() {
 
     // Reset state for a new upload.
     setError('');
-    setStatus('Cleaning archive...');
+    setStatus('Processing archive...');
     setProcessing(true);
     setReady(false);
     setPassword(null);
+    setCleanedConversations(null);
 
     try {
-      // Create FormData and append the file
-      const formData = new FormData();
-      formData.append('file', file);
-
-      // Call cleanArchive with FormData instead of the raw file
-      const result = await cleanArchive(formData);
-      if (!result.success) {
-        setError('Failed to clean the archive.');
+      // Process the zip file on the client side
+      setStatus('Extracting and cleaning data...');
+      const result = await processZipFile(file);
+      
+      if (!result.success || !result.conversations) {
+        setError('Failed to process the archive.');
         setProcessing(false);
         return;
       }
+      
+      setCleanedConversations(result.conversations);
+      
       setStatus('Generating password...');
       // Generate a strong password on the client.
       const newPassword = generatePassword();
@@ -78,9 +79,37 @@ export function OnboardingForm() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // Here you would handle the sign-up submission using the generated password
-    console.log('Signing up with password:', password);
-    // Implement the sign-up logic (e.g., call an API or use a server action)
+    
+    if (!cleanedConversations || !password) {
+      setError('Missing required data for submission.');
+      return;
+    }
+    
+    try {
+      // Create FormData with only the cleaned data
+      const formData = new FormData();
+      // Only add the cleaned conversations.json data to the form
+      formData.append('conversations', JSON.stringify(cleanedConversations));
+      formData.append('password', password);
+      
+      // Here you would implement actual API call with the FormData
+      console.log('Signing up with cleaned data and password');
+      
+      // Example of how you might send the data
+      // const response = await fetch('/api/signup', {
+      //   method: 'POST',
+      //   body: formData,
+      // });
+      // 
+      // if (!response.ok) {
+      //   throw new Error('Failed to sign up');
+      // }
+      //
+      // Handle successful signup
+    } catch (err) {
+      console.error(err);
+      setError('An error occurred during sign up.');
+    }
   }
 
   return (
