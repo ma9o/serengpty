@@ -12,11 +12,6 @@
 - Run Python lint: `poetry run ruff check`
 - Run Python tests: `poetry run pytest`
 
-## Git Commands and Practices
-- Commit format: Use conventional commits (feat, fix, docs, style, refactor, test, chore)
-- Maintain descriptive commit messages that clearly explain changes
-- For rewriting commit history, refer to `scripts/rewrite_history.sh`
-
 ## Code Style Guidelines
 - TypeScript: Use strict types, avoid `any` and `!` assertions when possible
 - Python: Follow PEP 8, 88-char line length, use type hints
