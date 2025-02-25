@@ -17,7 +17,7 @@ from data_pipeline.partitions import user_partitions_def
 def _process_conversation_data(original_df: pd.DataFrame) -> pd.DataFrame:
     """
     Process conversation data into a structured DataFrame with conversation_id,
-    date, time, question and answer columns.
+    date, time, question and answer columns. Handles branched conversations.
 
     Args:
         original_df (pd.DataFrame): DataFrame containing the mapping column
@@ -32,22 +32,25 @@ def _process_conversation_data(original_df: pd.DataFrame) -> pd.DataFrame:
         conversation_id = row["id"]
         title = row["title"]
         mapping = row["mapping"]
-        conversation_data = list(mapping.values())
-
-        # Iterate through messages with index to check next message
-        for i, message in enumerate(conversation_data):
-            # Check if the message has required fields and is from a user
-            if (
-                message.get("message")
-                and message["message"].get("author")
+        
+        # Create a message lookup dictionary
+        message_lookup = {}
+        for msg_id, msg in mapping.items():
+            message_lookup[msg_id] = msg
+        
+        # Process all user messages 
+        for msg_id, message in mapping.items():
+            # Check if message is from user and has required fields
+            if (message.get("message") 
+                and message["message"].get("author") 
                 and message["message"]["author"].get("role") == "user"
                 and message["message"].get("create_time")
-                and message["message"].get("content")
-            ):
+                and message["message"].get("content")):
+                
                 # Extract timestamp and convert to datetime
                 timestamp = message["message"]["create_time"]
                 dt = datetime.fromtimestamp(timestamp)
-
+                
                 # Process question
                 question_parts = message["message"]["content"].get("parts", [""])
                 question_parts = [
@@ -55,26 +58,38 @@ def _process_conversation_data(original_df: pd.DataFrame) -> pd.DataFrame:
                     for part in question_parts
                 ]
                 question = "\n".join(question_parts)
-
-                # Get answer from next message if it exists and is from assistant
+                
+                # Look for assistant response in children
                 answer = ""
-                if i + 1 < len(conversation_data):
-                    next_message = conversation_data[i + 1]
-                    if (
-                        next_message.get("message")
-                        and next_message["message"].get("author")
-                        and next_message["message"]["author"].get("role") == "assistant"
-                        and next_message["message"].get("content")
-                    ):
-                        answer_parts = next_message["message"]["content"].get(
-                            "parts", [""]
-                        )
-                        answer_parts = [
-                            str(part) if isinstance(part, dict) else part
-                            for part in answer_parts
-                        ]
-                        answer = "\n".join(answer_parts)
-
+                if message.get("children"):
+                    # Get all assistant responses from child messages
+                    assistant_responses = []
+                    
+                    for child_id in message["children"]:
+                        child = message_lookup.get(child_id)
+                        if (child 
+                            and child.get("message")
+                            and child["message"].get("author")
+                            and child["message"]["author"].get("role") == "assistant"
+                            and child["message"].get("content")):
+                            
+                            # Process answer parts
+                            answer_parts = child["message"]["content"].get("parts", [""])
+                            answer_parts = [
+                                str(part) if isinstance(part, dict) else part
+                                for part in answer_parts
+                            ]
+                            answer_text = "\n".join(answer_parts)
+                            
+                            # Get timestamp for sorting
+                            child_timestamp = child["message"].get("create_time", 0)
+                            assistant_responses.append((answer_text, child_timestamp))
+                    
+                    # If multiple responses found, use most recent
+                    if assistant_responses:
+                        assistant_responses.sort(key=lambda x: x[1], reverse=True)
+                        answer = assistant_responses[0][0]
+                
                 processed_data.append(
                     {
                         "conversation_id": conversation_id,
