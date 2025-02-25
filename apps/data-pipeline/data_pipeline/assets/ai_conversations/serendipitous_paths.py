@@ -41,15 +41,12 @@ def load_user_dataframe(context: AssetExecutionContext, user_id: str) -> pl.Lazy
     return pl.scan_parquet(get_working_dir(context) / f"{user_id}.snappy")
 
 
-def find_longest_common_paths(
-    user_graphs: Dict[str, nx.DiGraph], max_path_length: int = 10
-) -> List[List[str]]:
+def find_longest_common_paths(user_graphs: Dict[str, nx.DiGraph]) -> List[List[str]]:
     """
     Find the longest common directed paths across multiple user graphs.
 
     Args:
         user_graphs: Dictionary mapping user_ids to their respective DiGraphs
-        max_path_length: Maximum path length to consider to limit memory usage
 
     Returns:
         List of paths (each path is a list of node IDs)
@@ -82,7 +79,9 @@ def find_longest_common_paths(
                         # Get simple paths with cutoff to limit memory usage
                         simple_paths = list(
                             nx.all_simple_paths(
-                                graph, source, target, cutoff=max_path_length
+                                graph,
+                                source,
+                                target,
                             )
                         )
                         # Only keep paths with length >= 2
@@ -198,8 +197,6 @@ class SerendipitousPathsConfig(RowLimitConfig):
     max_paths: int = 10
     # Maximum number of users to process at once
     max_users_per_batch: int = 5
-    # Maximum path length to consider (helps reduce memory usage)
-    max_path_length: int = 10
     # Save graph visualization
     save_graphml: bool = get_environment() == "LOCAL"
 
@@ -381,7 +378,7 @@ def serendipitous_paths(
                 continue
 
     # Find longest common paths across user graphs
-    common_paths = find_longest_common_paths(user_graphs, config.max_path_length)
+    common_paths = find_longest_common_paths(user_graphs)
     logger.info(f"Found {len(common_paths)} common paths across users")
 
     # Create a path-level DataFrame structure

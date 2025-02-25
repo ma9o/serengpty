@@ -1,6 +1,6 @@
+import json
 from datetime import datetime
 from io import StringIO
-from zipfile import ZipFile, is_zipfile
 
 import pandas as pd
 import polars as pl
@@ -32,25 +32,26 @@ def _process_conversation_data(original_df: pd.DataFrame) -> pd.DataFrame:
         conversation_id = row["id"]
         title = row["title"]
         mapping = row["mapping"]
-        
+
         # Create a message lookup dictionary
         message_lookup = {}
         for msg_id, msg in mapping.items():
             message_lookup[msg_id] = msg
-        
-        # Process all user messages 
+
+        # Process all user messages
         for msg_id, message in mapping.items():
             # Check if message is from user and has required fields
-            if (message.get("message") 
-                and message["message"].get("author") 
+            if (
+                message.get("message")
+                and message["message"].get("author")
                 and message["message"]["author"].get("role") == "user"
                 and message["message"].get("create_time")
-                and message["message"].get("content")):
-                
+                and message["message"].get("content")
+            ):
                 # Extract timestamp and convert to datetime
                 timestamp = message["message"]["create_time"]
                 dt = datetime.fromtimestamp(timestamp)
-                
+
                 # Process question
                 question_parts = message["message"]["content"].get("parts", [""])
                 question_parts = [
@@ -58,38 +59,41 @@ def _process_conversation_data(original_df: pd.DataFrame) -> pd.DataFrame:
                     for part in question_parts
                 ]
                 question = "\n".join(question_parts)
-                
+
                 # Look for assistant response in children
                 answer = ""
                 if message.get("children"):
                     # Get all assistant responses from child messages
                     assistant_responses = []
-                    
+
                     for child_id in message["children"]:
                         child = message_lookup.get(child_id)
-                        if (child 
+                        if (
+                            child
                             and child.get("message")
                             and child["message"].get("author")
                             and child["message"]["author"].get("role") == "assistant"
-                            and child["message"].get("content")):
-                            
+                            and child["message"].get("content")
+                        ):
                             # Process answer parts
-                            answer_parts = child["message"]["content"].get("parts", [""])
+                            answer_parts = child["message"]["content"].get(
+                                "parts", [""]
+                            )
                             answer_parts = [
                                 str(part) if isinstance(part, dict) else part
                                 for part in answer_parts
                             ]
                             answer_text = "\n".join(answer_parts)
-                            
+
                             # Get timestamp for sorting
                             child_timestamp = child["message"].get("create_time", 0)
                             assistant_responses.append((answer_text, child_timestamp))
-                    
+
                     # If multiple responses found, use most recent
                     if assistant_responses:
                         assistant_responses.sort(key=lambda x: x[1], reverse=True)
                         answer = assistant_responses[0][0]
-                
+
                 processed_data.append(
                     {
                         "conversation_id": conversation_id,
@@ -120,14 +124,14 @@ def parsed_conversations(
     context: AssetExecutionContext, config: Config
 ) -> pl.DataFrame:
     """
-    Extracts and structures raw conversation data from OpenAI zip archives.
-    
+    Extracts and structures raw conversation data from OpenAI JSON files.
+
     This asset:
     - Transforms unstructured JSON into a clean dataframe with standard fields
-    - Uses zipfile, pandas and polars libraries for efficient data handling
+    - Uses pandas and polars libraries for efficient data handling
     - Serves as the foundation layer for all subsequent processing steps
     - Each row represents a single Q&A exchange from user conversations
-    
+
     Output columns:
     - conversation_id: Unique identifier for each conversation
     - title: The title of the conversation
@@ -136,20 +140,21 @@ def parsed_conversations(
     - question: User's query text
     - answer: Assistant's response text
     """
-    archive_path = (
+    user_dir = (
         API_STORAGE_DIRECTORY
         / context.partition_key
         / DataProvider.OPENAI["path_prefix"]
-        / "latest.zip"
     )
 
-    expected_file = DataProvider.OPENAI["expected_file"]
-    with archive_path.open("rb") as f:
-        if not is_zipfile(f):
-            raise ValueError("Expected a zip archive but got a different file type.")
+    # Get the JSON file for the current user
+    json_file = user_dir / "latest.json"
 
-        with ZipFile(f, "r") as zip_ref, zip_ref.open(expected_file) as zip_f:
-            raw_df = pd.read_json(zip_f)
+    # Load the JSON file directly
+    with open(json_file) as f:
+        conversations_data = json.load(f)
+
+    # Convert to DataFrame
+    raw_df = pd.DataFrame(conversations_data)
 
     if raw_df.empty:
         raise ValueError("Expected a non-empty DataFrame but got an empty one.")
