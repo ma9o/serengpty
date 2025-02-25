@@ -51,14 +51,21 @@ class DeepInfraEmbedderClient(BaseEmbedderClient):
         while True:
             current_time = asyncio.get_event_loop().time()
             if current_time - self._last_log_time >= 60:  # Only log every 60 seconds
-                progress = (self._completed_requests) / total_texts
+                completed = self._completed_requests
+                progress = completed / total_texts
                 elapsed_time = current_time - start_time
-                estimated_total_time = elapsed_time / progress if progress > 0 else 0
-                estimated_remaining_time = estimated_total_time - elapsed_time
+                
+                # Calculate processing rate (texts per second)
+                processing_rate = completed / elapsed_time if elapsed_time > 0 else 0
+                
+                # Estimate remaining time based on rate, not linear progress
+                remaining_texts = total_texts - completed
+                estimated_remaining_time = remaining_texts / processing_rate if processing_rate > 0 else 0
 
                 self._logger.info(
                     f"Progress: {progress:.1%} | "
                     f"Elapsed: {elapsed_time:.1f}s | "
+                    f"Rate: {processing_rate:.1f} texts/s | "
                     f"Estimated remaining: {estimated_remaining_time:.1f}s"
                 )
                 self._last_log_time = current_time
