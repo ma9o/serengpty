@@ -11,6 +11,16 @@
 - Install dependencies: `poetry install`
 - Run Python lint: `poetry run ruff check`
 - Run Python tests: `poetry run pytest`
+- Python commands via nx: `bun nx run [python-project]:lint`
+
+## Git Commit Guidelines
+- Format: `type(scope): description`
+- Types: `feat`, `fix`, `refactor`, `docs`, `style`, `test`, `chore`
+- Scope: Optional component/module name in parentheses
+- Examples:
+  - `feat(web): add user dashboard`
+  - `fix(data): handle branching in OpenAI conversations`
+  - `refactor: process zip files client-side`
 
 ## Code Style Guidelines
 - TypeScript: Use strict types, avoid `any` and `!` assertions when possible
