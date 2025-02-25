@@ -30,10 +30,22 @@ def skeletons_clusters(
     skeletons_embeddings: pl.DataFrame,
 ) -> pl.DataFrame:
     """
-    Assigns clusters to skeletons using agglomerative clustering on their embeddings.
-
+    Groups similar conversations into clusters for easier analysis.
+    
+    This asset:
+    - Groups semantically similar conversations using AgglomerativeClustering
+    - Identifies patterns in user behavior and interests
+    - Visualizes cluster distribution for analysis
+    - Creates organization structure for categorization
+    - Helps identify common themes across user interactions
+    
+    Output columns:
+    - All columns from skeletons_embeddings
+    - cluster_label: Assigned cluster identifier
+    
     Args:
         context: The asset execution context
+        config: Configuration for clustering parameters
         skeletons_embeddings: DataFrame containing the skeletons embeddings
 
     Returns:

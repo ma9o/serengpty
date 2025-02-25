@@ -110,6 +110,27 @@ async def conversation_skeletons(
     gpt4o_mini: BaseLlmResource,
     parsed_conversations: pl.DataFrame,
 ):
+    """
+    Creates simplified representations of conversations using LLM summarization.
+    
+    This asset:
+    - Creates condensed representations of conversations using LLM (gpt4o_mini)
+    - Groups by conversation_id to maintain context across exchanges
+    - Flags sensitive content for privacy protection
+    - Adds summary field to capture conversation essence
+    - Essential for reducing raw data complexity while preserving meaning
+    
+    Output columns:
+    - conversation_id: Unique identifier for each conversation
+    - title: The title of the conversation
+    - start_date: Date when the conversation started
+    - start_time: Time when the conversation started
+    - datetime_conversations: Combined date/time/question/answer text
+    - datetime_questions: Structured date/time/question data
+    - is_sensitive: Boolean flag for sensitive content
+    - summary: LLM-generated conversation summary
+    - skeleton: Structured conversation with date/time/question/answer
+    """
     llm = gpt4o_mini
     logger = context.log
 

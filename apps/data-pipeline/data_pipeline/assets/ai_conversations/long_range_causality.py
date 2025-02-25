@@ -97,16 +97,36 @@ async def long_range_causality(
     short_range_causality: pl.DataFrame,
 ) -> pl.DataFrame:
     """
-    Ingests the short_range_causality asset (which has a 'caused_by' column).
-    Checks for additional long-range dependencies by using embeddings:
-      - Build a FAISS index from all conversations.
-      - For each conversation, search for top K most similar older conversations.
-      - Exclude any conversation that is already in the causal chain.
-      - Ask the LLM if any of those candidates caused the current conversation.
-      - Append the newly found causes to the existing 'caused_by'.
-
-    When `config.save_llm_io` is True, the raw LLM outputs are saved in an additional
-    'llm_raw_outputs' column for debugging, and the raw prompts are saved in 'llm_raw_prompts'.
+    Extends the causal graph by identifying relationships between distant conversations.
+    
+    This asset:
+    - Extends causality detection to distant conversations
+    - Builds comprehensive knowledge graph with networkx
+    - Traverses causal chains to find indirect relationships
+    - Captures long-term patterns in user behavior
+    - Outputs GraphML format for visualization tools
+    
+    Output columns:
+    - All columns from short_range_causality
+    - caused_by: Updated with long-range causal relationships
+    - relationships: (when save_graphml=True) Graph edges for visualization
+    
+    Processing steps:
+    - Build a FAISS index from all conversations
+    - For each conversation, search for top K most similar older conversations
+    - Exclude any conversation that is already in the causal chain
+    - Ask the LLM if any of those candidates caused the current conversation
+    - Append the newly found causes to the existing 'caused_by'
+    - Generate a knowledge graph in GraphML format (optional)
+    
+    Args:
+        context: The asset execution context
+        config: Configuration for long-range causality detection
+        gpt4o_mini: LLM resource for causality verification
+        short_range_causality: DataFrame with short-range causality information
+        
+    Returns:
+        DataFrame with comprehensive causality information and optional graph data
     """
     llm = gpt4o_mini
     logger = context.log

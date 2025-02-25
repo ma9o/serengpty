@@ -74,8 +74,27 @@ async def skeletons_categorized(
     skeletons_clusters: pl.DataFrame,
 ) -> pl.DataFrame:
     """
-    Generates category summaries for each cluster using LLM analysis of sample conversations.
-    After computing the categories for each cluster, merges them back to the original dataframe.
+    Assigns descriptive categories to each cluster of conversations.
+    
+    This asset:
+    - Assigns human-readable labels to conversation clusters using gpt4o
+    - Identifies personal vs. professional content
+    - Makes data more navigable and understandable
+    - Enables filtering by domain/category
+    - Adds semantic layer to purely statistical clustering
+    
+    Output columns:
+    - All columns from skeletons_clusters
+    - category: Descriptive categorization of the cluster
+    - is_personal: Boolean indicating if the cluster is in the personal/humanistic domain
+    
+    Args:
+        context: The asset execution context
+        gpt4o: LLM resource for generating categories
+        skeletons_clusters: DataFrame containing the clustered skeletons
+        
+    Returns:
+        DataFrame with added category and is_personal columns
     """
     logger = context.log
     df = skeletons_clusters

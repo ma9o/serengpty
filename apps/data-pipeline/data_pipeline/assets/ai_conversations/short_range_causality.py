@@ -91,14 +91,37 @@ async def short_range_causality(
     skeletons_embeddings: pl.DataFrame,
 ) -> pl.DataFrame:
     """
-    Identifies short-range causal dependencies by:
+    Identifies causal relationships between recent conversations.
+    
+    This asset:
+    - Identifies causal relationships between temporally close conversations
+    - Uses both time windows and semantic similarity via FAISS
+    - Leverages LLM reasoning to confirm causality
+    - Creates initial graph structure
+    - Captures immediate influences in user thought patterns
+    
+    Output columns:
+    - All columns from skeletons_embeddings
+    - row_idx: Row index for reference
+    - start_date_int: Integer representation of the start date
+    - caused_by: List of row indices that caused the current conversation
+    - short_range_cutoff: Lower bound date for short-range filtering
+    - llm_raw_outputs: (optional) Raw LLM outputs for debugging
+    - llm_raw_prompts: (optional) Raw prompts used for LLM
+    
+    Processing steps:
     1) Filtering each conversation to the top K preceding convos within X days.
     2) Asking the LLM which of those K convos may have caused the current convo.
     3) Storing the resulting conversation_ids in a new caused_by column.
-
-    When `config.save_llm_io` is True, the raw LLM outputs are saved in an additional
-    'llm_raw_outputs' column for debugging. Additionally, the raw prompts are saved in
-    'llm_raw_prompts' column.
+    
+    Args:
+        context: The asset execution context
+        config: Configuration for causality detection
+        gpt4o_mini: LLM resource for causality determination
+        skeletons_embeddings: DataFrame containing vectorized conversation skeletons
+        
+    Returns:
+        DataFrame with added causality information
     """
     llm = gpt4o_mini
     logger = context.log

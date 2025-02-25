@@ -119,6 +119,23 @@ def _process_conversation_data(original_df: pd.DataFrame) -> pd.DataFrame:
 def parsed_conversations(
     context: AssetExecutionContext, config: Config
 ) -> pl.DataFrame:
+    """
+    Extracts and structures raw conversation data from OpenAI zip archives.
+    
+    This asset:
+    - Transforms unstructured JSON into a clean dataframe with standard fields
+    - Uses zipfile, pandas and polars libraries for efficient data handling
+    - Serves as the foundation layer for all subsequent processing steps
+    - Each row represents a single Q&A exchange from user conversations
+    
+    Output columns:
+    - conversation_id: Unique identifier for each conversation
+    - title: The title of the conversation
+    - date: Date when the exchange occurred
+    - time: Time when the exchange occurred
+    - question: User's query text
+    - answer: Assistant's response text
+    """
     archive_path = (
         API_STORAGE_DIRECTORY
         / context.partition_key

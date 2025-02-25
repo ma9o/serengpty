@@ -27,13 +27,24 @@ async def skeletons_embeddings(
     conversation_skeletons: pl.DataFrame,
 ) -> pl.DataFrame:
     """
-    Creates embeddings for combined questions and answers in the parsed conversations.
+    Creates vector embeddings for conversation skeletons to enable similarity search.
 
+    This asset:
+    - Vectorizes conversational content using DeepInfraEmbedderClient
+    - Processes in efficient batches to handle large datasets
+    - Adds semantic meaning through vector representations
+    - Enables similarity-based operations in later stages
+    - Critical for transitioning from text to machine-understandable format
+    
+    Output columns:
+    - All columns from conversation_skeletons
+    - embedding: Vector representation of combined Q&A pairs
+    
     Args:
         context: The asset execution context
         config: Configuration for row limiting
         batch_embedder: Resource for creating embeddings
-        parsed_conversations: DataFrame containing the parsed conversations
+        conversation_skeletons: DataFrame containing conversation skeletons
 
     Returns:
         DataFrame with added embedding column for combined question and answer text
