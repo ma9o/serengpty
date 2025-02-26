@@ -16,7 +16,7 @@ from data_pipeline.resources.batch_inference.base_llm_resource import (
 )
 
 
-def get_conversation_skeleton_prompt_sequence(conversation: str) -> PromptSequence:
+def get_conversation_summary_prompt_sequence(conversation: str) -> PromptSequence:
     return [
         # NB: do not use "user" or "assistant" in the prompt or it will throw a 500
         dedent(
@@ -24,40 +24,17 @@ def get_conversation_skeleton_prompt_sequence(conversation: str) -> PromptSequen
               You will be given a conversation between a user and an AI assistant.
               Sometimes, users paste content from an external source into their questions, such as articles, code snippets, etc.
 
-              Your job is to provide a summary of the conversation that:
-              - only preserves verbatim the user's manually written text
-              - summarizes the assistant's responses and content that the user is likely to have pasted from an external source
-
-              Format each exchange as:
-              Q: what the user wrote in the question + [a concise summary of what the user pasted in the question, if any]
-              A: concise summary of main response points
-
-              Examples:
-
-              For a question with no pasted content, just return the input verbatim and summarize the response:
-              Q: "I've always stored my tomatoes in the fridge like my mom taught me - is this the best way to keep them fresh?"
-              A: Recommends room temperature storage instead of refrigeration
-
-              For a question with pasted content, return only the manually written part verbatim, summarize the external content, and summarize the response:
-              Q: "My garden tomatoes are getting spots and I'm really worried about losing the whole crop. My grandfather taught me to always check the leaves first" + [Includes lengthy paste of disease identification guide from gardening website]
-              A: Identifies likely early blight and suggests organic treatment options
+              Your job is to provide a summary of the conversation that captures the essence of what was discussed.
 
               Additionally:
               1. If the conversation is not in English, translate it to English.
-              2. Determine if the conversation is highly sensitive, containing topics such as physicial and mental health problems, relationship advice and private legal matters.
+              2. Determine if the conversation is highly sensitive, containing topics such as physical and mental health problems, relationship advice and private legal matters.
               3. Descriptively summarize what the user wants to do, without mentioning the AI assistant.
 
               Use this output schema:
               {{
                   "summary": str,
-                  "is_sensitive": bool,
-                  "skeleton": [
-                      {{
-                          "question": str,
-                          "answer": str
-                      }},
-                      ...
-                  ]
+                  "is_sensitive": bool
               }}
 
               Here is the conversation:
@@ -67,21 +44,17 @@ def get_conversation_skeleton_prompt_sequence(conversation: str) -> PromptSequen
     ]
 
 
-def parse_conversation_skeletons(completion: str) -> dict | None:
+def parse_conversation_summaries(completion: str) -> dict | None:
     try:
         res = repair_json(completion, return_objects=True)
 
-        # Now expect a JSON object with an "is_sensitive" field and a "skeleton" list of Q/A dicts.
+        # Now expect a JSON object with an "is_sensitive" field and a "summary" field.
         if (
             isinstance(res, dict)
             and "is_sensitive" in res
-            and "skeleton" in res
             and "summary" in res
-            and isinstance(res["skeleton"], list)
-            and all(
-                isinstance(x, dict) and "question" in x and "answer" in x
-                for x in res["skeleton"]
-            )
+            and isinstance(res["is_sensitive"], bool)
+            and isinstance(res["summary"], str)
         ):
             return res
         else:
@@ -90,7 +63,7 @@ def parse_conversation_skeletons(completion: str) -> dict | None:
         return None
 
 
-class ConversationSkeletonsConfig(RowLimitConfig):
+class ConversationSummariesConfig(RowLimitConfig):
     row_limit: int = 1500
 
 
@@ -104,21 +77,20 @@ class ConversationSkeletonsConfig(RowLimitConfig):
     io_manager_key="parquet_io_manager",
     # op_tags=get_k8s_vllm_config(),
 )
-async def conversation_skeletons(
+async def conversation_summaries(
     context: AssetExecutionContext,
-    config: ConversationSkeletonsConfig,
+    config: ConversationSummariesConfig,
     gpt4o_mini: BaseLlmResource,
     parsed_conversations: pl.DataFrame,
 ):
     """
-    Creates simplified representations of conversations using LLM summarization.
+    Creates simplified summaries of conversations using LLM.
 
     This asset:
-    - Creates condensed representations of conversations using LLM (gpt4o_mini)
+    - Creates concise summaries of conversations using LLM (gpt4o_mini)
     - Groups by conversation_id to maintain context across exchanges
     - Flags sensitive content for privacy protection
-    - Adds summary field to capture conversation essence
-    - Essential for reducing raw data complexity while preserving meaning
+    - Essential for quick understanding of conversation content
 
     Output columns:
     - conversation_id: Unique identifier for each conversation
@@ -126,10 +98,8 @@ async def conversation_skeletons(
     - start_date: Date when the conversation started
     - start_time: Time when the conversation started
     - datetime_conversations: Combined date/time/question/answer text
-    - datetime_questions: Structured date/time/question data
     - is_sensitive: Boolean flag for sensitive content
     - summary: LLM-generated conversation summary
-    - skeleton: Structured conversation with date/time/question/answer
     """
     llm = gpt4o_mini
     logger = context.log
@@ -148,9 +118,6 @@ async def conversation_skeletons(
                     pl.col("answer"),
                 ],
             ).alias("datetime_conversation"),
-            pl.struct([pl.col("date"), pl.col("time"), pl.col("question")]).alias(
-                "datetime_question"
-            ),
         )
         .group_by("conversation_id")
         .agg(
@@ -161,7 +128,6 @@ async def conversation_skeletons(
                 pl.col("title").first(),
                 pl.col("date").first().alias("start_date"),
                 pl.col("time").first().alias("start_time"),
-                pl.col("datetime_question").alias("datetime_questions"),
             ]
         )
         .sort("start_date", "start_time", descending=True)
@@ -174,7 +140,7 @@ async def conversation_skeletons(
     )
 
     prompt_sequences = [
-        get_conversation_skeleton_prompt_sequence(row["datetime_conversations"])
+        get_conversation_summary_prompt_sequence(row["datetime_conversations"])
         for row in df.to_dicts()
     ]
 
@@ -192,7 +158,7 @@ async def conversation_skeletons(
 
     results = [
         {
-            "raw_skeleton": parse_conversation_skeletons(completion[-1])
+            "raw_summary": parse_conversation_summaries(completion[-1])
             if completion
             else None
         }
@@ -201,39 +167,24 @@ async def conversation_skeletons(
 
     result = df.hstack(pl.DataFrame(results, strict=False))
 
-    invalid_results = result.filter(pl.col("raw_skeleton").is_null())
+    invalid_results = result.filter(pl.col("raw_summary").is_null())
 
     if invalid_results.height > 0:
-        logger.warning(f"DOOT DOOT: Found invalid {invalid_results.height} skeletons.")
+        logger.warning(f"Found invalid {invalid_results.height} summaries.")
 
     result = (
         result.join(invalid_results, on="conversation_id", how="anti")
         .with_columns(
             [
-                pl.col("raw_skeleton")
+                pl.col("raw_summary")
                 .map_elements(lambda rs: rs["is_sensitive"])
                 .alias("is_sensitive"),
-                pl.col("raw_skeleton")
+                pl.col("raw_summary")
                 .map_elements(lambda rs: rs["summary"])
                 .alias("summary"),
-                pl.struct(["datetime_questions", "raw_skeleton"])
-                .map_elements(
-                    lambda row: [
-                        {
-                            "question": skel["question"],
-                            "answer": skel["answer"],
-                            "date": dtq["date"],
-                            "time": dtq["time"],
-                        }
-                        for dtq, skel in zip(
-                            row["datetime_questions"], row["raw_skeleton"]["skeleton"]
-                        )
-                    ],
-                )
-                .alias("skeleton"),
             ]
         )
-        .drop("raw_skeleton")
+        .drop("raw_summary")
     )
 
     return result

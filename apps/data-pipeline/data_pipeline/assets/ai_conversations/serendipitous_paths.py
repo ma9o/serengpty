@@ -11,9 +11,11 @@ from dagster import (
 )
 
 from data_pipeline.constants.custom_config import RowLimitConfig
-from data_pipeline.constants.environments import get_environment
+from data_pipeline.constants.environments import (
+    DAGSTER_STORAGE_DIRECTORY,
+    get_environment,
+)
 from data_pipeline.partitions import user_partitions_def
-from data_pipeline.utils.get_working_dir import get_working_dir
 from data_pipeline.utils.graph.save_graph import save_graph
 
 
@@ -36,9 +38,11 @@ def get_materialized_partitions(context: AssetExecutionContext, asset_name: str)
     return filtered_partitions
 
 
-def load_user_dataframe(context: AssetExecutionContext, user_id: str) -> pl.LazyFrame:
+def load_user_dataframe(user_id: str) -> pl.LazyFrame:
     """Load a user's dataframe as a LazyFrame to reduce memory consumption."""
-    return pl.scan_parquet(get_working_dir(context) / f"{user_id}.snappy")
+    return pl.scan_parquet(
+        DAGSTER_STORAGE_DIRECTORY / "long_range_causality" / f"{user_id}.snappy"
+    )
 
 
 def find_longest_common_paths(user_graphs: Dict[str, nx.DiGraph]) -> List[List[str]]:
@@ -170,8 +174,7 @@ def greedy_bipartite_matching(
 
     # For each embedding in embeddings1, find top K nearest in embeddings2
     # Use k=embeddings2.shape[0] to get all possible matches
-    k = min(100, emb2_array.shape[0])  # Limit k for efficiency with large sets
-    distances, indices = index.search(emb1_array, k)
+    distances, indices = index.search(emb1_array, emb2_array.shape[0])
 
     # Perform greedy matching
     matches = []
@@ -270,6 +273,10 @@ def serendipitous_paths(
                 "created_at": pl.Datetime,
             }
         )
+    else:
+        logger.info(
+            f"Processing {len(other_user_ids)} serendipitous paths for user {current_user_id}"
+        )
 
     # Process current user data first
     current_user_embeddings = long_range_causality["embedding"].to_list()
@@ -316,7 +323,7 @@ def serendipitous_paths(
         for user_id in user_batch:
             try:
                 # Load user data as LazyFrame
-                user_lazy_df = load_user_dataframe(context, user_id)
+                user_lazy_df = load_user_dataframe(user_id)
 
                 # Only materialize required columns to limit memory usage
                 user_df_embeddings = (
