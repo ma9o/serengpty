@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from typing import Dict, List, Set
+from typing import Dict
 
 import polars as pl
 from dagster import (
@@ -8,128 +8,21 @@ from dagster import (
     AssetIn,
     asset,
 )
-from json_repair import repair_json
 
+from data_pipeline.assets.ai_conversations.utils.data_loading import (
+    get_materialized_partitions,
+    load_user_dataframe,
+)
+from data_pipeline.assets.ai_conversations.utils.serendipity import (
+    format_conversation_summary,
+    generate_serendipity_prompt,
+    get_empty_result_schema,
+    parse_serendipity_result,
+    prepare_conversation_summaries,
+)
 from data_pipeline.constants.custom_config import RowLimitConfig
-from data_pipeline.constants.environments import DAGSTER_STORAGE_DIRECTORY
 from data_pipeline.partitions import user_partitions_def
 from data_pipeline.resources.batch_inference.base_llm_resource import BaseLlmResource
-
-
-def load_user_dataframe(user_id: str) -> pl.DataFrame:
-    """Load a user's dataframe from Parquet."""
-    return pl.read_parquet(
-        DAGSTER_STORAGE_DIRECTORY / "conversation_summaries" / f"{user_id}.snappy"
-    )
-
-
-def get_materialized_partitions(context: AssetExecutionContext, asset_name: str):
-    """Retrieve only currently active (non-deleted) partitions for a given asset."""
-    # Fetch all materialized partitions
-    materialized_partitions = context.instance.get_materialized_partitions(
-        context.asset_key_for_input(asset_name)
-    )
-    # Fetch current dynamic partitions
-    current_dynamic_partitions = context.instance.get_dynamic_partitions("users")
-    # Filter out deleted partitions
-    filtered_partitions = [
-        partition
-        for partition in materialized_partitions
-        if partition in current_dynamic_partitions
-    ]
-    return filtered_partitions
-
-
-def generate_serendipity_prompt(
-    user1_summaries: List[Dict],
-    user2_summaries: List[Dict],
-    user1_excluded_ids: Set[str] = None,
-    user2_excluded_ids: Set[str] = None,
-):
-    """
-    Generate a prompt for finding serendipitous paths between two users' conversation summaries.
-    The LLM sees integer indices, but we exclude by conversation UUIDs under the hood.
-    """
-    if user1_excluded_ids is None:
-        user1_excluded_ids = set()
-    if user2_excluded_ids is None:
-        user2_excluded_ids = set()
-
-    # Filter out conversations whose conversation_id is in the exclude set
-    filtered_user1 = [
-        s for s in user1_summaries if s["conversation_id"] not in user1_excluded_ids
-    ]
-    filtered_user2 = [
-        s for s in user2_summaries if s["conversation_id"] not in user2_excluded_ids
-    ]
-
-    # If either user has no conversations left, return empty prompt
-    if not filtered_user1 or not filtered_user2:
-        return "", {}, {}
-
-    # Build local index mappings for the LLM
-    user1_idx_to_id = {}
-    user2_idx_to_id = {}
-
-    user1_texts = []
-    for i, s in enumerate(filtered_user1):
-        user1_idx_to_id[i] = s["conversation_id"]
-        user1_texts.append(
-            f"ID: {i}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}"
-        )
-
-    user2_texts = []
-    for j, s in enumerate(filtered_user2):
-        user2_idx_to_id[j] = s["conversation_id"]
-        user2_texts.append(
-            f"ID: {j}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}"
-        )
-
-    prompt = f"""
-You are a researcher identifying serendipitous paths between conversation topics.
-You'll be given conversations from two different users. Your task is to find one meaningful
-connection or progression between multiple conversations from both users.
-
-USER 1 CONVERSATIONS:
-{chr(10).join(user1_texts)}
-
-USER 2 CONVERSATIONS:
-{chr(10).join(user2_texts)}
-
-Look for a serendipitous path that connects multiple conversations from both users.
-This should form an interesting progression of thought or exploration that spans across multiple conversations.
-
-Output in this JSON format:
-{{
-  "user1_row_indices": [list of integer IDs from USER 1 CONVERSATIONS],
-  "user2_row_indices": [list of integer IDs from USER 2 CONVERSATIONS],
-  "path_description": "A detailed description of the serendipitous connection between these conversations and why they form an interesting path"
-}}
-
-Criteria for serendipitous paths:
-1. Include multiple conversations from each user that connect in meaningful ways
-2. Prioritize unexpected connections that might not be obvious
-3. Look for thematic progression or knowledge building across the conversations
-4. The conversations should form a natural sequence or network of related ideas
-
-If you find no meaningful connections, return an empty object: {{}}
-    """.strip()
-
-    return prompt, user1_idx_to_id, user2_idx_to_id
-
-
-def parse_serendipity_result(content: str) -> Dict:
-    """
-    Parse the LLM response (in JSON) and return a Python dictionary.
-    If the JSON is invalid or empty, return an empty dict.
-    """
-    try:
-        result = repair_json(content, return_objects=True)
-        if not isinstance(result, dict):
-            return {}
-        return result
-    except Exception:
-        return {}
 
 
 class SerendipitySimpleConfig(RowLimitConfig):
@@ -178,51 +71,14 @@ def serendipity_simple(
     if not other_user_ids:
         logger.info("No other users found for serendipitous path detection.")
         # Return an empty DataFrame with the proper schema
-        return pl.DataFrame(
-            schema={
-                "path_id": pl.Utf8,
-                "user1_id": pl.Utf8,
-                "user2_id": pl.Utf8,
-                "user1_conversation_ids": pl.List(pl.Utf8),
-                "user2_conversation_ids": pl.List(pl.Utf8),
-                "path_description": pl.Utf8,
-                "iteration": pl.Int32,
-                "created_at": pl.Datetime,
-                "llm_output": pl.Utf8,
-            }
-        )
+        return pl.DataFrame(schema=get_empty_result_schema())
 
     logger.info(
         f"Processing {len(other_user_ids)} users for serendipitous paths with user {current_user_id}"
     )
 
     # 1) Prepare current user conversations
-    # Sort by date/time for a stable ordering
-    current_user_df = conversation_summaries.sort(["start_date", "start_time"])
-    current_user_summaries = []
-    for row in current_user_df.select(
-        ["conversation_id", "title", "summary", "start_date", "start_time"]
-    ).iter_rows(named=True):
-        if not row["summary"]:
-            continue
-        date_str = "Unknown"
-        if row["start_date"] and row["start_time"]:
-            # Format time as HH:MM
-            time_obj = row["start_time"]
-            formatted_time = (
-                time_obj.strftime("%H:%M")
-                if hasattr(time_obj, "strftime")
-                else str(time_obj)
-            )
-            date_str = f"{row['start_date']} {formatted_time}"
-        current_user_summaries.append(
-            {
-                "conversation_id": row["conversation_id"],
-                "title": row["title"],
-                "summary": row["summary"],
-                "date": date_str,
-            }
-        )
+    current_user_summaries = prepare_conversation_summaries(conversation_summaries)
 
     # 2) For each other user, load their conversation summaries
     user_data = {}
@@ -231,32 +87,8 @@ def serendipity_simple(
         if other_user_df.height == 0:
             logger.info(f"No valid conversations for user {user_id}, skipping.")
             continue
-        sorted_other_user_df = other_user_df.sort(["start_date", "start_time"])
-
-        other_user_summaries = []
-        for row in sorted_other_user_df.select(
-            ["conversation_id", "title", "summary", "start_date", "start_time"]
-        ).iter_rows(named=True):
-            if not row["summary"]:
-                continue
-            date_str = "Unknown"
-            if row["start_date"] and row["start_time"]:
-                time_obj = row["start_time"]
-                formatted_time = (
-                    time_obj.strftime("%H:%M")
-                    if hasattr(time_obj, "strftime")
-                    else str(time_obj)
-                )
-                date_str = f"{row['start_date']} {formatted_time}"
-
-            other_user_summaries.append(
-                {
-                    "conversation_id": row["conversation_id"],
-                    "title": row["title"],
-                    "summary": row["summary"],
-                    "date": date_str,
-                }
-            )
+        
+        other_user_summaries = prepare_conversation_summaries(other_user_df)
 
         user_data[user_id] = {
             "summaries": other_user_summaries,
@@ -372,16 +204,4 @@ def serendipity_simple(
         return pl.DataFrame(all_paths, schema_overrides={"iteration": pl.Int32})
     else:
         # Return an empty DataFrame with the proper schema
-        return pl.DataFrame(
-            schema={
-                "path_id": pl.Utf8,
-                "user1_id": pl.Utf8,
-                "user2_id": pl.Utf8,
-                "user1_conversation_ids": pl.List(pl.Utf8),
-                "user2_conversation_ids": pl.List(pl.Utf8),
-                "path_description": pl.Utf8,
-                "iteration": pl.Int32,
-                "created_at": pl.Datetime,
-                "llm_output": pl.Utf8,
-            }
-        )
+        return pl.DataFrame(schema=get_empty_result_schema())
