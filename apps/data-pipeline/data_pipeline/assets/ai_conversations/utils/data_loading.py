@@ -8,7 +8,7 @@ from data_pipeline.constants.environments import DAGSTER_STORAGE_DIRECTORY
 def load_user_dataframe(user_id: str) -> pl.DataFrame:
     """Load a user's dataframe from Parquet."""
     return pl.read_parquet(
-        DAGSTER_STORAGE_DIRECTORY / "conversation_summaries" / f"{user_id}.snappy"
+        DAGSTER_STORAGE_DIRECTORY / "conversations_embeddings" / f"{user_id}.snappy"
     )
 
 

@@ -1,4 +1,5 @@
 """Utilities for serendipity path generation."""
+
 from typing import Dict, List, Set, Tuple
 
 import polars as pl
@@ -14,7 +15,7 @@ def generate_serendipity_prompt(
     """
     Generate a prompt for finding serendipitous paths between two users' conversation summaries.
     The LLM sees integer indices, but we exclude by conversation UUIDs under the hood.
-    
+
     Returns:
         Tuple of (prompt_text, user1_idx_to_id_map, user2_idx_to_id_map)
     """
@@ -40,19 +41,22 @@ def generate_serendipity_prompt(
     user2_idx_to_id = {}
 
     user1_texts = []
-    for i, s in enumerate(filtered_user1):
-        user1_idx_to_id[i] = s["conversation_id"]
+    for s in filtered_user1:
+        row_idx = s["row_idx"]  # Use the stable row_idx instead of enumerate
+        user1_idx_to_id[row_idx] = s["conversation_id"]
         user1_texts.append(
-            f"ID: {i}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}"
+            f"ID: {row_idx}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}"
         )
 
     user2_texts = []
-    for j, s in enumerate(filtered_user2):
-        user2_idx_to_id[j] = s["conversation_id"]
+    for s in filtered_user2:
+        row_idx = s["row_idx"]  # Use the stable row_idx instead of enumerate
+        user2_idx_to_id[row_idx] = s["conversation_id"]
         user2_texts.append(
-            f"ID: {j}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}"
+            f"ID: {row_idx}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}"
         )
 
+    # Rest of the function remains the same...
     prompt = f"""
 You are a researcher identifying serendipitous paths between conversation topics.
 You'll be given conversations from two different users. Your task is to find one meaningful
@@ -103,16 +107,16 @@ def parse_serendipity_result(content: str) -> Dict:
 def format_conversation_summary(row: Dict) -> Dict:
     """
     Format a conversation row into a summary dictionary.
-    
+
     Args:
         row: A row from the conversation DataFrame
-        
+
     Returns:
         A dictionary with conversation details
     """
     if not row["summary"]:
         return None
-        
+
     date_str = "Unknown"
     if row["start_date"] and row["start_time"]:
         # Format time as HH:MM
@@ -123,7 +127,7 @@ def format_conversation_summary(row: Dict) -> Dict:
             else str(time_obj)
         )
         date_str = f"{row['start_date']} {formatted_time}"
-        
+
     return {
         "conversation_id": row["conversation_id"],
         "title": row["title"],
@@ -135,28 +139,33 @@ def format_conversation_summary(row: Dict) -> Dict:
 def prepare_conversation_summaries(df: pl.DataFrame) -> List[Dict]:
     """
     Prepare conversation summaries from a DataFrame.
-    
+
     Args:
         df: A polars DataFrame with conversation data
-        
+
     Returns:
         A list of conversation summary dictionaries
     """
+    # Add row indices before sorting
+    df_with_idx = df.with_row_count("row_idx")
+
     # Sort by date/time for a stable ordering
-    sorted_df = df.sort(["start_date", "start_time"])
-    
+    sorted_df = df_with_idx.sort(["start_date", "start_time"])
+
     summaries = []
     for row in sorted_df.select(
-        ["conversation_id", "title", "summary", "start_date", "start_time"]
+        ["row_idx", "conversation_id", "title", "summary", "start_date", "start_time"]
     ).iter_rows(named=True):
         summary = format_conversation_summary(row)
         if summary:
+            # Include the row_idx in the summary
+            summary["row_idx"] = row["row_idx"]
             summaries.append(summary)
-    
+
     return summaries
 
 
-def get_empty_result_schema() -> Dict[str, pl.DataType]:
+def get_empty_result_schema():
     """Return the schema for an empty serendipity results DataFrame."""
     return {
         "path_id": pl.Utf8,

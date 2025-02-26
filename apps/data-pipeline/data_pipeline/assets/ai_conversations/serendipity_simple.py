@@ -1,6 +1,5 @@
 import datetime
 import uuid
-from typing import Dict
 
 import polars as pl
 from dagster import (
@@ -14,7 +13,6 @@ from data_pipeline.assets.ai_conversations.utils.data_loading import (
     load_user_dataframe,
 )
 from data_pipeline.assets.ai_conversations.utils.serendipity import (
-    format_conversation_summary,
     generate_serendipity_prompt,
     get_empty_result_schema,
     parse_serendipity_result,
@@ -32,14 +30,14 @@ class SerendipitySimpleConfig(RowLimitConfig):
 
 @asset(
     partitions_def=user_partitions_def,
-    ins={"conversation_summaries": AssetIn(key="conversation_summaries")},
+    ins={"conversations_embeddings": AssetIn(key="conversations_embeddings")},
     io_manager_key="parquet_io_manager",
 )
 def serendipity_simple(
     context: AssetExecutionContext,
     config: SerendipitySimpleConfig,
     gemini_flash: BaseLlmResource,
-    conversation_summaries: pl.DataFrame,
+    conversations_embeddings: pl.DataFrame,
 ) -> pl.DataFrame:
     """
     Discovers serendipitous paths between the current user's conversations and other users'
@@ -62,7 +60,7 @@ def serendipity_simple(
     """
 
     current_user_id = context.partition_key
-    other_user_ids = get_materialized_partitions(context, "conversation_summaries")
+    other_user_ids = get_materialized_partitions(context, "conversations_embeddings")
     logger = context.log
 
     # Filter out the current user from other_user_ids if present
@@ -78,7 +76,7 @@ def serendipity_simple(
     )
 
     # 1) Prepare current user conversations
-    current_user_summaries = prepare_conversation_summaries(conversation_summaries)
+    current_user_summaries = prepare_conversation_summaries(conversations_embeddings)
 
     # 2) For each other user, load their conversation summaries
     user_data = {}
@@ -87,7 +85,7 @@ def serendipity_simple(
         if other_user_df.height == 0:
             logger.info(f"No valid conversations for user {user_id}, skipping.")
             continue
-        
+
         other_user_summaries = prepare_conversation_summaries(other_user_df)
 
         user_data[user_id] = {
@@ -149,8 +147,14 @@ def serendipity_simple(
             user_info = user_data[user_id]
 
             # Parse the JSON from the LLM
-            response_text = completion[-1]  # last message is the LLM's response
-            path_obj = parse_serendipity_result(response_text)
+            try:
+                response_text = completion[-1]  # last message is the LLM's response
+                path_obj = parse_serendipity_result(response_text)
+            except (IndexError, Exception) as e:
+                logger.warning(
+                    f"Error processing LLM response for user pair with {user_id}: {str(e)}"
+                )
+                continue
 
             # Make sure it has the expected structure
             if not isinstance(path_obj, dict):
@@ -201,7 +205,24 @@ def serendipity_simple(
 
     # 6) Build the final result DataFrame
     if all_paths:
-        return pl.DataFrame(all_paths, schema_overrides={"iteration": pl.Int32})
+        result_df = pl.DataFrame(all_paths, schema_overrides={"iteration": pl.Int32})
+
+        # Assert that there are no duplicates across both conversation ID lists
+        user1_exploded = result_df.select(
+            pl.col("user1_conversation_ids").explode().alias("conversation_id")
+        )
+        user2_exploded = result_df.select(
+            pl.col("user2_conversation_ids").explode().alias("conversation_id")
+        )
+        all_exploded = pl.concat([user1_exploded, user2_exploded])
+
+        all_unique = all_exploded.unique()
+        if all_exploded.height != all_unique.height:
+            context.log.error(
+                f"Found {all_exploded.height - all_unique.height} duplicate conversation IDs across user1 and user2 lists"
+            )
+
+        return result_df
     else:
         # Return an empty DataFrame with the proper schema
         return pl.DataFrame(schema=get_empty_result_schema())
