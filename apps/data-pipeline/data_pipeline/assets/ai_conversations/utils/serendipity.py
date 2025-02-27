@@ -133,6 +133,8 @@ def format_conversation_summary(row: Dict) -> Dict:
         "title": row["title"],
         "summary": row["summary"],
         "date": date_str,
+        "is_sensitive": row.get("is_sensitive", False),
+        "category": row.get("category", "analytical"),
     }
 
 
@@ -154,7 +156,8 @@ def prepare_conversation_summaries(df: pl.DataFrame) -> List[Dict]:
 
     summaries = []
     for row in sorted_df.select(
-        ["row_idx", "conversation_id", "title", "summary", "start_date", "start_time"]
+        ["row_idx", "conversation_id", "title", "summary", "start_date", "start_time", 
+         "is_sensitive", "category"]
     ).iter_rows(named=True):
         summary = format_conversation_summary(row)
         if summary:

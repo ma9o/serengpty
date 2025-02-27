@@ -30,11 +30,13 @@ def get_conversation_summary_prompt_sequence(conversation: str) -> PromptSequenc
               1. If the conversation is not in English, translate it to English.
               2. Determine if the conversation is highly sensitive, containing topics such as physical and mental health problems, relationship advice and private legal matters.
               3. Descriptively summarize what the user wants to do, without mentioning what the AI replies.
+              4. Categorize the conversation as either "personal" (for humanitarian, emotional, personal questions) or "analytical" (for work, technical, analytical questions).
 
               Use this output schema:
               {{
                   "summary": str,
-                  "is_sensitive": bool
+                  "is_sensitive": bool,
+                  "category": str
               }}
 
               Here is the conversation:
@@ -48,13 +50,15 @@ def parse_conversation_summaries(completion: str) -> dict | None:
     try:
         res = repair_json(completion, return_objects=True)
 
-        # Now expect a JSON object with an "is_sensitive" field and a "summary" field.
+        # Now expect a JSON object with "is_sensitive", "summary", and "category" fields.
         if (
             isinstance(res, dict)
             and "is_sensitive" in res
             and "summary" in res
+            and "category" in res
             and isinstance(res["is_sensitive"], bool)
             and isinstance(res["summary"], str)
+            and isinstance(res["category"], str)
         ):
             return res
         else:
@@ -99,6 +103,7 @@ async def conversation_summaries(
     - start_time: Time when the conversation started
     - datetime_conversations: Combined date/time/question/answer text
     - is_sensitive: Boolean flag for sensitive content
+    - category: Classification as "personal" or "analytical" topic
     - summary: LLM-generated conversation summary
     """
     llm = gpt4o_mini
@@ -182,6 +187,9 @@ async def conversation_summaries(
                 pl.col("raw_summary")
                 .map_elements(lambda rs: rs["summary"])
                 .alias("summary"),
+                pl.col("raw_summary")
+                .map_elements(lambda rs: rs["category"])
+                .alias("category"),
             ]
         )
         .drop("raw_summary")
