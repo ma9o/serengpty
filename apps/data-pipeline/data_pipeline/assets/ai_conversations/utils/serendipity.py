@@ -73,16 +73,18 @@ This should form an interesting progression of thought or exploration that spans
 
 Output in this JSON format:
 {{
-  "user1_row_indices": [list of integer IDs from USER 1 CONVERSATIONS],
-  "user2_row_indices": [list of integer IDs from USER 2 CONVERSATIONS],
+  "common_row_indices": [list of integer IDs that represent the SHARED/SIMILAR topics between both users],
+  "user1_row_indices": [list of integer IDs from USER 1 CONVERSATIONS that are UNIQUE/COMPLEMENTARY],
+  "user2_row_indices": [list of integer IDs from USER 2 CONVERSATIONS that are UNIQUE/COMPLEMENTARY],
   "path_description": "A detailed description of the serendipitous connection between these conversations and why they form an interesting path"
 }}
 
 Criteria for serendipitous paths:
-1. Include multiple conversations from each user that connect in meaningful ways
-2. Prioritize unexpected connections that might not be obvious
-3. Look for thematic progression or knowledge building across the conversations
-4. The conversations should form a natural sequence or network of related ideas
+1. Identify which conversation topics are shared/similar between users (common_row_indices)
+2. Identify which conversation topics are unique/complementary to each user (user1_row_indices and user2_row_indices)
+3. Prioritize unexpected connections that might not be obvious
+4. Look for thematic progression or knowledge building across the conversations
+5. The conversations should form a natural sequence or network of related ideas
 
 If you find no meaningful connections, return an empty object: {{}}
     """.strip()
@@ -156,8 +158,16 @@ def prepare_conversation_summaries(df: pl.DataFrame) -> List[Dict]:
 
     summaries = []
     for row in sorted_df.select(
-        ["row_idx", "conversation_id", "title", "summary", "start_date", "start_time", 
-         "is_sensitive", "category"]
+        [
+            "row_idx",
+            "conversation_id",
+            "title",
+            "summary",
+            "start_date",
+            "start_time",
+            "is_sensitive",
+            "category",
+        ]
     ).iter_rows(named=True):
         summary = format_conversation_summary(row)
         if summary:
@@ -174,6 +184,7 @@ def get_empty_result_schema():
         "path_id": pl.Utf8,
         "user1_id": pl.Utf8,
         "user2_id": pl.Utf8,
+        "common_conversation_ids": pl.List(pl.Utf8),
         "user1_conversation_ids": pl.List(pl.Utf8),
         "user2_conversation_ids": pl.List(pl.Utf8),
         "path_description": pl.Utf8,

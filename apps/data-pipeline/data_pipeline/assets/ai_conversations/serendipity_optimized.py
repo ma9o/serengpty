@@ -61,11 +61,21 @@ def _create_path_entry(
     category: str = "practical",
 ) -> dict:
     """Create a path entry from LLM response"""
+    common_indices = path_obj.get("common_row_indices", [])
     user1_indices = path_obj.get("user1_row_indices", [])
     user2_indices = path_obj.get("user2_row_indices", [])
     path_description = path_obj.get("path_description", "")
 
     # Map local indices -> conversation_id
+    # For common_indices, we need to check both maps since they could come from either user
+    common_conv_ids = []
+    for idx in common_indices:
+        if idx in user1_idx_map:
+            common_conv_ids.append(user1_idx_map[idx])
+        elif idx in user2_idx_map:
+            common_conv_ids.append(user2_idx_map[idx])
+
+    # Map the user-specific indices
     user1_conv_ids = [
         user1_idx_map[idx] for idx in user1_indices if idx in user1_idx_map
     ]
@@ -84,19 +94,34 @@ def _create_path_entry(
                     user2_ids.add(summary["user_id"])
                     break
 
+    # Also check common indices for user2 contributions
+    for idx in common_indices:
+        if idx in user2_idx_map:
+            conv_id = user2_idx_map[idx]
+            # Find the user_id for this conversation
+            for summary in cluster_data["summaries"]:
+                if summary["conversation_id"] == conv_id:
+                    user2_ids.add(summary["user_id"])
+                    break
+
     # Convert user2_ids to list, using primary user if empty
     user2_id_list = list(user2_ids)
     primary_user2_id = user2_id_list[0] if user2_id_list else None
+
+    # Calculate total path lengths including common conversations
+    user1_total_length = len(user1_conv_ids) + len(common_conv_ids)
+    user2_total_length = len(user2_conv_ids) + len(common_conv_ids)
 
     # Build the path entry
     return {
         "path_id": str(uuid.uuid4()),
         "user1_id": current_user_id,
         "user2_id": primary_user2_id,
+        "common_conversation_ids": common_conv_ids,
         "user1_conversation_ids": user1_conv_ids,
         "user2_conversation_ids": user2_conv_ids,
-        "user1_path_length": len(user1_conv_ids),
-        "user2_path_length": len(user2_conv_ids),
+        "user1_path_length": user1_total_length,  # Includes common conversations
+        "user2_path_length": user2_total_length,  # Includes common conversations
         "path_description": path_description,
         "iteration": cluster_data["iteration"],
         "created_at": datetime.datetime.now(),
@@ -148,7 +173,8 @@ def serendipity_optimized(
     1. Groups conversation pairs by cluster_id
     2. For each cluster, extracts conversation details and sorts by date and time
     3. Iteratively generates prompts and calls the LLM to find serendipitous paths
-    4. Builds a result DataFrame with path information including category
+    4. Identifies both shared/common topics and unique/complementary topics between users
+    5. Builds a result DataFrame with path information including category
 
     The conversations are sorted chronologically before being sent to the LLM to help it
     identify temporal progression in topics and interests.
@@ -157,8 +183,9 @@ def serendipity_optimized(
     - path_id
     - user1_id
     - user2_id
-    - user1_conversation_ids (list of the conversation_id UUIDs)
-    - user2_conversation_ids (list of the conversation_id UUIDs)
+    - common_conversation_ids (list of conversation_id UUIDs representing shared/similar topics)
+    - user1_conversation_ids (list of conversation_id UUIDs representing unique/complementary topics for user1)
+    - user2_conversation_ids (list of conversation_id UUIDs representing unique/complementary topics for user2)
     - path_description
     - iteration
     - created_at
@@ -170,10 +197,10 @@ def serendipity_optimized(
     current_user_id = context.partition_key
     logger = context.log
 
-    # The input is now cluster_categorizations, which is the original conversation_pair_clusters 
+    # The input is now cluster_categorizations, which is the original conversation_pair_clusters
     # with category information added
     conversation_pair_clusters = cluster_categorizations
-    
+
     if conversation_pair_clusters.height == 0:
         logger.info("No conversation pair candidates found, returning empty result.")
         return pl.DataFrame(schema=_get_enhanced_schema())
@@ -300,20 +327,28 @@ def serendipity_optimized(
                 continue
 
             # If the LLM found a valid connection
+            common_indices = path_obj.get("common_row_indices", [])
             user1_indices = path_obj.get("user1_row_indices", [])
             user2_indices = path_obj.get("user2_row_indices", [])
             path_description = path_obj.get("path_description", "")
 
             # If we got a non-empty path
-            if user1_indices or user2_indices or path_description:
+            if common_indices or user1_indices or user2_indices or path_description:
                 paths_found_any = True
                 cluster_info_data["paths_found"] += 1
 
                 # Get the category for this cluster
                 # We'll use the first conversation's category (they should all be the same within a cluster)
-                first_conversation = conversation_pair_clusters.filter(pl.col("cluster_id") == cluster_id).first()
-                category = first_conversation["category"] if first_conversation else "practical"
-                
+                first_conversation = conversation_pair_clusters.filter(
+                    pl.col("cluster_id") == cluster_id
+                ).row(0, named=True)
+
+                category = (
+                    first_conversation["category"]
+                    if first_conversation
+                    else "practical"
+                )
+
                 # Create path entry using helper function
                 path_entry = _create_path_entry(
                     path_obj,
@@ -336,10 +371,19 @@ def serendipity_optimized(
                 user2_conv_ids = [
                     user2_idx_map[idx] for idx in user2_indices if idx in user2_idx_map
                 ]
+                common_conv_ids = []
+                for idx in common_indices:
+                    if idx in user1_idx_map:
+                        common_conv_ids.append(user1_idx_map[idx])
+                    elif idx in user2_idx_map:
+                        common_conv_ids.append(user2_idx_map[idx])
 
                 # Exclude these conversation IDs from subsequent prompts
+                # Add all conversation IDs to excluded lists so they won't be reused
                 cluster_info_data["excluded_ids_user1"].update(user1_conv_ids)
+                cluster_info_data["excluded_ids_user1"].update(common_conv_ids)
                 cluster_info_data["excluded_ids_user2"].update(user2_conv_ids)
+                cluster_info_data["excluded_ids_user2"].update(common_conv_ids)
 
             # Increment iteration for the cluster
             cluster_info_data["iteration"] += 1
@@ -362,6 +406,7 @@ def serendipity_optimized(
                 "cluster_id": pl.UInt8,
                 "match_group_id": pl.UInt32,
                 "all_user_ids": pl.List(pl.Utf8),
+                "common_conversation_ids": pl.List(pl.Utf8),
                 "category": pl.Utf8,
             },
         )
@@ -381,8 +426,14 @@ def serendipity_optimized(
             .rename({"user2_conversation_ids": "conversation_id"})
         )
 
+        common_exploded = (
+            result_df.select("match_group_id", "common_conversation_ids")
+            .explode("common_conversation_ids")
+            .rename({"common_conversation_ids": "conversation_id"})
+        )
+
         # Concatenate and group by match_group_id
-        all_exploded = pl.concat([user1_exploded, user2_exploded])
+        all_exploded = pl.concat([user1_exploded, user2_exploded, common_exploded])
 
         # Check for duplicates within each match group
         total_duplicates = 0

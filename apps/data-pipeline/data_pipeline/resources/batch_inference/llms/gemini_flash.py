@@ -9,7 +9,7 @@ from data_pipeline.resources.batch_inference.remote_llm_config import RemoteLlmC
 
 # TODO: Fix rate limits
 vertex_ai_config = RemoteLlmConfig(
-    api_key=EnvVar("GEMINI_API_KEY"),
+    api_key=EnvVar("GOOGLE_SERVICE_ACCOUNT_JSON"),
     inference_url="https://us-central1-aiplatform.googleapis.com/v1beta1/projects/enclaveid/locations/us-central1/endpoints/openapi/chat/completions",
     inference_config={
         "model": "google/gemini-2.0-flash-001",

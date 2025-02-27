@@ -8,6 +8,7 @@ import httpx
 from dagster import InitResourceContext, get_dagster_logger
 from pydantic import PrivateAttr
 
+from data_pipeline.resources.batch_inference.api_keys import get_gemini_api_key
 from data_pipeline.resources.batch_inference.base_llm_resource import (
     BaseLlmResource,
     PromptSequence,
@@ -114,15 +115,23 @@ class RemoteLlmResource(BaseLlmResource):
             response = None
 
             try:
+                # Start with default headers
+                if ".googleapis." in self.llm_config.inference_url:
+                    api_key = get_gemini_api_key(self.llm_config.api_key)
+                else:
+                    api_key = self.llm_config.api_key
+
+                headers = {
+                    "Content-Type": "application/json",
+                    # We need both because of inconsistencies across providers
+                    "Authorization": f"Bearer {api_key}",
+                    "api-key": api_key,
+                }
+
                 response = await self._client.post(
                     self.llm_config.inference_url,
                     json=payload,
-                    headers={
-                        "Content-Type": "application/json",
-                        # We need both because of inconsistencies across providers
-                        "Authorization": f"Bearer {self.llm_config.api_key}",
-                        "api-key": self.llm_config.api_key,
-                    },
+                    headers=headers,
                 )
 
                 # Providers often return 500s for rate limits
