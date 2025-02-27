@@ -1,4 +1,5 @@
-from math import ceil  # Add this import at the top
+from math import ceil
+from typing import Optional
 
 import faiss
 import numpy as np
@@ -23,11 +24,11 @@ class ConversationPairClustersConfig(RowLimitConfig):
     # Number of top similar users to consider
     top_k_users: int = 10
     # Maximum number of items allowed per cluster
-    max_items_per_cluster: int = 500
+    max_items_per_cluster: Optional[int] = 1000
+
+    cosine_difference: Optional[float] = None
     # Maximum number of iterations to try to find a good number of clusters
     max_cluster_iterations: int = 5
-    # Linkage criterion for clustering
-    linkage: str = "ward"  # Options: "ward", "complete", "average", "single"
 
 
 # Define schema once to avoid repetition
@@ -116,8 +117,8 @@ def find_top_k_users(
 def cluster_conversations(
     emb1_array: np.ndarray,
     emb2_array: np.ndarray,
-    n_clusters: int,
-    linkage: str,
+    n_clusters: int | None,
+    distance_threshold: float | None,
 ) -> np.ndarray:
     """
     Cluster merged embeddings from two users using agglomerative clustering.
@@ -141,7 +142,9 @@ def cluster_conversations(
     # Perform agglomerative clustering
     clustering = AgglomerativeClustering(
         n_clusters=n_clusters,
-        linkage=linkage,
+        distance_threshold=distance_threshold,
+        compute_full_tree=True,
+        linkage="ward",
     )
 
     labels = clustering.fit_predict(merged_embeddings)
@@ -320,64 +323,79 @@ def conversation_pair_clusters(
         n1 = emb1_array.shape[0]
         n2 = emb2_array.shape[0]
 
-        # Initial estimate of clusters needed
-        n_clusters = max(1, ceil((n1 + n2) / config.max_items_per_cluster))
-        previous_largest_cluster_size = float("inf")
-        previous_cluster_labels = None
-
-        for iteration in range(config.max_cluster_iterations):
+        # If max_items_per_cluster is None, use cosine_difference threshold directly
+        if config.max_items_per_cluster is None:
             logger.info(
-                f"Attempt {iteration + 1}: Creating {n_clusters} clusters for {n1 + n2} total conversations"
+                f"Using cosine difference threshold {config.cosine_difference} for clustering"
             )
-
-            # Cluster the conversations
-            current_cluster_labels = cluster_conversations(
-                emb1_array, emb2_array, n_clusters, config.linkage
+            # Pass None for n_clusters to use distance_threshold instead
+            cluster_labels = cluster_conversations(
+                emb1_array,
+                emb2_array,
+                n_clusters=None,
+                distance_threshold=config.cosine_difference,
             )
-
-            # Check if any cluster exceeds the maximum size
-            cluster_sizes = np.bincount(current_cluster_labels)
-            largest_cluster_size = np.max(cluster_sizes)
-
-            if largest_cluster_size <= config.max_items_per_cluster:
-                logger.info(
-                    f"Success: Largest cluster has {largest_cluster_size} items (max: {config.max_items_per_cluster})"
-                )
-                cluster_labels = current_cluster_labels
-                break
-
-            # Check if increasing clusters didn't help reduce the largest cluster size
-            if largest_cluster_size >= previous_largest_cluster_size:
-                logger.info(
-                    "No improvement in cluster sizes after increasing clusters. Using previous clustering."
-                )
-                # Use the previous clustering results if they exist
-                if previous_cluster_labels is not None:
-                    cluster_labels = previous_cluster_labels
-                else:
-                    cluster_labels = current_cluster_labels
-                break
-
-            # Save current results before trying with more clusters
-            previous_cluster_labels = current_cluster_labels
-            previous_largest_cluster_size = largest_cluster_size
-
-            # Increase number of clusters and try again
-            logger.info(
-                f"Largest cluster has {largest_cluster_size} items, exceeding max of {config.max_items_per_cluster}"
-            )
-            n_clusters += 1
-
-            # Safety check - if we somehow need more clusters than items, something is wrong
-            if n_clusters >= (n1 + n2):
-                logger.warning("Reached maximum possible clusters, breaking")
-                # Use the current clustering results since we're breaking out
-                cluster_labels = current_cluster_labels
-                break
+            # Count how many clusters were formed
+            n_clusters = len(np.unique(cluster_labels))
+            logger.info(f"Created {n_clusters} clusters using cosine threshold")
         else:
-            # If we exit the loop normally (by running out of iterations)
-            # Use the last clustering attempt
-            cluster_labels = current_cluster_labels
+            n_clusters = max(1, ceil((n1 + n2) / config.max_items_per_cluster))
+            previous_largest_cluster_size = float("inf")
+            previous_cluster_labels = None
+
+            for iteration in range(config.max_cluster_iterations):
+                logger.info(
+                    f"Attempt {iteration + 1}: Creating {n_clusters} clusters for {n1 + n2} total conversations"
+                )
+
+                # Cluster the conversations
+                current_cluster_labels = cluster_conversations(
+                    emb1_array, emb2_array, n_clusters, config.cosine_difference
+                )
+
+                # Check if any cluster exceeds the maximum size
+                cluster_sizes = np.bincount(current_cluster_labels)
+                largest_cluster_size = np.max(cluster_sizes)
+
+                if largest_cluster_size <= config.max_items_per_cluster:
+                    logger.info(
+                        f"Success: Largest cluster has {largest_cluster_size} items (max: {config.max_items_per_cluster})"
+                    )
+                    cluster_labels = current_cluster_labels
+                    break
+
+                # Check if increasing clusters didn't help reduce the largest cluster size
+                if largest_cluster_size >= previous_largest_cluster_size:
+                    logger.info(
+                        "No improvement in cluster sizes after increasing clusters. Using previous clustering."
+                    )
+                    # Use the previous clustering results if they exist
+                    if previous_cluster_labels is not None:
+                        cluster_labels = previous_cluster_labels
+                    else:
+                        cluster_labels = current_cluster_labels
+                    break
+
+                # Save current results before trying with more clusters
+                previous_cluster_labels = current_cluster_labels
+                previous_largest_cluster_size = largest_cluster_size
+
+                # Increase number of clusters and try again
+                logger.info(
+                    f"Largest cluster has {largest_cluster_size} items, exceeding max of {config.max_items_per_cluster}"
+                )
+                n_clusters += 1
+
+                # Safety check - if we somehow need more clusters than items, something is wrong
+                if n_clusters >= (n1 + n2):
+                    logger.warning("Reached maximum possible clusters, breaking")
+                    # Use the current clustering results since we're breaking out
+                    cluster_labels = current_cluster_labels
+                    break
+            else:
+                # If we exit the loop normally (by running out of iterations)
+                # Use the last clustering attempt
+                cluster_labels = current_cluster_labels
 
         # Extract user1's and user2's cluster labels
         user1_labels = cluster_labels[:n1]

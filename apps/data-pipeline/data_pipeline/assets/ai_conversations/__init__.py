@@ -1,3 +1,4 @@
+from .cluster_categorizations import cluster_categorizations
 from .conversation_pair_candidates import conversation_pair_candidates
 from .conversation_pair_clusters import conversation_pair_clusters
 from .conversation_skeletons import conversation_skeletons
@@ -24,4 +25,5 @@ __all__ = [
     serendipity_optimized,
     conversation_pair_candidates,
     conversation_pair_clusters,
+    cluster_categorizations,
 ]  # type: ignore

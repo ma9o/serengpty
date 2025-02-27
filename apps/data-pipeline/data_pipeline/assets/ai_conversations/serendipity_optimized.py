@@ -27,15 +27,14 @@ def _extract_conversation_summaries(df: pl.DataFrame, is_current_user: bool = Fa
     """Helper function to extract conversation summaries from a dataframe."""
     summaries = []
     for row in df.iter_rows(named=True):
-        conv = row["conversation"]
         summary = {
-            "row_idx": conv["row_idx"],
-            "conversation_id": conv["conversation_id"],
-            "title": conv["title"],
-            "summary": conv["summary"],
-            "date": f"{conv['start_date']} {conv['start_time']}",
-            "start_date": conv["start_date"],
-            "start_time": conv["start_time"],
+            "row_idx": row["row_idx"],
+            "conversation_id": row["conversation_id"],
+            "title": row["title"],
+            "summary": row["summary"],
+            "date": f"{row['start_date']} {row['start_time']}",
+            "start_date": row["start_date"],
+            "start_time": row["start_time"],
         }
 
         # Add user_id only for non-current users
@@ -59,6 +58,7 @@ def _create_path_entry(
     match_group_id: int,
     all_users: list,
     response_text: str,
+    category: str = "practical",
 ) -> dict:
     """Create a path entry from LLM response"""
     user1_indices = path_obj.get("user1_row_indices", [])
@@ -105,6 +105,7 @@ def _create_path_entry(
         "cluster_id": int(cluster_id),
         "match_group_id": int(match_group_id),
         "all_user_ids": all_users,
+        "category": category,
     }
 
 
@@ -118,32 +119,36 @@ def _get_enhanced_schema():
     schema["cluster_id"] = pl.UInt8
     schema["match_group_id"] = pl.UInt32
     schema["all_user_ids"] = pl.List(pl.Utf8)
+    schema["category"] = pl.Utf8
     return schema
 
 
 @asset(
     partitions_def=user_partitions_def,
-    ins={"conversation_pair_clusters": AssetIn(key="conversation_pair_clusters")},
+    ins={
+        "cluster_categorizations": AssetIn(key="cluster_categorizations"),
+    },
     io_manager_key="parquet_io_manager",
 )
 def serendipity_optimized(
     context: AssetExecutionContext,
     config: SerendipityOptimizedConfig,
     gemini_flash: BaseLlmResource,
-    conversation_pair_clusters: pl.DataFrame,
+    cluster_categorizations: pl.DataFrame,
 ) -> pl.DataFrame:
     """
     Discovers serendipitous paths between users' conversations using pre-filtered
-    conversation pairs from conversation_pair_clusters.
+    conversation pairs that have been categorized in the cluster_categorizations asset.
 
     This asset focuses purely on finding meaningful connections between conversation pairs
-    that have already been identified as potentially related based on embedding similarity.
+    that have already been identified as potentially related based on embedding similarity
+    and categorized as either "humanistic" or "practical".
 
     Processing steps:
     1. Groups conversation pairs by cluster_id
     2. For each cluster, extracts conversation details and sorts by date and time
     3. Iteratively generates prompts and calls the LLM to find serendipitous paths
-    4. Builds a result DataFrame with path information
+    4. Builds a result DataFrame with path information including category
 
     The conversations are sorted chronologically before being sent to the LLM to help it
     identify temporal progression in topics and interests.
@@ -160,10 +165,15 @@ def serendipity_optimized(
     - llm_output (raw JSON response from the LLM)
     - user_similarity_score (average similarity of the conversation embeddings)
     - cluster_id (the cluster that these conversations were grouped in)
+    - category: Classification as "humanistic" or "practical" domain
     """
     current_user_id = context.partition_key
     logger = context.log
 
+    # The input is now cluster_categorizations, which is the original conversation_pair_clusters 
+    # with category information added
+    conversation_pair_clusters = cluster_categorizations
+    
     if conversation_pair_clusters.height == 0:
         logger.info("No conversation pair candidates found, returning empty result.")
         return pl.DataFrame(schema=_get_enhanced_schema())
@@ -299,6 +309,11 @@ def serendipity_optimized(
                 paths_found_any = True
                 cluster_info_data["paths_found"] += 1
 
+                # Get the category for this cluster
+                # We'll use the first conversation's category (they should all be the same within a cluster)
+                first_conversation = conversation_pair_clusters.filter(pl.col("cluster_id") == cluster_id).first()
+                category = first_conversation["category"] if first_conversation else "practical"
+                
                 # Create path entry using helper function
                 path_entry = _create_path_entry(
                     path_obj,
@@ -310,6 +325,7 @@ def serendipity_optimized(
                     match_group_id,
                     all_users,
                     response_text,
+                    category=category,
                 )
                 all_paths.append(path_entry)
 
@@ -346,6 +362,7 @@ def serendipity_optimized(
                 "cluster_id": pl.UInt8,
                 "match_group_id": pl.UInt32,
                 "all_user_ids": pl.List(pl.Utf8),
+                "category": pl.Utf8,
             },
         )
 
