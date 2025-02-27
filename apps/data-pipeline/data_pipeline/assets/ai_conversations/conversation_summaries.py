@@ -30,7 +30,7 @@ def get_conversation_summary_prompt_sequence(conversation: str) -> PromptSequenc
               1. If the conversation is not in English, translate it to English.
               2. Determine if the conversation is highly sensitive, containing topics such as physical and mental health problems, relationship advice and private legal matters.
               3. Descriptively summarize what the user wants to do, without mentioning what the AI replies.
-              4. Categorize the conversation as either "Personal/Humanistic Domain" (health, relationships, personal growth, philosophy, art, etc.) or "Professional/Practical Domain" (work, technology, house chores, taxes, etc.).
+              4. Categorize the conversation by its domain as either "humanistic" (health, relationships, personal growth, philosophy, art, etc.) or "practical" (work, technology, house chores, taxes, etc.).
 
               Use this output schema:
               {{
@@ -103,7 +103,7 @@ async def conversation_summaries(
     - start_time: Time when the conversation started
     - datetime_conversations: Combined date/time/question/answer text
     - is_sensitive: Boolean flag for sensitive content
-    - category: Classification as "Personal/Humanistic Domain" or "Professional/Practical Domain"
+    - category: Classification as "humanistic" or "practical" domain
     - summary: LLM-generated conversation summary
     """
     llm = gpt4o_mini
