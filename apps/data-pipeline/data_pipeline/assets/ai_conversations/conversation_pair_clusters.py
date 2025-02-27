@@ -1,3 +1,5 @@
+from math import ceil  # Add this import at the top
+
 import faiss
 import numpy as np
 import polars as pl
@@ -20,8 +22,10 @@ from data_pipeline.partitions import user_partitions_def
 class ConversationPairClustersConfig(RowLimitConfig):
     # Number of top similar users to consider
     top_k_users: int = 10
-    # Number of clusters to create
-    n_clusters: int = 4
+    # Maximum number of items allowed per cluster
+    max_items_per_cluster: int = 500
+    # Maximum number of iterations to try to find a good number of clusters
+    max_cluster_iterations: int = 5
     # Linkage criterion for clustering
     linkage: str = "ward"  # Options: "ward", "complete", "average", "single"
 
@@ -30,16 +34,12 @@ class ConversationPairClustersConfig(RowLimitConfig):
 CONVERSATION_PAIR_SCHEMA = {
     "user_id": pl.Utf8,
     "match_group_id": pl.UInt32,
-    "conversation": pl.Struct(
-        {
-            "row_idx": pl.UInt32,
-            "conversation_id": pl.Utf8,
-            "title": pl.Utf8,
-            "summary": pl.Utf8,
-            "start_date": pl.Utf8,
-            "start_time": pl.Utf8,
-        }
-    ),
+    "row_idx": pl.UInt32,
+    "conversation_id": pl.Utf8,
+    "title": pl.Utf8,
+    "summary": pl.Utf8,
+    "start_date": pl.Utf8,
+    "start_time": pl.Utf8,
     "cluster_id": pl.UInt8,
 }
 
@@ -205,7 +205,12 @@ def create_conversation_pairs_for_clusters(
             {
                 "user_id": current_user_id,
                 "match_group_id": match_group_id,
-                "conversation": user1_conv,
+                "row_idx": user1_conv["row_idx"],
+                "conversation_id": user1_conv["conversation_id"],
+                "title": user1_conv["title"],
+                "summary": user1_conv["summary"],
+                "start_date": user1_conv["start_date"],
+                "start_time": user1_conv["start_time"],
                 "cluster_id": int(cluster_id),
             }
         )
@@ -219,7 +224,12 @@ def create_conversation_pairs_for_clusters(
             {
                 "user_id": other_uid,
                 "match_group_id": match_group_id,
-                "conversation": user2_conv,
+                "row_idx": user2_conv["row_idx"],
+                "conversation_id": user2_conv["conversation_id"],
+                "title": user2_conv["title"],
+                "summary": user2_conv["summary"],
+                "start_date": user2_conv["start_date"],
+                "start_time": user2_conv["start_time"],
                 "cluster_id": int(cluster_id),
             }
         )
@@ -238,9 +248,28 @@ def conversation_pair_clusters(
     conversations_embeddings: pl.DataFrame,
 ) -> pl.DataFrame:
     """
-    Create conversation pairs grouped by clusters using agglomerative clustering.
-    For each pair of users, merge their conversation embeddings and cluster them,
-    assigning each conversation to a globally unique cluster ID.
+    Create semantically related conversation pairs grouped by clusters using agglomerative clustering.
+
+    This asset identifies similar conversations between pairs of users by:
+    1. Finding the most similar users based on average conversation embeddings using FAISS
+    2. For each similar user pair, merging and clustering their conversation embeddings
+    3. Creating clusters of semantically related conversations across users
+    4. Assigning each conversation to a globally unique cluster ID
+
+    The resulting clusters provide a foundation for identifying serendipitous connections
+    between different users' conversations. By pre-grouping related conversations,
+    this asset significantly reduces the search space for downstream LLM-based processing.
+
+    Configuration options:
+    - top_k_users: Number of most similar users to analyze (default: 10)
+    - max_items_per_cluster: Maximum number of items allowed per cluster (default: 1000)
+    - linkage: Clustering criterion for agglomerative clustering (default: "ward")
+
+    Returns a DataFrame with schema:
+    - user_id: The user ID
+    - match_group_id: ID for the user pair
+    - conversation: Struct with conversation details (ID, title, summary, dates)
+    - cluster_id: Global cluster ID grouping semantically related conversations
     """
     current_user_id = context.partition_key
     logger = context.log
@@ -282,23 +311,73 @@ def conversation_pair_clusters(
     all_pairs = []
     # Create a global counter for unique cluster IDs
     global_cluster_id_offset = 0
-    n_clusters = config.n_clusters
 
     for match_group_id, (other_uid, user_user_sim) in enumerate(top_users):
         df2, emb2_array = user_data[other_uid]
         logger.info(f"Clustering conversations with user {other_uid}")
 
+        # Start with minimum number of clusters
         n1 = emb1_array.shape[0]
         n2 = emb2_array.shape[0]
 
-        # Skip if either user has no conversations
-        if n1 == 0 or n2 == 0:
-            continue
+        # Initial estimate of clusters needed
+        n_clusters = max(1, ceil((n1 + n2) / config.max_items_per_cluster))
+        previous_largest_cluster_size = float("inf")
+        previous_cluster_labels = None
 
-        # Cluster the conversations
-        cluster_labels = cluster_conversations(
-            emb1_array, emb2_array, n_clusters, config.linkage
-        )
+        for iteration in range(config.max_cluster_iterations):
+            logger.info(
+                f"Attempt {iteration + 1}: Creating {n_clusters} clusters for {n1 + n2} total conversations"
+            )
+
+            # Cluster the conversations
+            current_cluster_labels = cluster_conversations(
+                emb1_array, emb2_array, n_clusters, config.linkage
+            )
+
+            # Check if any cluster exceeds the maximum size
+            cluster_sizes = np.bincount(current_cluster_labels)
+            largest_cluster_size = np.max(cluster_sizes)
+
+            if largest_cluster_size <= config.max_items_per_cluster:
+                logger.info(
+                    f"Success: Largest cluster has {largest_cluster_size} items (max: {config.max_items_per_cluster})"
+                )
+                cluster_labels = current_cluster_labels
+                break
+
+            # Check if increasing clusters didn't help reduce the largest cluster size
+            if largest_cluster_size >= previous_largest_cluster_size:
+                logger.info(
+                    "No improvement in cluster sizes after increasing clusters. Using previous clustering."
+                )
+                # Use the previous clustering results if they exist
+                if previous_cluster_labels is not None:
+                    cluster_labels = previous_cluster_labels
+                else:
+                    cluster_labels = current_cluster_labels
+                break
+
+            # Save current results before trying with more clusters
+            previous_cluster_labels = current_cluster_labels
+            previous_largest_cluster_size = largest_cluster_size
+
+            # Increase number of clusters and try again
+            logger.info(
+                f"Largest cluster has {largest_cluster_size} items, exceeding max of {config.max_items_per_cluster}"
+            )
+            n_clusters += 1
+
+            # Safety check - if we somehow need more clusters than items, something is wrong
+            if n_clusters >= (n1 + n2):
+                logger.warning("Reached maximum possible clusters, breaking")
+                # Use the current clustering results since we're breaking out
+                cluster_labels = current_cluster_labels
+                break
+        else:
+            # If we exit the loop normally (by running out of iterations)
+            # Use the last clustering attempt
+            cluster_labels = current_cluster_labels
 
         # Extract user1's and user2's cluster labels
         user1_labels = cluster_labels[:n1]

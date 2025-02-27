@@ -29,7 +29,7 @@ def get_conversation_summary_prompt_sequence(conversation: str) -> PromptSequenc
               Additionally:
               1. If the conversation is not in English, translate it to English.
               2. Determine if the conversation is highly sensitive, containing topics such as physical and mental health problems, relationship advice and private legal matters.
-              3. Descriptively summarize what the user wants to do, without mentioning the AI assistant.
+              3. Descriptively summarize what the user wants to do, without mentioning what the AI replies.
 
               Use this output schema:
               {{

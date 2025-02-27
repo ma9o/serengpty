@@ -12,7 +12,7 @@ vertex_ai_config = RemoteLlmConfig(
     api_key=EnvVar("GEMINI_API_KEY"),
     inference_url="https://us-central1-aiplatform.googleapis.com/v1beta1/projects/enclaveid/locations/us-central1/endpoints/openapi/chat/completions",
     inference_config={
-        "model": "google/gemini-1.5-flash",
+        "model": "google/gemini-2.0-flash-001",
         # "temperature": 0.2,
         # "top_p": 0.95,
     },
@@ -29,7 +29,7 @@ openrouter_config = RemoteLlmConfig(
     api_key=EnvVar("OPENROUTER_API_KEY"),
     inference_url="https://openrouter.ai/api/v1/chat/completions",
     inference_config={
-        "model": "google/gemini-2.0-flash-001",  # nb: different from config above
+        "model": "google/gemini-2.0-flash-001",
     },
     context_length=1_000_000,
     concurrency_limit=200,
@@ -40,7 +40,7 @@ openrouter_config = RemoteLlmConfig(
 
 gemini_flash_config = LlmConfig(
     colloquial_model_name="gemini_flash",
-    remote_llm_config=openrouter_config,
+    remote_llm_config=vertex_ai_config,
 )
 
 
