@@ -161,22 +161,38 @@ def serendipity_simple(
                 continue
 
             # If the LLM found a valid connection
-            user1_indices = path_obj.get("user1_row_indices", [])
-            user2_indices = path_obj.get("user2_row_indices", [])
-            path_description = path_obj.get("path_description", "")
+            user1_common_indices = path_obj.get("user1_common_indices", [])
+            user2_common_indices = path_obj.get("user2_common_indices", [])
+            user1_unique_indices = path_obj.get("user1_unique_indices", [])
+            user2_unique_indices = path_obj.get("user2_unique_indices", [])
+            common_background = path_obj.get("common_background", "")
+            unique_branches = path_obj.get("unique_branches", "")
 
             # If we got a non-empty path
-            if user1_indices or user2_indices or path_description:
+            if (user1_common_indices or user2_common_indices or 
+                user1_unique_indices or user2_unique_indices or 
+                common_background or unique_branches):
                 paths_found_any = True
                 user_info["paths_found"] += 1
 
                 # Map local indices -> conversation_id
-                user1_conv_ids = [
-                    user1_idx_map[idx] for idx in user1_indices if idx in user1_idx_map
+                user1_common_conv_ids = [
+                    user1_idx_map[idx] for idx in user1_common_indices if idx in user1_idx_map
                 ]
-                user2_conv_ids = [
-                    user2_idx_map[idx] for idx in user2_indices if idx in user2_idx_map
+                user2_common_conv_ids = [
+                    user2_idx_map[idx] for idx in user2_common_indices if idx in user2_idx_map
                 ]
+                user1_unique_conv_ids = [
+                    user1_idx_map[idx] for idx in user1_unique_indices if idx in user1_idx_map
+                ]
+                user2_unique_conv_ids = [
+                    user2_idx_map[idx] for idx in user2_unique_indices if idx in user2_idx_map
+                ]
+                
+                # Keep combined lists for compatibility with existing database schema
+                user1_conv_ids = user1_common_conv_ids + user1_unique_conv_ids
+                user2_conv_ids = user2_common_conv_ids + user2_unique_conv_ids
+                path_description = f"{common_background}\n\n{unique_branches}".strip()
 
                 # Build the path entry
                 path_entry = {
