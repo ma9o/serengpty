@@ -134,7 +134,7 @@ def format_conversation_summary(row: Dict) -> Dict:
         "summary": row["summary"],
         "date": date_str,
         "is_sensitive": row.get("is_sensitive", False),
-        "category": row.get("category", "analytical"),
+        "category": row.get("category", "Professional/Practical Domain"),
     }
 
 
