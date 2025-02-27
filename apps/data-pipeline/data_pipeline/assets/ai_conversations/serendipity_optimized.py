@@ -1,6 +1,5 @@
 import datetime
 import uuid
-from typing import Dict, List, Set
 
 import polars as pl
 from dagster import (
@@ -26,28 +25,28 @@ class SerendipityOptimizedConfig(RowLimitConfig):
 
 @asset(
     partitions_def=user_partitions_def,
-    ins={"conversation_pair_candidates": AssetIn(key="conversation_pair_candidates")},
+    ins={"conversation_pair_clusters": AssetIn(key="conversation_pair_clusters")},
     io_manager_key="parquet_io_manager",
 )
 def serendipity_optimized(
     context: AssetExecutionContext,
     config: SerendipityOptimizedConfig,
     gemini_flash: BaseLlmResource,
-    conversation_pair_candidates: pl.DataFrame,
+    conversation_pair_clusters: pl.DataFrame,
 ) -> pl.DataFrame:
     """
     Discovers serendipitous paths between users' conversations using pre-filtered
-    conversation pairs from conversation_pair_candidates.
-    
+    conversation pairs from conversation_pair_clusters.
+
     This asset focuses purely on finding meaningful connections between conversation pairs
     that have already been identified as potentially related based on embedding similarity.
-    
+
     Processing steps:
     1. Groups conversation pairs by user2_id
     2. For each user pair, extracts conversation details and sorts by date and time
     3. Iteratively generates prompts and calls the LLM to find serendipitous paths
     4. Builds a result DataFrame with path information
-    
+
     The conversations are sorted chronologically before being sent to the LLM to help it
     identify temporal progression in topics and interests.
 
@@ -66,56 +65,64 @@ def serendipity_optimized(
     current_user_id = context.partition_key
     logger = context.log
 
-    if conversation_pair_candidates.height == 0:
+    if conversation_pair_clusters.height == 0:
         logger.info("No conversation pair candidates found, returning empty result.")
         return pl.DataFrame(schema=get_empty_result_schema())
 
     # Group by user2_id to process each user pair separately
-    user_groups = conversation_pair_candidates.group_by("user2_id")
-    
+    user_groups = conversation_pair_clusters.group_by("user2_id")
+
     # Organize conversation pairs by user2_id
     user_data = {}
-    
+
     for user_group in user_groups:
         user2_id = user_group["user2_id"][0]
         user_df = user_group.select(pl.exclude("user2_id"))
-        
+
         # Extract user1 (current user) and user2 conversation data
         user1_summaries = []
         user2_summaries = []
-        
+
         for row in user_df.iter_rows(named=True):
             conv1 = row["conv1"]
             conv2 = row["conv2"]
-            
+
             # Add to respective summaries lists
-            user1_summaries.append({
-                "row_idx": conv1["row_idx"],
-                "conversation_id": conv1["conversation_id"],
-                "title": conv1["title"],
-                "summary": conv1["summary"],
-                "date": f"{conv1['start_date']} {conv1['start_time']}",
-                "start_date": conv1["start_date"],
-                "start_time": conv1["start_time"],
-            })
-            
-            user2_summaries.append({
-                "row_idx": conv2["row_idx"],
-                "conversation_id": conv2["conversation_id"],
-                "title": conv2["title"],
-                "summary": conv2["summary"],
-                "date": f"{conv2['start_date']} {conv2['start_time']}",
-                "start_date": conv2["start_date"],
-                "start_time": conv2["start_time"],
-            })
-        
+            user1_summaries.append(
+                {
+                    "row_idx": conv1["row_idx"],
+                    "conversation_id": conv1["conversation_id"],
+                    "title": conv1["title"],
+                    "summary": conv1["summary"],
+                    "date": f"{conv1['start_date']} {conv1['start_time']}",
+                    "start_date": conv1["start_date"],
+                    "start_time": conv1["start_time"],
+                }
+            )
+
+            user2_summaries.append(
+                {
+                    "row_idx": conv2["row_idx"],
+                    "conversation_id": conv2["conversation_id"],
+                    "title": conv2["title"],
+                    "summary": conv2["summary"],
+                    "date": f"{conv2['start_date']} {conv2['start_time']}",
+                    "start_date": conv2["start_date"],
+                    "start_time": conv2["start_time"],
+                }
+            )
+
         # Sort summaries by date and time
-        user1_summaries.sort(key=lambda x: (x.get("start_date", ""), x.get("start_time", "")))
-        user2_summaries.sort(key=lambda x: (x.get("start_date", ""), x.get("start_time", "")))
-        
+        user1_summaries.sort(
+            key=lambda x: (x.get("start_date", ""), x.get("start_time", ""))
+        )
+        user2_summaries.sort(
+            key=lambda x: (x.get("start_date", ""), x.get("start_time", ""))
+        )
+
         # Calculate average similarity for this user pair
         avg_similarity = user_df["cosine_similarity"].mean()
-        
+
         # Store data for this user pair
         user_data[user2_id] = {
             "current_summaries": user1_summaries,
@@ -126,9 +133,9 @@ def serendipity_optimized(
             "iteration": 0,
             "user_similarity_score": float(avg_similarity),
         }
-    
+
     logger.info(f"Processing {len(user_data)} user pairs for serendipitous paths")
-    
+
     # Iteratively find paths across user pairs
     all_paths = []
 

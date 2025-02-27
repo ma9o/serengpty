@@ -1,4 +1,5 @@
 from .conversation_pair_candidates import conversation_pair_candidates
+from .conversation_pair_clusters import conversation_pair_clusters
 from .conversation_skeletons import conversation_skeletons
 from .conversation_summaries import conversation_summaries
 from .conversations_embeddings import conversations_embeddings
@@ -22,4 +23,5 @@ __all__ = [
     serendipity_simple,
     serendipity_optimized,
     conversation_pair_candidates,
+    conversation_pair_clusters,
 ]  # type: ignore
