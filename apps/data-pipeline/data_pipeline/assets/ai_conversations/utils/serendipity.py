@@ -58,35 +58,28 @@ def generate_serendipity_prompt(
 
     # Rest of the function remains the same...
     prompt = f"""
-You are a researcher identifying serendipitous paths between conversation topics.
-You'll be given conversations from two different users. Your task is to find one meaningful
-connection or progression between multiple conversations from both users.
+You'll be given summaries of AI conversations from two different users.
+Your task is to find the largest serendipitous progression between the two users, that spans across multiple conversations in either set.
+
+The serendipitous path should have common nodes (the conversations) that establish a shared background, but it should branch out into unique nodes that are complementary to either user.
+
+Output in this JSON format:
+{{
+  "user1_common_indices": [list of integer IDs from USER 1 CONVERSATIONS whose themes are shared with USER 2],
+  "user2_common_indices": [list of integer IDs from USER 2 CONVERSATIONS whose themes are shared with USER 1],
+  "user1_unique_indices": [list of integer IDs from USER 1 CONVERSATIONS that are UNIQUE/COMPLEMENTARY to USER 2],
+  "user2_unique_indices": [list of integer IDs from USER 2 CONVERSATIONS that are UNIQUE/COMPLEMENTARY to USER 1],
+  "common_background": "A detailed description of the shared background between the two users (without the unique branches)",
+  "unique_branches": "A detailed description of the unique branches of the serendipitous path (without the common background)"
+}}
+
+If you cannot find a serendipitous path, return an empty object: {{}}
 
 USER 1 CONVERSATIONS:
 {chr(10).join(user1_texts)}
 
 USER 2 CONVERSATIONS:
 {chr(10).join(user2_texts)}
-
-Look for a serendipitous path that connects multiple conversations from both users.
-This should form an interesting progression of thought or exploration that spans across multiple conversations.
-
-Output in this JSON format:
-{{
-  "common_row_indices": [list of integer IDs that represent the SHARED/SIMILAR topics between both users],
-  "user1_row_indices": [list of integer IDs from USER 1 CONVERSATIONS that are UNIQUE/COMPLEMENTARY],
-  "user2_row_indices": [list of integer IDs from USER 2 CONVERSATIONS that are UNIQUE/COMPLEMENTARY],
-  "path_description": "A detailed description of the serendipitous connection between these conversations and why they form an interesting path"
-}}
-
-Criteria for serendipitous paths:
-1. Identify which conversation topics are shared/similar between users (common_row_indices)
-2. Identify which conversation topics are unique/complementary to each user (user1_row_indices and user2_row_indices)
-3. Prioritize unexpected connections that might not be obvious
-4. Look for thematic progression or knowledge building across the conversations
-5. The conversations should form a natural sequence or network of related ideas
-
-If you find no meaningful connections, return an empty object: {{}}
     """.strip()
 
     return prompt, user1_idx_to_id, user2_idx_to_id
