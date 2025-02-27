@@ -55,14 +55,14 @@ def generate_serendipity_prompt(
     prompt = dedent(
         f"""
           You'll be given summaries of AI conversations from two different users.
-          Your task is to find the largest serendipitous progression between the two users, that spans across multiple conversations in either set.
+          Your task is to find the best matching serendipitous progression between the two users, that spans across multiple conversations in either set.
 
-          The serendipitous path should have common nodes (the conversations) that establish a shared background, but it should branch out into unique nodes that are complementary to either user.
+          The serendipitous path should have common nodes (the conversations) that establish a closely shared background, but it should branch out into unique nodes that are complementary to either user.
+          Common nodes between the two users should be as closely matched as possible, and the divergent paths have to be at least tangentially related to the common background.
 
           Output in this JSON format:
           {{
-            "user1_common_indices": [list of integer IDs from USER 1 CONVERSATIONS whose themes are shared with USER 2],
-            "user2_common_indices": [list of integer IDs from USER 2 CONVERSATIONS whose themes are shared with USER 1],
+            "common_indices": [list of integer IDs from both users' CONVERSATIONS whose themes are shared],
             "user1_unique_indices": [list of integer IDs from USER 1 CONVERSATIONS that are UNIQUE/COMPLEMENTARY to USER 2],
             "user2_unique_indices": [list of integer IDs from USER 2 CONVERSATIONS that are UNIQUE/COMPLEMENTARY to USER 1],
             "common_background": "A detailed description of the shared background between the two users (without the unique branches)",
@@ -93,20 +93,20 @@ def parse_serendipity_result(content: str) -> Dict:
             return {}
 
         # LLM might return duplicate indices, so we need to remove them
-        user1_common_indices = np.unique(result["user1_common_indices"]).tolist()
-        user2_common_indices = np.unique(result["user2_common_indices"]).tolist()
+        common_indices = np.unique(result["common_indices"]).tolist()
 
         # Make sure unique indices don't overlap with common indices
         user1_unique_indices = list(
-            set(np.unique(result["user1_unique_indices"])) - set(user1_common_indices)
+            set(np.unique(result["user1_unique_indices"])) - set(common_indices)
         )
         user2_unique_indices = list(
-            set(np.unique(result["user2_unique_indices"])) - set(user2_common_indices)
+            set(np.unique(result["user2_unique_indices"]))
+            - set(user1_unique_indices)  # Just to be sure
+            - set(common_indices)
         )
 
         return {
-            "user1_common_indices": user1_common_indices,
-            "user2_common_indices": user2_common_indices,
+            "common_indices": common_indices,
             "user1_unique_indices": user1_unique_indices,
             "user2_unique_indices": user2_unique_indices,
             "common_background": result["common_background"],

@@ -61,8 +61,8 @@ def _create_path_entry(
     iteration: int = 0,
 ) -> dict:
     """Create a path entry from LLM response"""
-    user1_common_indices = path_obj.get("user1_common_indices", [])
-    user2_common_indices = path_obj.get("user2_common_indices", [])
+    # Updated to work with common_indices instead of separate user indices
+    common_indices = path_obj.get("common_indices", [])
     user1_unique_indices = path_obj.get("user1_unique_indices", [])
     user2_unique_indices = path_obj.get("user2_unique_indices", [])
     common_background = path_obj.get("common_background", "")
@@ -86,8 +86,8 @@ def _create_path_entry(
         if idx in idx_to_user:
             user2_ids.add(idx_to_user[idx])
 
-    # Also check user2 common indices
-    for idx in user2_common_indices:
+    # Also check common indices for user2 identification
+    for idx in common_indices:
         if idx in idx_to_user:
             user2_ids.add(idx_to_user[idx])
 
@@ -95,12 +95,11 @@ def _create_path_entry(
     user2_id_list = list(user2_ids)
     primary_user2_id = user2_id_list[0] if user2_id_list else None
 
-    # Calculate total path lengths using row indices directly
-    common_indices = user1_common_indices + user2_common_indices
+    # Calculate total path lengths using common indices and unique indices
     user1_total_length = len(user1_unique_indices) + len(common_indices)
     user2_total_length = len(user2_unique_indices) + len(common_indices)
 
-    # Build the path entry - use row indices directly instead of conversation_ids
+    # Build the path entry
     return {
         "path_id": str(uuid.uuid4()),
         "user1_id": current_user_id,
@@ -358,22 +357,13 @@ def serendipity_optimized(
             if not isinstance(path_obj, dict):
                 continue
 
-            # If the LLM found a valid connection
-            user1_common_indices = path_obj.get("user1_common_indices", [])
-            user2_common_indices = path_obj.get("user2_common_indices", [])
-            user1_unique_indices = path_obj.get("user1_unique_indices", [])
-            user2_unique_indices = path_obj.get("user2_unique_indices", [])
-            common_background = path_obj.get("common_background", "")
-            unique_branches = path_obj.get("unique_branches", "")
-
             # If we got a non-empty path
             if (
-                user1_common_indices
-                or user2_common_indices
-                or user1_unique_indices
-                or user2_unique_indices
-                or common_background
-                or unique_branches
+                path_obj.get("common_indices")
+                or path_obj.get("user1_unique_indices")
+                or path_obj.get("user2_unique_indices")
+                or path_obj.get("common_background")
+                or path_obj.get("unique_branches")
             ):
                 paths_found_any = True
                 cluster_info_data["paths_found"] += 1
@@ -394,10 +384,9 @@ def serendipity_optimized(
                 all_paths.append(path_entry)
 
                 # Update exclusions with row indices directly
-                global_exclusions.update(user1_common_indices)
-                global_exclusions.update(user2_common_indices)
-                global_exclusions.update(user1_unique_indices)
-                global_exclusions.update(user2_unique_indices)
+                global_exclusions.update(path_obj.get("common_indices", []))
+                global_exclusions.update(path_obj.get("user1_unique_indices", []))
+                global_exclusions.update(path_obj.get("user2_unique_indices", []))
 
             # Increment iteration for the cluster
             cluster_info_data["iteration"] += 1

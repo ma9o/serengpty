@@ -24,7 +24,7 @@ class ConversationPairClustersConfig(RowLimitConfig):
     # Number of top similar users to consider
     top_k_users: int = 10
     # Maximum number of items allowed per cluster
-    max_items_per_cluster: Optional[int] = 1000
+    max_items_per_cluster: Optional[int] = 500
 
     cosine_difference: Optional[float] = None
     # Maximum number of iterations to try to find a good number of clusters
