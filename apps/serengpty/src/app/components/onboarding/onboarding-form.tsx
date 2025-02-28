@@ -142,7 +142,7 @@ export function OnboardingForm() {
 
       // Call server action to save the profile
       const result = await saveUserProfile(values);
-      
+
       if (result.success) {
         toast({
           title: 'Profile saved!',
@@ -152,7 +152,8 @@ export function OnboardingForm() {
       } else {
         toast({
           title: 'Error',
-          description: result.message || 'Failed to save your profile. Please try again.',
+          description:
+            result.message || 'Failed to save your profile. Please try again.',
           variant: 'destructive',
           duration: 3000,
         });

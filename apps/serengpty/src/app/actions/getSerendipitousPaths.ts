@@ -41,7 +41,7 @@ export async function getSerendipitousPaths(): Promise<
             user: {
               select: {
                 id: true,
-                username: true,
+                name: true,
                 image: true,
                 country: true,
                 email: true,

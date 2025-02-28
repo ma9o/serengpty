@@ -1,10 +1,7 @@
 import NextAuth from 'next-auth';
-import GithubProvider from 'next-auth/providers/github';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from './db/prisma';
-import { sendEmail } from './sendEmail';
-import Nodemailer from 'next-auth/providers/nodemailer';
 import { PrismaClient } from '@prisma/client';
 import { Adapter } from 'next-auth/adapters';
 import * as bcrypt from 'bcrypt';
@@ -48,18 +45,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     error: '/auth/error',
   },
   providers: [
-    // Keep existing providers for transitional period
-    GithubProvider({
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-    }),
-    Nodemailer({
-      server: process.env.AZURE_EMAIL_CONNECTION_STRING!,
-      sendVerificationRequest: async ({ identifier: email, url }) => {
-        await sendEmail(email, 'Verify your email', url);
-      },
-    }),
-    // Add credentials provider for password-based auth
     CredentialsProvider({
       name: 'Password',
       credentials: {
@@ -119,6 +104,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.email = (token.email as string) || null;
       }
       return session;
+    },
+    authorized: async ({ auth }) => {
+      // Logged in users are authenticated, otherwise redirect to login page
+      return !!auth;
     },
   },
 });

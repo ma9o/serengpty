@@ -233,13 +233,13 @@ function UserCard({
     >
       <CardHeader className="flex flex-row items-center gap-4">
         <Avatar className={cn('h-16 w-16', isActive && 'ring-2 ring-primary')}>
-          <AvatarImage src={user.image || undefined} alt={user.username} />
+          <AvatarImage src={user.image || undefined} alt={user.name} />
           <AvatarFallback>
-            {user.username.substring(0, 2).toUpperCase()}
+            {user.name.substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         <div>
-          <CardTitle>{user.username}</CardTitle>
+          <CardTitle>{user.name}</CardTitle>
           <CardDescription>{user.country}</CardDescription>
         </div>
       </CardHeader>

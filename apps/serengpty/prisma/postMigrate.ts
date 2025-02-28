@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 // Create HNSW indexes for all vector embedding fields
 // const createHnsw = async (prisma: PrismaClient) => {
@@ -14,49 +15,48 @@ const seed = async (prisma: PrismaClient) => {
     update: {},
     create: {
       id: 'cm0i27jdj0000aqpa73ghpcxf',
-      email: 'magogagiovanni@gmail.com',
-      username: 'giovanni',
+      name: 'giovanni',
       country: 'Italy',
+      passwordHash: await bcrypt.hash('securePassword123', 10),
     },
   });
 
   const alice = await prisma.user.upsert({
-    where: { username: 'alice' },
+    where: { name: 'alice' },
     update: {},
     create: {
       email: 'alice@example.com',
-      username: 'alice',
+      name: 'alice',
       country: 'USA',
     },
   });
 
   const bob = await prisma.user.upsert({
-    where: { username: 'bob' },
+    where: { name: 'bob' },
     update: {},
     create: {
       email: 'bob@example.com',
-      username: 'bob',
+      name: 'bob',
       country: 'UK',
     },
   });
 
   const charlie = await prisma.user.upsert({
-    where: { username: 'charlie' },
+    where: { name: 'charlie' },
     update: {},
     create: {
       email: 'charlie@example.com',
-      username: 'charlie',
+      name: 'charlie',
       country: 'Canada',
-      image: 'https://placehold.co/150x150?text=C',
     },
   });
 
   const diana = await prisma.user.upsert({
-    where: { username: 'diana' },
+    where: { name: 'diana' },
     update: {},
     create: {
       email: 'diana@example.com',
-      username: 'diana',
+      name: 'diana',
       country: 'France',
     },
   });

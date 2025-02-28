@@ -7,12 +7,12 @@ import { revalidatePath } from 'next/cache';
 
 // Form validation schema
 const userProfileSchema = z.object({
-  username: z
+  name: z
     .string()
-    .min(3, { message: 'Username must be at least 3 characters.' })
-    .max(20, { message: 'Username cannot be longer than 20 characters.' })
+    .min(3, { message: 'name must be at least 3 characters.' })
+    .max(20, { message: 'name cannot be longer than 20 characters.' })
     .regex(/^[a-zA-Z0-9_]+$/, {
-      message: 'Username can only contain letters, numbers, and underscores.',
+      message: 'name can only contain letters, numbers, and underscores.',
     }),
   country: z.string(),
   sensitiveMatching: z.boolean().default(false),
@@ -47,16 +47,16 @@ export async function saveUserProfile(
 
     const userId = session.user.id;
 
-    // Check if username is already taken by another user
+    // Check if name is already taken by another user
     const existingUser = await prisma.user.findUnique({
-      where: { username: data.username },
+      where: { name: data.name },
       select: { id: true },
     });
 
     if (existingUser && existingUser.id !== userId) {
       return {
         success: false,
-        message: 'This username is already taken.',
+        message: 'This name is already taken.',
       };
     }
 
@@ -64,7 +64,7 @@ export async function saveUserProfile(
     await prisma.user.update({
       where: { id: userId },
       data: {
-        username: data.username,
+        name: data.name,
         country: data.country,
         sensitiveMatching: data.sensitiveMatching,
       },
