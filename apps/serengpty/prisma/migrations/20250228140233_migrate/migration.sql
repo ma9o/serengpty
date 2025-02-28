@@ -19,8 +19,10 @@ CREATE TABLE "Conversation" (
     "id" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "summary" TEXT NOT NULL,
+    "uniqueSummary" TEXT NOT NULL,
     "datetime" TIMESTAMP(3) NOT NULL,
+    "serendipitousPathId" TEXT,
+    "userPathId" TEXT,
 
     CONSTRAINT "Conversation_pkey" PRIMARY KEY ("id")
 );
@@ -30,7 +32,8 @@ CREATE TABLE "SerendipitousPath" (
     "id" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "summary" TEXT NOT NULL,
+    "commonSummary" TEXT NOT NULL,
+    "score" DOUBLE PRECISION NOT NULL,
 
     CONSTRAINT "SerendipitousPath_pkey" PRIMARY KEY ("id")
 );
@@ -83,22 +86,6 @@ CREATE TABLE "VerificationToken" (
     CONSTRAINT "VerificationToken_pkey" PRIMARY KEY ("identifier","token")
 );
 
--- CreateTable
-CREATE TABLE "_UniqueConversations" (
-    "A" TEXT NOT NULL,
-    "B" TEXT NOT NULL,
-
-    CONSTRAINT "_UniqueConversations_AB_pkey" PRIMARY KEY ("A","B")
-);
-
--- CreateTable
-CREATE TABLE "_CommonConversations" (
-    "A" TEXT NOT NULL,
-    "B" TEXT NOT NULL,
-
-    CONSTRAINT "_CommonConversations_AB_pkey" PRIMARY KEY ("A","B")
-);
-
 -- CreateIndex
 CREATE UNIQUE INDEX "User_name_key" ON "User"("name");
 
@@ -108,11 +95,11 @@ CREATE UNIQUE INDEX "UserPath_userId_pathId_key" ON "UserPath"("userId", "pathId
 -- CreateIndex
 CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
 
--- CreateIndex
-CREATE INDEX "_UniqueConversations_B_index" ON "_UniqueConversations"("B");
+-- AddForeignKey
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_serendipitousPathId_fkey" FOREIGN KEY ("serendipitousPathId") REFERENCES "SerendipitousPath"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
--- CreateIndex
-CREATE INDEX "_CommonConversations_B_index" ON "_CommonConversations"("B");
+-- AddForeignKey
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_userPathId_fkey" FOREIGN KEY ("userPathId") REFERENCES "UserPath"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UserPath" ADD CONSTRAINT "UserPath_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -125,15 +112,3 @@ ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId"
 
 -- AddForeignKey
 ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_UniqueConversations" ADD CONSTRAINT "_UniqueConversations_A_fkey" FOREIGN KEY ("A") REFERENCES "Conversation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_UniqueConversations" ADD CONSTRAINT "_UniqueConversations_B_fkey" FOREIGN KEY ("B") REFERENCES "UserPath"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_CommonConversations" ADD CONSTRAINT "_CommonConversations_A_fkey" FOREIGN KEY ("A") REFERENCES "Conversation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_CommonConversations" ADD CONSTRAINT "_CommonConversations_B_fkey" FOREIGN KEY ("B") REFERENCES "UserPath"("id") ON DELETE CASCADE ON UPDATE CASCADE;

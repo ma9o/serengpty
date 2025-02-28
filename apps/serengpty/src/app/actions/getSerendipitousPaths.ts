@@ -22,9 +22,12 @@ export async function getSerendipitousPaths(): Promise<
         userId: currentUserId,
       },
       include: {
-        path: true,
-        commonConversations: true,
-        uniqueConversations: true,
+        path: {
+          include: {
+            commonConversations: true, // Get common conversations from SerendipitousPath
+          },
+        },
+        uniqueConversations: true, // Get user's unique conversations from UserPath
       },
     });
 
@@ -47,7 +50,7 @@ export async function getSerendipitousPaths(): Promise<
                 email: true,
               },
             },
-            uniqueConversations: true,
+            uniqueConversations: true, // Get connected user's unique conversations
           },
         });
 
@@ -56,12 +59,34 @@ export async function getSerendipitousPaths(): Promise<
         }
 
         return {
-          path: userPath.path,
+          path: {
+            id: userPath.path.id,
+            createdAt: userPath.path.createdAt,
+            updatedAt: userPath.path.updatedAt,
+            summary: userPath.path.commonSummary, // Map commonSummary to summary for frontend compatibility
+            score: userPath.path.score,
+          },
           connectedUser: connectedUserPath.user,
-          commonConversations: userPath.commonConversations,
-          currentUserUniqueConversations: userPath.uniqueConversations,
+          commonConversations: userPath.path.commonConversations.map(
+            (convo) => ({
+              id: convo.id,
+              summary: convo.uniqueSummary, // Map uniqueSummary to summary for frontend compatibility
+              datetime: convo.datetime,
+            })
+          ),
+          currentUserUniqueConversations: userPath.uniqueConversations.map(
+            (convo) => ({
+              id: convo.id,
+              summary: convo.uniqueSummary,
+              datetime: convo.datetime,
+            })
+          ),
           connectedUserUniqueConversations:
-            connectedUserPath.uniqueConversations,
+            connectedUserPath.uniqueConversations.map((convo) => ({
+              id: convo.id,
+              summary: convo.uniqueSummary,
+              datetime: convo.datetime,
+            })),
         };
       })
     );
@@ -70,8 +95,53 @@ export async function getSerendipitousPaths(): Promise<
     const filteredResults = results.filter(
       (result) => result !== null
     ) as SerendipitousPathsResponse[];
+    
+    // Group results by connected user to calculate average score, but keep individual paths
+    const userMap = new Map<string, {
+      paths: SerendipitousPathsResponse[],
+      averageScore: number
+    }>();
+    
+    for (const result of filteredResults) {
+      const userId = result.connectedUser.id;
+      if (!userMap.has(userId)) {
+        userMap.set(userId, {
+          paths: [],
+          averageScore: 0
+        });
+      }
+      userMap.get(userId)!.paths.push(result);
+    }
+    
+    // Calculate average score for each user
+    for (const [userId, userData] of userMap.entries()) {
+      const totalScore = userData.paths.reduce((sum, path) => sum + path.path.score, 0);
+      userData.averageScore = totalScore / userData.paths.length;
+      
+      // Add the average score to each path for this user
+      userData.paths.forEach(path => {
+        path.averageUserScore = userData.averageScore;
+        path.totalUserPaths = userData.paths.length;
+      });
+    }
+    
+    // Create a unified list of paths, preserving all individual paths
+    const processedResults: SerendipitousPathsResponse[] = [];
+    for (const userData of userMap.values()) {
+      processedResults.push(...userData.paths);
+    }
+    
+    // Sort first by averageUserScore, then by individual path score
+    processedResults.sort((a, b) => {
+      // First sort by average user score
+      if (a.averageUserScore !== b.averageUserScore) {
+        return b.averageUserScore - a.averageUserScore;
+      }
+      // If same user, then sort by individual path score
+      return b.path.score - a.path.score;
+    });
 
-    return filteredResults;
+    return processedResults;
   } catch (error) {
     console.error('Error fetching serendipitous paths:', error);
     throw error;

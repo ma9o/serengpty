@@ -59,8 +59,8 @@
         "cwd": "apps/serengpty",
         "commands": [
           "rm -rf prisma/migrations",
-          "yes | nx run webapp:prisma-migrate",
-          "cd ../.. && nx run webapp:prisma-post-migrate"
+          "yes | nx run serengpty:prisma-migrate",
+          "cd ../.. && nx run serengpty:prisma-post-migrate"
         ],
         "parallel": false
       }
