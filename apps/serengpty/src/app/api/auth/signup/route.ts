@@ -4,6 +4,7 @@ import { prisma } from '../../../services/db/prisma';
 import { azureContainerClient } from '../../../services/azure/storage';
 import path from 'path';
 import fs from 'fs';
+import { generateUniqueUsername } from '../../../actions/generateUniqueUsername';
 
 /**
  * Anonymous user signup API endpoint
@@ -22,29 +23,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse the conversations data
-    const conversations = JSON.parse(conversationsJson);
-
     // Hash the password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Create anonymous user with just the password hash
+    // Generate a unique name using the existing function
+    const name = await generateUniqueUsername();
+
+    // Create anonymous user with password hash and generated name
     const user = await prisma.user.create({
       data: {
         passwordHash,
+        name,
       },
     });
 
     // Save the conversations.json file to Azure storage or local filesystem
     // depending on the environment
     const isProduction = process.env.NODE_ENV === 'production';
-    
+
     if (isProduction) {
       // Save to Azure Blob Storage
       // Create a blob name with user id and path that matches the expected structure
       // The path should match what's expected by the parsed_conversations asset
       const blobName = `api/${user.id}/openai/latest.json`;
-      
+
       // Upload the conversations JSON as a blob
       const blockBlobClient = azureContainerClient.getBlockBlobClient(blobName);
       await blockBlobClient.upload(conversationsJson, conversationsJson.length);
@@ -52,11 +54,16 @@ export async function POST(request: NextRequest) {
       // In development, save to local filesystem
       // Create local directory structure that matches the expected structure
       const localDataDir = path.join(process.cwd(), 'apps/data-pipeline/data');
-      const userDir = path.join(localDataDir, 'api', user.id.toString(), 'openai');
-      
+      const userDir = path.join(
+        localDataDir,
+        'api',
+        user.id.toString(),
+        'openai'
+      );
+
       // Create directory if it doesn't exist
       await fs.promises.mkdir(userDir, { recursive: true });
-      
+
       // Write the conversations JSON to file
       await fs.promises.writeFile(
         path.join(userDir, 'latest.json'),

@@ -32,7 +32,7 @@ export async function validateUsername(username: string): Promise<{
 
     // Check if username already exists in the database
     const existingUser = await prisma.user.findUnique({
-      where: { username },
+      where: { name: username },
       select: { id: true },
     });
 
@@ -53,23 +53,4 @@ export async function validateUsername(username: string): Promise<{
   }
 }
 
-/**
- * Generates a unique username
- */
-export async function generateUniqueUsername(): Promise<string> {
-  // Using unique-username-generator library to generate usernames
-  // Attempt to generate a unique username up to 5 times
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const username = generateUsername('_', 0, 18);
 
-    // Check if the username is available
-    const { isValid } = await validateUsername(username);
-
-    if (isValid) {
-      return username;
-    }
-  }
-
-  // If all attempts fail, generate a random username with timestamp
-  return `user_${Date.now().toString(36)}`;
-}

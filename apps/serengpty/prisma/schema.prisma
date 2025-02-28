@@ -11,10 +11,10 @@ datasource db {
 
 model User {
   id           String  @id @default(cuid())
-  email        String? @unique
+  email        String?
   passwordHash String?
 
-  username          String  @unique
+  name              String  @unique
   country           String  @default("INTERNET")
   sensitiveMatching Boolean @default(false)
 

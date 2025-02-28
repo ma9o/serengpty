@@ -5,7 +5,7 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from './db/prisma';
 import { sendEmail } from './sendEmail';
 import Nodemailer from 'next-auth/providers/nodemailer';
-import { PrismaClient, User } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { Adapter } from 'next-auth/adapters';
 import * as bcrypt from 'bcrypt';
 
@@ -24,6 +24,8 @@ function CustomPrismaAdapter(p: PrismaClient): Adapter {
     },
     // Override createUser to allow for anonymous users
     createUser: async (user) => {
+      // User name will be assigned by the adapter
+
       // Handle anonymous users without email
       return await p.user.create({
         data: {
@@ -38,7 +40,7 @@ function CustomPrismaAdapter(p: PrismaClient): Adapter {
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: CustomPrismaAdapter(prisma),
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
   },
   pages: {
     signIn: '/login',
@@ -59,55 +61,64 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
     // Add credentials provider for password-based auth
     CredentialsProvider({
-      name: "Password",
+      name: 'Password',
       credentials: {
-        password: { label: "Password", type: "password" }
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.password) return null;
 
-        // Find user by password hash
-        const user = await prisma.user.findFirst({
+        // Find all users with password hash and check each one
+        const users = await prisma.user.findMany({
           where: {
             passwordHash: {
-              not: null
-            }
-          }
+              not: null,
+            },
+          },
         });
 
-        // Verify password
-        if (user?.passwordHash) {
-          const isValid = await bcrypt.compare(
-            credentials.password,
-            user.passwordHash
-          );
+        // Try each user's password hash
+        for (const user of users) {
+          if (user.passwordHash) {
+            const isValid = await bcrypt.compare(
+              credentials.password as string,
+              user.passwordHash
+            );
 
-          if (isValid) {
-            return {
-              id: user.id,
-              name: user.name,
-              email: user.email
-            };
+            if (isValid) {
+              return {
+                id: user.id,
+                // Support anonymous users with no name or email
+                name: user.name || null,
+                email: user.email || null,
+              };
+            }
           }
         }
-        
+
         return null;
-      }
-    })
+      },
+    }),
   ],
   callbacks: {
     // Add custom callbacks as needed
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        // Ensure name and email are properly handled for anonymous users
+        token.name = user.name || null;
+        token.email = user.email || null;
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
+        // Ensure name and email are properly handled for anonymous users
+        session.user.name = (token.name as string) || null;
+        session.user.email = (token.email as string) || null;
       }
       return session;
-    }
-  }
+    },
+  },
 });

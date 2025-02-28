@@ -22,7 +22,7 @@ export function LoginForm({
           // Call SignIn with our credentials provider and password
           await signIn('credentials', {
             password: formData.get('password') as string,
-            callbackUrl: '/dashboard/home'
+            callbackUrl: '/dashboard/home',
           });
         }}
       >
@@ -49,7 +49,11 @@ export function LoginForm({
                 type="password"
                 placeholder="Enter your password"
                 required
+                autoComplete="current-password"
               />
+              <p className="text-xs text-muted-foreground">
+                Enter the password you created during signup
+              </p>
             </div>
             <Button type="submit" className="w-full">
               Continue
