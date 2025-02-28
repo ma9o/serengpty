@@ -58,7 +58,9 @@
     "framer-motion": "^11.15.0",
     "hyparquet": "^1.8.0",
     "hyparquet-compressors": "^1.0.0",
+    "i18n-iso-countries": "^7.14.0",
     "input-otp": "^1.4.2",
+    "jdenticon": "^3.3.0",
     "jszip": "^3.10.1",
     "lodash": "^4.17.21",
     "lucide-react": "^0.471.1",
@@ -79,6 +81,7 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.171.0",
+    "use-debounce": "^10.0.4",
     "vaul": "^1.1.2",
     "yauzl": "^3.2.0",
     "zod": "^3.24.1"
@@ -134,6 +137,7 @@
     "tslib": "^2.3.0",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.13.0",
+    "unique-username-generator": "^1.4.0",
     "unplugin-icons": "^0.22.0"
   },
   "trustedDependencies": [
