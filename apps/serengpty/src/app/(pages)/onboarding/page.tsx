@@ -1,13 +1,58 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { OnboardingForm } from '../../components/onboarding/onboarding-form';
 import { Toaster } from '@enclaveid/ui/toaster';
 import { Loader2 } from 'lucide-react';
+import { getOnboardingStatus } from '../../actions/getOnboardingStatus';
+
+// Helper function to format seconds into a readable time string
+function formatTimeFromSeconds(seconds: number): string {
+  if (seconds < 60) {
+    return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+  } else {
+    const minutes = Math.ceil(seconds / 60);
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  }
+}
 
 export default function OnboardingPage() {
-  // Mock values - these would be fetched from an API in a real app
-  const queuePosition = 3;
-  const estimatedTime = '2 minutes';
+  const router = useRouter();
+  const [queuePosition, setQueuePosition] = useState<number>(0);
+  const [estimatedTimeSeconds, setEstimatedTimeSeconds] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    // Function to fetch queue status
+    const fetchQueueStatus = async () => {
+      try {
+        const status = await getOnboardingStatus();
+        if (status.success) {
+          setQueuePosition(status.queuePosition);
+          setEstimatedTimeSeconds(status.estimatedTimeSeconds);
+          
+          // If estimatedTimeSeconds is 0, redirect to dashboard
+          if (status.estimatedTimeSeconds === 0) {
+            router.push('/dashboard');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching queue status:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Fetch initially
+    fetchQueueStatus();
+
+    // Poll for updates every 30 seconds
+    const intervalId = setInterval(fetchQueueStatus, 30000);
+
+    // Clean up interval on unmount
+    return () => clearInterval(intervalId);
+  }, [router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
@@ -18,9 +63,17 @@ export default function OnboardingPage() {
         </h1>
         <div className="mb-12 flex flex-col items-center space-y-2">
           <p className="max-w-md text-center text-muted-foreground">
-            Processing data: Queue position{' '}
-            <span className="font-medium">{queuePosition}</span> • Est. time:{' '}
-            <span className="font-medium">{estimatedTime}</span>
+            {isLoading ? (
+              "Checking status..."
+            ) : queuePosition > 0 ? (
+              <>
+                Processing data: Queue position{' '}
+                <span className="font-medium">{queuePosition}</span> • Est. time:{' '}
+                <span className="font-medium">{formatTimeFromSeconds(estimatedTimeSeconds)}</span>
+              </>
+            ) : (
+              "Your data is being processed..."
+            )}
           </p>
           <p className="max-w-md text-center text-sm text-muted-foreground">
             You can complete your profile below while you wait.

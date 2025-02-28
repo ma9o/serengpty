@@ -23,12 +23,12 @@ function generatePassword(length = 24): string {
 }
 
 /**
- * OnboardingForm component wraps the ZipDropzone.
+ * ZipOnboardingForm component wraps the ZipDropzone.
  * When a file is dropped, we process it on the client side,
  * generate a password, update UI feedback statuses, and then
  * reveal a sign-up button that will handle the final sign-up with just the cleaned conversations data.
  */
-export function OnboardingForm() {
+export function ZipOnboardingForm() {
   const { toast } = useToast();
 
   const [processing, setProcessing] = useState(false);

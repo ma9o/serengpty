@@ -5,7 +5,7 @@ import { Logo } from '../../../../libs/ui/src/logo';
 import { Button } from '@enclaveid/ui/button';
 import Link from 'next/link';
 import { LandingGuidance } from './components/landing/landing-guidance';
-import { OnboardingForm } from './components/landing/onboarding-form';
+import { ZipOnboardingForm } from './components/landing/zip-onboarding-form';
 
 export default function Index() {
   return (
@@ -79,7 +79,7 @@ function Hero() {
             </p>
           </div>
 
-          <OnboardingForm />
+          <ZipOnboardingForm />
         </div>
       </div>
 
