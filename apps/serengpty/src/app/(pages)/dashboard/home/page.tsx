@@ -1,4 +1,4 @@
-import { getSerendipitousPaths } from '../../../actions/serendipitous-paths';
+import { getSerendipitousPaths } from '../../../actions/getSerendipitousPaths';
 import { SerendipitousPathsCarousel } from '../../../components/serendipitous-paths/serendipitous-paths-carousel';
 
 export default async function Page() {
