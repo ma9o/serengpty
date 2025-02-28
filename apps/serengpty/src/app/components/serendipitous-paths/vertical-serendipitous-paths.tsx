@@ -8,6 +8,10 @@ import { cn } from '@enclaveid/ui-utils';
 import { ScrollArea } from '@enclaveid/ui/scroll-area';
 import { Separator } from '@enclaveid/ui/separator';
 import { ChatButton } from '../chat/ChatButton';
+import { SerendipitousPathsResponse } from '../../types/serendipitous-paths';
+import { ScoreCircle } from './score-circle';
+import { getIdenticon } from '../../utils/getIdenticon';
+import { getCountryFlag } from '../../utils/getCountryFlag';
 
 interface VerticalSerendipitousPathsProps {
   initialData?: SerendipitousPathsResponse[];
@@ -38,8 +42,12 @@ export function VerticalSerendipitousPaths({
 
   const handleUserSelect = (index: number) => {
     setSelectedUserIndex(index);
-    // Reset the path selection when user changes
-    setSelectedPathIndex(0);
+    // Find the first path index for this user
+    const firstPathIndex = data.findIndex(
+      item => item.connectedUser.id === data[index].connectedUser.id
+    );
+    // Set to the first path for this user
+    setSelectedPathIndex(firstPathIndex !== -1 ? firstPathIndex : 0);
   };
 
   const handlePathSelect = (index: number) => {
@@ -47,7 +55,7 @@ export function VerticalSerendipitousPaths({
   };
 
   const selectedUser = data[selectedUserIndex].connectedUser;
-  const selectedPathData = data[selectedUserIndex];
+  const selectedPathData = data[selectedPathIndex];
 
   return (
     <div className="flex h-full">
@@ -58,12 +66,28 @@ export function VerticalSerendipitousPaths({
         </div>
         <ScrollArea className="h-[calc(100%-56px)]">
           <div className="p-2 space-y-2">
-            {data.map((item, index) => (
+            {/* Group data by user to prevent duplicates */}
+            {Array.from(
+              new Map(
+                data.map((item) => [item.connectedUser.id, item])
+              ).values()
+            ).map((item, index) => (
               <UserCard
                 key={item.connectedUser.id}
                 user={item.connectedUser}
-                isActive={index === selectedUserIndex}
-                onClick={() => handleUserSelect(index)}
+                score={item.averageUserScore}
+                totalPaths={item.totalUserPaths}
+                isActive={
+                  data[selectedUserIndex].connectedUser.id ===
+                  item.connectedUser.id
+                }
+                onClick={() =>
+                  handleUserSelect(
+                    data.findIndex(
+                      (d) => d.connectedUser.id === item.connectedUser.id
+                    )
+                  )
+                }
               />
             ))}
           </div>
@@ -74,17 +98,32 @@ export function VerticalSerendipitousPaths({
       <div className="w-1/3 border-r">
         <div className="p-4 border-b">
           <h2 className="text-xl font-semibold">
-            Paths with {selectedUser.name}
+            {selectedPathData.totalUserPaths > 1
+              ? `Paths with ${selectedUser.name}`
+              : `Path with ${selectedUser.name}`}
           </h2>
         </div>
         <ScrollArea className="h-[calc(100%-56px)]">
           <div className="p-2 space-y-2">
-            <PathSummaryCard
-              key={selectedPathData.path.id}
-              path={selectedPathData.path}
-              isActive={true}
-              onClick={() => {}} // Only one path per user for now
-            />
+            {/* Find all paths for the selected user */}
+            {data
+              .filter((item) => item.connectedUser.id === selectedUser.id)
+              .map((pathData, index) => {
+                // Get the actual index in the full data array
+                const dataIndex = data.findIndex(d => 
+                  d.path.id === pathData.path.id && 
+                  d.connectedUser.id === selectedUser.id
+                );
+                
+                return (
+                  <PathSummaryCard
+                    key={pathData.path.id}
+                    path={pathData.path}
+                    isActive={selectedPathIndex === dataIndex}
+                    onClick={() => handlePathSelect(dataIndex)}
+                  />
+                );
+              })}
           </div>
         </ScrollArea>
       </div>
@@ -112,10 +151,14 @@ export function VerticalSerendipitousPaths({
 // User Card Component
 function UserCard({
   user,
+  score,
+  totalPaths = 1,
   isActive = false,
   onClick,
 }: {
   user: SerendipitousPathsResponse['connectedUser'];
+  score: number;
+  totalPaths?: number;
   isActive?: boolean;
   onClick?: () => void;
 }) {
@@ -128,14 +171,26 @@ function UserCard({
       onClick={onClick}
     >
       <Avatar className={cn('h-10 w-10', isActive && 'ring-2 ring-primary')}>
-        <AvatarImage src={user.image || undefined} alt={user.name} />
+        <AvatarImage 
+          src={user.image || getIdenticon(user.id)} 
+          alt={user.name} 
+        />
         <AvatarFallback>
           {user.name.substring(0, 2).toUpperCase()}
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 overflow-hidden">
         <div className="font-medium truncate">{user.name}</div>
-        <div className="text-xs text-muted-foreground">{user.country}</div>
+        <div className="flex items-center gap-1">
+          <div className="text-xs text-muted-foreground">
+            <span className="mr-1">{getCountryFlag(user.country)}</span>
+            {user.country}
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col items-center justify-center">
+        <ScoreCircle percentage={score} size="md" label="Match" />
+        <div className="text-xs text-muted-foreground mt-1">Match</div>
       </div>
     </div>
   );
