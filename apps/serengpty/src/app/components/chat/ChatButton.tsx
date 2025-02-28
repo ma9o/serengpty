@@ -4,7 +4,6 @@ import { Button } from '@enclaveid/ui/button';
 import { ChatBubbleIcon } from '@radix-ui/react-icons';
 import { useUser } from './UserContext';
 import { useChatClient } from '../../services/streamChat';
-import { useState } from 'react';
 import { useStartChat } from './useStartChat';
 import { toast } from 'sonner';
 
@@ -26,13 +25,13 @@ export function ChatButton({
   const { userId } = useUser();
   const { client } = useChatClient(userId || '', ''); // Token will be fetched in the hook
   const { startChatWithUser, isLoading, error } = useStartChat();
-  
+
   const handleClick = async () => {
     if (!userId) {
       toast.error('You must be logged in to start a chat');
       return;
     }
-    
+
     try {
       await startChatWithUser(
         userId,
@@ -40,7 +39,7 @@ export function ChatButton({
         client,
         `Chat with ${otherUserName}`
       );
-      
+
       if (error) {
         toast.error(`Failed to start chat: ${error.message}`);
       }
@@ -49,7 +48,7 @@ export function ChatButton({
       toast.error('Failed to start a chat. Please try again.');
     }
   };
-  
+
   return (
     <Button
       variant={variant}
@@ -59,7 +58,7 @@ export function ChatButton({
       className={className}
     >
       <ChatBubbleIcon className="mr-2 h-4 w-4" />
-      {isLoading ? 'Connecting...' : 'Message'}
+      {isLoading ? 'Connecting...' : 'Message ' + otherUserName}
     </Button>
   );
 }

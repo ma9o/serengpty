@@ -35,12 +35,16 @@ model Conversation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  summary  String
-  datetime DateTime
+  uniqueSummary String
+  datetime      DateTime
 
-  // Relations to the join table
-  userPathUniqueConversations UserPath[] @relation("UniqueConversations")
-  userPathCommonConversations UserPath[] @relation("CommonConversations")
+  // If the conversation is part of the common conversations of a serendipitous path
+  serendipitousPath   SerendipitousPath? @relation(fields: [serendipitousPathId], references: [id])
+  serendipitousPathId String?
+
+  // If the conversation is part of the unique conversations of a serendipitous path
+  userPath   UserPath? @relation(fields: [userPathId], references: [id])
+  userPathId String?
 }
 
 model SerendipitousPath {
@@ -48,9 +52,12 @@ model SerendipitousPath {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  summary String
+  commonSummary String
+  score         Float
 
-  // Replace direct relation with relation through join table
+  commonConversations Conversation[]
+
+  // Through this relation, we can get the unique conversations for each user of a serendipitous path
   userPaths UserPath[]
 }
 
@@ -60,16 +67,14 @@ model UserPath {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations to User and SerendipitousPath
+  // Links user and serendipitous path
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
   path   SerendipitousPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
   pathId String
 
-  // Relations to Conversation for unique and common conversations
-  uniqueConversations Conversation[] @relation("UniqueConversations")
-  commonConversations Conversation[] @relation("CommonConversations")
+  uniqueConversations Conversation[]
 
   @@unique([userId, pathId])
 }
