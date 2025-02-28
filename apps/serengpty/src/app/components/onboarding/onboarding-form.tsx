@@ -8,7 +8,7 @@ import { Save, Shield } from 'lucide-react';
 import countries from 'i18n-iso-countries';
 import enLocale from 'i18n-iso-countries/langs/en.json';
 import { useState, useMemo, useEffect } from 'react';
-import { generateUniqueUsername } from '../../actions/validateUsername';
+import { getUniqueUsername } from '../../actions/getUniqueUsername';
 import { saveUserProfile } from '../../actions/saveUserProfile';
 import { UsernameStatus } from './username-status';
 
@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from '@enclaveid/ui/select';
 import { getIdenticon } from '../../utils/getIdenticon';
+import { ConditionalWrapper } from '../conditional-wrapper';
 
 // Initialize the countries library
 countries.registerLocale(enLocale);
@@ -81,7 +82,11 @@ const formSchema = z.object({
   sensitiveMatching: z.boolean().default(false),
 });
 
-export function OnboardingForm() {
+export interface OnboardingFormProps {
+  isPreferences?: boolean;
+}
+
+export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
   const { toast } = useToast();
   const [countrySearch, setCountrySearch] = useState('');
   const [isUsernameValid, setIsUsernameValid] = useState(true);
@@ -110,7 +115,7 @@ export function OnboardingForm() {
   useEffect(() => {
     async function fetchUniqueUsername() {
       try {
-        const username = await generateUniqueUsername();
+        const username = await getUniqueUsername();
         form.setValue('username', username);
         setIsUsernameValid(true);
       } catch (error) {
@@ -145,24 +150,34 @@ export function OnboardingForm() {
 
       if (result.success) {
         toast({
-          title: 'Profile saved!',
-          description: 'Your profile has been created successfully.',
+          title: isPreferences ? 'Preferences saved!' : 'Profile saved!',
+          description: isPreferences
+            ? 'Your preferences have been updated successfully.'
+            : 'Your profile has been created successfully.',
           duration: 3000,
         });
       } else {
         toast({
           title: 'Error',
           description:
-            result.message || 'Failed to save your profile. Please try again.',
+            result.message ||
+            `Failed to save your ${
+              isPreferences ? 'preferences' : 'profile'
+            }. Please try again.`,
           variant: 'destructive',
           duration: 3000,
         });
       }
     } catch (error) {
-      console.error('Error saving profile:', error);
+      console.error(
+        `Error saving ${isPreferences ? 'preferences' : 'profile'}:`,
+        error
+      );
       toast({
         title: 'Error',
-        description: 'Failed to save your profile. Please try again.',
+        description: `Failed to save your ${
+          isPreferences ? 'preferences' : 'profile'
+        }. Please try again.`,
         variant: 'destructive',
         duration: 3000,
       });
@@ -172,7 +187,10 @@ export function OnboardingForm() {
   return (
     <div className="w-full max-w-xl mx-auto">
       {/* User profile form */}
-      <Card className="p-6">
+      <ConditionalWrapper
+        condition={!isPreferences}
+        wrapper={(children) => <Card className="p-6">{children}</Card>}
+      >
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Avatar/Identicon */}
@@ -297,11 +315,11 @@ export function OnboardingForm() {
             {/* Save button */}
             <Button type="submit" className="w-full">
               <Save className="mr-2 h-4 w-4" />
-              Save Profile
+              {isPreferences ? 'Save Preferences' : 'Save Profile'}
             </Button>
           </form>
         </Form>
-      </Card>
+      </ConditionalWrapper>
     </div>
   );
 }

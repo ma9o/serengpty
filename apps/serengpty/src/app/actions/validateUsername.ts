@@ -1,9 +1,8 @@
 'use server';
 
 import { z } from 'zod';
-import { generateUsername } from 'unique-username-generator';
 import { prisma } from '../services/db/prisma';
-
+import { getCurrentUser } from './getCurrentUser';
 // Validation schema for username
 const usernameSchema = z
   .string()
@@ -20,6 +19,14 @@ export async function validateUsername(username: string): Promise<{
   isValid: boolean;
   message?: string;
 }> {
+  const currentUser = await getCurrentUser();
+
+  if (currentUser?.name === username) {
+    return {
+      isValid: true,
+    };
+  }
+
   try {
     // Validate the username format
     const validationResult = usernameSchema.safeParse(username);
@@ -52,5 +59,3 @@ export async function validateUsername(username: string): Promise<{
     };
   }
 }
-
-

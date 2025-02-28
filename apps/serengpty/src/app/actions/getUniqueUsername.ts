@@ -1,10 +1,8 @@
 import { generateUsername } from 'unique-username-generator';
 import { validateUsername } from './validateUsername';
+import { getCurrentUser } from './getCurrentUser';
 
-/**
- * Generates a unique username
- */
-export async function generateUniqueUsername(): Promise<string> {
+async function generateUniqueUsername() {
   // Using unique-username-generator library to generate usernames
   // Attempt to generate a unique username up to 5 times
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -20,4 +18,16 @@ export async function generateUniqueUsername(): Promise<string> {
 
   // If all attempts fail, generate a random username with timestamp
   return `user_${Date.now().toString(36)}`;
+}
+/**
+ * Generates a unique username
+ */
+export async function getUniqueUsername(): Promise<string> {
+  const currentUser = await getCurrentUser();
+
+  if (currentUser) {
+    return currentUser.name || generateUniqueUsername();
+  } else {
+    return generateUniqueUsername();
+  }
 }

@@ -27,7 +27,7 @@ export default function OnboardingPage() {
           </p>
         </div>
 
-        <OnboardingForm />
+        <OnboardingForm isPreferences={false} />
 
         <Toaster />
       </div>

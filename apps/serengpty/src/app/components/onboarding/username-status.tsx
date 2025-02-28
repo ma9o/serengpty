@@ -11,8 +11,14 @@ interface UsernameStatusProps {
   setIsValid: (isValid: boolean) => void;
 }
 
-export function UsernameStatus({ username, isValid, setIsValid }: UsernameStatusProps) {
-  const [validationState, setValidationState] = useState<'idle' | 'loading' | 'valid' | 'invalid'>('idle');
+export function UsernameStatus({
+  username,
+  isValid,
+  setIsValid,
+}: UsernameStatusProps) {
+  const [validationState, setValidationState] = useState<
+    'idle' | 'loading' | 'valid' | 'invalid'
+  >('idle');
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
   const debouncedValidation = useDebouncedCallback(async (value: string) => {
@@ -23,7 +29,7 @@ export function UsernameStatus({ username, isValid, setIsValid }: UsernameStatus
     }
 
     setValidationState('loading');
-    
+
     try {
       const result = await validateUsername(value);
       if (result.isValid) {
@@ -45,7 +51,7 @@ export function UsernameStatus({ username, isValid, setIsValid }: UsernameStatus
 
   useEffect(() => {
     debouncedValidation(username);
-    
+
     return () => {
       debouncedValidation.cancel();
     };
@@ -63,18 +69,20 @@ export function UsernameStatus({ username, isValid, setIsValid }: UsernameStatus
           <span className="text-xs">Checking availability...</span>
         </div>
       )}
-      
+
       {validationState === 'valid' && (
         <div className="flex items-center text-green-500">
           <CheckCircle className="h-4 w-4 mr-1" />
           <span className="text-xs">Username available</span>
         </div>
       )}
-      
+
       {validationState === 'invalid' && (
         <div className="flex items-center text-red-500">
           <XCircle className="h-4 w-4 mr-1" />
-          <span className="text-xs">{errorMessage || 'Username unavailable'}</span>
+          <span className="text-xs">
+            {errorMessage || 'Username unavailable'}
+          </span>
         </div>
       )}
     </div>

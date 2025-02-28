@@ -4,7 +4,7 @@ import { prisma } from '../../../services/db/prisma';
 import { azureContainerClient } from '../../../services/azure/storage';
 import path from 'path';
 import fs from 'fs';
-import { generateUniqueUsername } from '../../../actions/generateUniqueUsername';
+import { getUniqueUsername } from '../../../actions/getUniqueUsername';
 
 /**
  * Anonymous user signup API endpoint
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 10);
 
     // Generate a unique name using the existing function
-    const name = await generateUniqueUsername();
+    const name = await getUniqueUsername();
 
     // Create anonymous user with password hash and generated name
     const user = await prisma.user.create({
