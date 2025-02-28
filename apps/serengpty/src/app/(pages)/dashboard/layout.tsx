@@ -8,7 +8,11 @@ import {
 } from '@enclaveid/ui/sidebar';
 import { LogoutButton } from '../../components/logout-button';
 import { DashboardBreadcrumb } from '../../components/dashboard-breadcrumb';
-import { CodeIcon, HomeIcon, Share1Icon } from '@radix-ui/react-icons';
+import {
+  HomeIcon,
+  ChatBubbleIcon,
+  MixerHorizontalIcon,
+} from '@radix-ui/react-icons';
 
 const sidebarItems = {
   navMain: [
@@ -21,9 +25,9 @@ const sidebarItems = {
           icon: <HomeIcon />,
         },
         {
-          title: 'Graph',
-          url: '/dashboard/graph',
-          icon: <Share1Icon />,
+          title: 'Chats',
+          url: '/dashboard/chats',
+          icon: <ChatBubbleIcon />,
         },
       ],
     },
@@ -31,9 +35,9 @@ const sidebarItems = {
       title: 'Settings',
       items: [
         {
-          title: 'API Keys',
-          url: '/dashboard/api-keys',
-          icon: <CodeIcon />,
+          title: 'Preferences',
+          url: '/dashboard/preferences',
+          icon: <MixerHorizontalIcon />,
         },
         // {
         //   title: 'Data sources',
