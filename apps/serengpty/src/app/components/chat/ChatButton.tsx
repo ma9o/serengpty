@@ -22,8 +22,8 @@ export function ChatButton({
   size = 'sm',
   className,
 }: ChatButtonProps) {
-  const { userId } = useUser();
-  const { client } = useChatClient(userId || '', ''); // Token will be fetched in the hook
+  const { userId, userToken } = useUser();
+  const { client } = useChatClient(userId, userToken);
   const { startChatWithUser, isLoading, error } = useStartChat();
 
   const handleClick = async () => {
