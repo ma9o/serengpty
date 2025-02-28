@@ -4,10 +4,12 @@ import { StreamChat } from 'stream-chat';
 import { getCurrentUser } from './getCurrentUser';
 
 // This should be moved to environment variables
-const API_KEY = process.env.STREAM_CHAT_API_KEY;
+const API_KEY = process.env.NEXT_PUBLIC_STREAM_CHAT_API_KEY;
 const API_SECRET = process.env.STREAM_CHAT_API_SECRET;
 
-export async function getChatToken(): Promise<{token: string} | {error: string}> {
+export async function getChatToken(): Promise<
+  { token: string } | { error: string }
+> {
   try {
     // Get current user from session
     const user = await getCurrentUser();
