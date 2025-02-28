@@ -15,10 +15,8 @@ model User {
   passwordHash String?
 
   username          String  @unique
-  country           String?
+  country           String  @default("INTERNET")
   sensitiveMatching Boolean @default(false)
-
-  apiKeys ApiKey[]
 
   // Auth.js fields
   emailVerified DateTime?
@@ -28,18 +26,52 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  userPaths UserPath[]
 }
 
-model ApiKey {
-  id String @id @default(cuid())
-
-  key String @unique @default(dbgenerated("encode(sha256(random()::text::bytea), 'hex')")) @db.Char(64)
-
+model Conversation {
+  id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  summary  String
+  datetime DateTime
+
+  // Relations to the join table
+  userPathUniqueConversations UserPath[] @relation("UniqueConversations")
+  userPathCommonConversations UserPath[] @relation("CommonConversations")
+}
+
+model SerendipitousPath {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  summary String
+
+  // Replace direct relation with relation through join table
+  userPaths UserPath[]
+}
+
+// New join table between User and SerendipitousPath
+model UserPath {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations to User and SerendipitousPath
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
+
+  path   SerendipitousPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  pathId String
+
+  // Relations to Conversation for unique and common conversations
+  uniqueConversations Conversation[] @relation("UniqueConversations")
+  commonConversations Conversation[] @relation("CommonConversations")
+
+  @@unique([userId, pathId])
 }
 
 // -------------------- Auth.js models --------------------
