@@ -21,7 +21,7 @@ import { Badge } from '@enclaveid/ui/badge';
 import { Skeleton } from '@enclaveid/ui/skeleton';
 import { Button } from '@enclaveid/ui/button';
 import { cn } from '@enclaveid/ui-utils';
-import { type SerendipitousPathsResponse } from '../../types/serendipitous-paths';
+import { ChatButton } from '../chat/ChatButton';
 
 interface SerendipitousPathsCarouselProps {
   initialData?: SerendipitousPathsResponse[];
@@ -212,6 +212,7 @@ function PathDetailsCarousel({
 }
 
 // User Card Component
+
 function UserCard({
   user,
   pathSummary,
@@ -223,13 +224,20 @@ function UserCard({
   isActive?: boolean;
   onClick?: () => void;
 }) {
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Only trigger the card click if the click was not on the chat button
+    if (!(e.target as HTMLElement).closest('button')) {
+      onClick?.();
+    }
+  };
+
   return (
     <Card
       className={cn(
         'h-full transition-all cursor-pointer hover:border-primary',
         isActive && 'border-primary ring-2 ring-primary ring-opacity-50'
       )}
-      onClick={onClick}
+      onClick={handleCardClick}
     >
       <CardHeader className="flex flex-row items-center gap-4">
         <Avatar className={cn('h-16 w-16', isActive && 'ring-2 ring-primary')}>
@@ -250,9 +258,12 @@ function UserCard({
         <p className="font-medium">{pathSummary}</p>
       </CardContent>
       <CardFooter className="flex justify-end">
-        <Button variant={isActive ? 'default' : 'outline'} size="sm">
-          {isActive ? 'Selected' : 'View Details'}
-        </Button>
+        <ChatButton 
+          otherUserId={user.id} 
+          otherUserName={user.name} 
+          variant={isActive ? 'default' : 'outline'} 
+          size="sm"
+        />
       </CardFooter>
     </Card>
   );
