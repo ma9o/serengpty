@@ -17,7 +17,7 @@ const seed = async (prisma: PrismaClient): Promise<string[]> => {
       id: 'cm0i27jdj0000aqpa73ghpcxf',
       name: 'giovanni',
       country: 'IT', // Italy - Using ISO country code
-      passwordHash: await bcrypt.hash('securePassword123', 10),
+      passwordHash: await bcrypt.hash('securePassword1', 10),
     },
   });
 
@@ -28,6 +28,7 @@ const seed = async (prisma: PrismaClient): Promise<string[]> => {
       email: 'alice@example.com',
       name: 'alice',
       country: 'US', // USA - Using ISO country code
+      passwordHash: await bcrypt.hash('securePassword2', 10),
     },
   });
 

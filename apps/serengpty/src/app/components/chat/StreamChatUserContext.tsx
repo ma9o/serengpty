@@ -7,7 +7,7 @@ import {
   useState,
   ReactNode,
 } from 'react';
-import { getTestToken } from '../../services/streamChat';
+import { getTestToken, registerNotificationCallback } from '../../services/streamChat';
 import { getCurrentUser } from '../../actions/getCurrentUser';
 import { getChatToken } from '../../actions/getChatToken';
 
@@ -16,6 +16,8 @@ interface StreamChatUserContextType {
   userToken: string | null;
   isLoading: boolean;
   error: Error | null;
+  unreadCount: number;
+  setUnreadCount: (count: number) => void;
 }
 
 const StreamChatUserContext = createContext<StreamChatUserContextType>({
@@ -23,6 +25,8 @@ const StreamChatUserContext = createContext<StreamChatUserContextType>({
   userToken: null,
   isLoading: true,
   error: null,
+  unreadCount: 0,
+  setUnreadCount: () => {},
 });
 
 export const useStreamChatUser = () => useContext(StreamChatUserContext);
@@ -36,6 +40,19 @@ export const StreamChatUserProvider = ({ children }: StreamChatUserProviderProps
   const [userToken, setUserToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  
+  // Register for notification updates
+  useEffect(() => {
+    const unregister = registerNotificationCallback((count) => {
+      setUnreadCount(count);
+    });
+    
+    // Clean up on unmount
+    return () => {
+      unregister();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -94,7 +111,14 @@ export const StreamChatUserProvider = ({ children }: StreamChatUserProviderProps
   }, []);
 
   return (
-    <StreamChatUserContext.Provider value={{ userId, userToken, isLoading, error }}>
+    <StreamChatUserContext.Provider value={{ 
+      userId, 
+      userToken, 
+      isLoading, 
+      error,
+      unreadCount,
+      setUnreadCount
+    }}>
       {children}
     </StreamChatUserContext.Provider>
   );

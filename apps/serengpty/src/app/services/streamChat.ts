@@ -10,6 +10,10 @@ const API_KEY = process.env.NEXT_PUBLIC_STREAM_CHAT_API_KEY!;
 // for use throughout the application
 let chatClient: StreamChat | undefined;
 
+// Global event listeners for notification tracking
+let isListening = false;
+let notificationCallbacks: ((count: number) => void)[] = [];
+
 export const useChatClient = (userId?: string, userToken?: string) => {
   const [client, setClient] = useState<StreamChat | undefined>();
   const [isLoading, setIsLoading] = useState(true);
@@ -59,6 +63,11 @@ export const useChatClient = (userId?: string, userToken?: string) => {
 
         // Update the state with connected client
         setClient(chatClient);
+
+        // Set up global notification listeners if not already listening
+        if (!isListening && chatClient) {
+          setupNotificationListeners(chatClient);
+        }
       } catch (error) {
         if (error instanceof Error) {
           setError(error);
@@ -88,6 +97,57 @@ export const useChatClient = (userId?: string, userToken?: string) => {
 
 // Function to generate a token for testing
 // In production, tokens should be generated server-side
+// Set up global notification listeners
+function setupNotificationListeners(client: StreamChat) {
+  if (isListening) return;
+  
+  const updateNotifications = async () => {
+    if (!client) return;
+    
+    try {
+      // Get unread count from the client
+      const unreadData = await client.getUnreadCount();
+      const totalUnread = unreadData.total_unread_count || 0;
+      
+      // Notify all registered callbacks
+      notificationCallbacks.forEach(callback => callback(totalUnread));
+    } catch (err) {
+      console.error('Error getting unread count:', err);
+    }
+  };
+  
+  // Set up event listeners for notifications
+  client.on('notification.message_new', updateNotifications);
+  client.on('notification.mark_read', updateNotifications);
+  client.on('channel.truncated', updateNotifications);
+  
+  // Do initial update
+  updateNotifications();
+  
+  // Mark as listening
+  isListening = true;
+}
+
+// Register to listen for notification updates
+export function registerNotificationCallback(callback: (count: number) => void) {
+  notificationCallbacks.push(callback);
+  
+  // If we already have a client and it's connected, update immediately
+  if (chatClient && chatClient.userID) {
+    chatClient.getUnreadCount().then(data => {
+      const count = data.total_unread_count || 0;
+      callback(count);
+    }).catch(err => {
+      console.error('Error getting initial unread count:', err);
+    });
+  }
+  
+  // Return function to unregister
+  return () => {
+    notificationCallbacks = notificationCallbacks.filter(cb => cb !== callback);
+  };
+}
+
 export const getTestToken = (userId: string) => {
   if (!chatClient) {
     chatClient = StreamChat.getInstance(API_KEY);
