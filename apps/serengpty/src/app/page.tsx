@@ -171,7 +171,7 @@ function PrivacySection() {
             {/* Open Source */}
             <div>
               <h3 className="text-xl font-bold text-brand mb-2">
-                As anonymous as you're comfortable with
+                As anonymous as you&apos;re comfortable with
               </h3>
               <p className="text-gray-700">
                 Every single component of EnclaveID is publicly available on
@@ -202,7 +202,7 @@ function PrivacySection() {
                 Zero Trust Infrastructure [coming soon!]
               </h3>
               <p className="text-content-secondary">
-                EnclaveID runs on AMD SEV-SNP capable hardware – hence "enclave"
+                EnclaveID runs on AMD SEV-SNP capable hardware – hence &quot;enclave&quot;
                 in the name – which guarantees that your data is inaccessible by
                 any other software or human (except you), even by the
                 infrastructure provider!

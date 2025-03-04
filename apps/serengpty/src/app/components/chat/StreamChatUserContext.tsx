@@ -33,9 +33,9 @@ const StreamChatUserContext = createContext<StreamChatUserContextType>({
   isLoading: true,
   error: null,
   unreadCount: 0,
-  setUnreadCount: () => {},
+  setUnreadCount: (count: number) => { /* Implementation to be added */ },
   activeChannelId: null,
-  setActiveChannelId: () => {},
+  setActiveChannelId: (channelId: string) => { /* Implementation to be added */ },
 });
 
 export const useStreamChatUser = () => useContext(StreamChatUserContext);

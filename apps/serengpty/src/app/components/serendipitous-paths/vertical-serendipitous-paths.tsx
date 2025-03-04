@@ -291,7 +291,7 @@ function PathDetails({ pathData }: { pathData: SerendipitousPathsResponse }) {
 
       <div>
         <h3 className="text-lg font-medium mb-2">
-          {pathData.connectedUser.name}'s Unique Interests
+          {pathData.connectedUser.name}&apos;s Unique Interests
         </h3>
         <div className="space-y-3">
           {pathData.connectedUserUniqueConversations.length > 0 ? (
@@ -360,21 +360,7 @@ function LoadingState() {
                   <Skeleton className="h-3 w-full" />
                 </div>
 
-                {/* None expanded by default */}
-                {false && (
-                  <div className="mt-2 p-4 rounded-lg border space-y-6">
-                    <div className="space-y-2">
-                      <Skeleton className="h-5 w-32" />
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-5/6" />
-                    </div>
-                    <Skeleton className="h-1 w-full" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-5 w-32" />
-                      <Skeleton className="h-24 w-full" />
-                    </div>
-                  </div>
-                )}
+                {/* Expanded view removed */}
               </div>
             ))}
         </div>
@@ -407,7 +393,7 @@ function EmptyState() {
       <div className="bg-muted p-8 rounded-xl text-center max-w-md">
         <h3 className="text-xl font-bold mb-2">No Connections Found</h3>
         <p className="text-muted-foreground mb-6">
-          You don't have any serendipitous connections yet. Keep using the
+          You don&apos;t have any serendipitous connections yet. Keep using the
           platform to discover people with similar interests.
         </p>
         <Button variant="default">Explore Topics</Button>

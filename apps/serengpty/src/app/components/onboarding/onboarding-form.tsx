@@ -271,7 +271,7 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Select the country you're based in.
+                    Select the country you&apos;re based in.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

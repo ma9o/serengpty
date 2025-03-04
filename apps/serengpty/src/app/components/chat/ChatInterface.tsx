@@ -54,7 +54,8 @@ const CustomAvatar = (props: any) => {
 };
 
 export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
-  const { userId, activeChannelId: contextActiveChannelId } = useStreamChatUser();
+  const { userId, activeChannelId: contextActiveChannelId } =
+    useStreamChatUser();
   const [activeChannel, setActiveChannel] = useState<string | undefined>(
     activeChannelId || contextActiveChannelId
   );
@@ -69,7 +70,7 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
       }
     }
   }, []);
-  
+
   // Update from context if it changes
   useEffect(() => {
     if (contextActiveChannelId) {

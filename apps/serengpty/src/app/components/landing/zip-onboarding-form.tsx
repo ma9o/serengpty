@@ -190,10 +190,15 @@ export function ZipOnboardingForm() {
             {processing ? (
               <div className="w-full mb-8 md:mb-0 border-2 border-dashed border-gray-300 p-6 rounded-lg flex flex-col items-center justify-center text-center">
                 <div className="flex flex-col items-center">
-                  <Icon icon="mage:robot-happy" width="24" height="24" className="mb-2" />
+                  <Icon
+                    icon="mage:robot-happy"
+                    width="24"
+                    height="24"
+                    className="mb-2"
+                  />
                   <div className="flex items-center">
                     <Loader2 className="animate-spin mr-2" size={16} />
-                    <span className="">We're anonymizing the data...</span>
+                    <span className="">We&apos;re anonymizing the data...</span>
                   </div>
                 </div>
               </div>
