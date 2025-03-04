@@ -27,7 +27,7 @@ export function VerticalSerendipitousPaths({
   const [error] = useState<string | null>(initialError);
   const [data] = useState<SerendipitousPathsResponse[]>(initialData);
   const [selectedUserIndex, setSelectedUserIndex] = useState(0);
-  const [selectedPathIndex, setSelectedPathIndex] = useState<number | null>(null);
+  const [selectedPathId, setSelectedPathId] = useState<string | null>(null);
 
   if (loading) {
     return <LoadingState />;
@@ -44,11 +44,11 @@ export function VerticalSerendipitousPaths({
   const handleUserSelect = (index: number) => {
     setSelectedUserIndex(index);
     // Reset the selected path when changing users
-    setSelectedPathIndex(null);
+    setSelectedPathId(null);
   };
 
-  const handlePathSelect = (index: number) => {
-    setSelectedPathIndex(index);
+  const handlePathSelect = (pathId: string | null) => {
+    setSelectedPathId(pathId);
   };
 
   const selectedUser = data[selectedUserIndex].connectedUser;
@@ -113,38 +113,26 @@ export function VerticalSerendipitousPaths({
           <div className="p-2">
             <Accordion 
               type="single" 
-              collapsible 
-              defaultValue={undefined}
-              value={selectedPathIndex !== null ? selectedPathIndex.toString() : undefined}
+              collapsible
+              value={selectedPathId}
               onValueChange={(value) => {
-                if (value) {
-                  handlePathSelect(parseInt(value));
-                } else {
-                  setSelectedPathIndex(null);
-                }
+                handlePathSelect(value || null);
               }}
               className="space-y-2"
             >
               {/* Find all paths for the selected user and display as accordions */}
               {data
                 .filter((item) => item.connectedUser.id === selectedUser.id)
-                .map((pathData, index) => {
-                  // Get the actual index in the full data array
-                  const dataIndex = data.findIndex(
-                    (d) =>
-                      d.path.id === pathData.path.id &&
-                      d.connectedUser.id === selectedUser.id
-                  );
-
+                .map((pathData) => {
                   return (
                     <AccordionItem 
                       key={pathData.path.id} 
-                      value={dataIndex.toString()}
+                      value={pathData.path.id}
                       className="border rounded-lg overflow-hidden shadow-sm"
                     >
                       <div className={cn(
                         "bg-background rounded-lg hover:bg-muted/50 transition-colors",
-                        selectedPathIndex === dataIndex && "bg-muted/50"
+                        selectedPathId === pathData.path.id && "bg-muted/50"
                       )}>
                         <AccordionTrigger className="px-3 py-3 hover:no-underline rounded-lg focus:outline-none">
                           <div className="w-full text-left">
@@ -156,7 +144,6 @@ export function VerticalSerendipitousPaths({
 
                       <AccordionContent 
                         className="px-4 pt-2 pb-4 border-t transition-all"
-                        forceMount
                       >
                         <PathDetails pathData={pathData} />
                       </AccordionContent>
