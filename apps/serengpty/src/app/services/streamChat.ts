@@ -15,9 +15,9 @@ let isListening = false;
 let notificationCallbacks: ((count: number) => void)[] = [];
 
 export const useChatClient = (
-  userId?: string,
-  userToken?: string,
-  userName?: string
+  userId: string,
+  userToken: string,
+  userName: string
 ) => {
   const [client, setClient] = useState<StreamChat | undefined>();
   const [isLoading, setIsLoading] = useState(true);
@@ -60,6 +60,7 @@ export const useChatClient = (
         await chatClient!.connectUser(
           {
             id: userId,
+            name: userName,
           },
           userToken
         );

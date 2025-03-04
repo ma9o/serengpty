@@ -9,15 +9,21 @@ import 'stream-chat-react/dist/css/v2/index.css';
 interface ChatProviderProps {
   userId: string;
   userToken: string;
+  userName: string;
   children: ReactNode;
 }
 
 export const ChatProvider = ({
   userId,
   userToken,
+  userName,
   children,
 }: ChatProviderProps) => {
-  const { client, isLoading, error } = useChatClient(userId, userToken);
+  const { client, isLoading, error } = useChatClient(
+    userId,
+    userToken,
+    userName
+  );
 
   if (error) {
     return (

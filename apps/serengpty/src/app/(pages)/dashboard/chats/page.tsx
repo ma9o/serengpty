@@ -6,7 +6,7 @@ import { ChatInterface } from '../../../components/chat/ChatInterface';
 
 // Wrapper component that handles the user authentication and chat initialization
 const ChatApp = () => {
-  const { userId, userToken, isLoading, error } = useStreamChatUser();
+  const { userId, userToken, userName, isLoading, error } = useStreamChatUser();
 
   if (isLoading) {
     return (
@@ -17,7 +17,7 @@ const ChatApp = () => {
     );
   }
 
-  if (error || !userId || !userToken) {
+  if (error || !userId || !userToken || !userName) {
     return (
       <div className="flex h-full flex-col items-center justify-center p-4">
         <h2 className="text-xl font-semibold text-red-500">
@@ -31,7 +31,7 @@ const ChatApp = () => {
   }
 
   return (
-    <ChatProvider userId={userId} userToken={userToken}>
+    <ChatProvider userId={userId} userToken={userToken} userName={userName}>
       <ChatInterface />
     </ChatProvider>
   );

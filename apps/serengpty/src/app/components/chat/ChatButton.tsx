@@ -22,8 +22,8 @@ export function ChatButton({
   size = 'sm',
   className,
 }: ChatButtonProps) {
-  const { userId, userToken } = useStreamChatUser();
-  const { client } = useChatClient(userId, userToken);
+  const { userId, userToken, userName } = useStreamChatUser();
+  const { client } = useChatClient(userId, userToken, userName);
   const { startChatWithUser, isLoading, error } = useStartChat();
 
   const handleClick = async () => {
@@ -46,7 +46,12 @@ export function ChatButton({
     try {
       console.log('Starting chat with:', { userId, otherUserId });
 
-      const result = await startChatWithUser(userId, otherUserId, client, otherUserName);
+      const result = await startChatWithUser(
+        userId,
+        otherUserId,
+        client,
+        otherUserName
+      );
 
       if (!result) {
         toast.error(`Failed to start chat${error ? `: ${error.message}` : ''}`);

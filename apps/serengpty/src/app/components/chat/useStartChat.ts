@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { StreamChat } from 'stream-chat';
+import { useStreamChatUser } from './StreamChatUserContext';
 
 export const useStartChat = () => {
   const router = useRouter();
+  const { setActiveChannelId } = useStreamChatUser();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -31,6 +33,11 @@ export const useStartChat = () => {
       });
 
       await channel.watch();
+
+      // Set active channel in context immediately
+      if (channel.id) {
+        setActiveChannelId(channel.id);
+      }
 
       // Navigate to the chat page with the specific channel ID
       router.push(`/dashboard/chats?cid=${encodeURIComponent(channel.id)}`);

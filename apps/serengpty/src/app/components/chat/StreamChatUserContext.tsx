@@ -17,19 +17,25 @@ import { getChatToken } from '../../actions/getChatToken';
 interface StreamChatUserContextType {
   userId: string | null;
   userToken: string | null;
+  userName: string | null;
   isLoading: boolean;
   error: Error | null;
   unreadCount: number;
   setUnreadCount: (count: number) => void;
+  activeChannelId: string | null;
+  setActiveChannelId: (channelId: string) => void;
 }
 
 const StreamChatUserContext = createContext<StreamChatUserContextType>({
   userId: null,
   userToken: null,
+  userName: null,
   isLoading: true,
   error: null,
   unreadCount: 0,
   setUnreadCount: () => {},
+  activeChannelId: null,
+  setActiveChannelId: () => {},
 });
 
 export const useStreamChatUser = () => useContext(StreamChatUserContext);
@@ -46,6 +52,8 @@ export const StreamChatUserProvider = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
   // Register for notification updates
   useEffect(() => {
@@ -92,6 +100,7 @@ export const StreamChatUserProvider = ({
 
         setUserId(user.id);
         setUserToken(token);
+        setUserName(user.name || null);
       } catch (err) {
         console.error('Error fetching user:', err);
         setError(
@@ -110,10 +119,13 @@ export const StreamChatUserProvider = ({
       value={{
         userId,
         userToken,
+        userName,
         isLoading,
         error,
         unreadCount,
         setUnreadCount,
+        activeChannelId,
+        setActiveChannelId,
       }}
     >
       {children}
