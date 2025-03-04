@@ -12,6 +12,7 @@ import { SerendipitousPathsResponse } from '../../types/serendipitous-paths';
 import { ScoreCircle } from './score-circle';
 import { getIdenticon } from '../../utils/getIdenticon';
 import { getCountryFlag } from '../../utils/getCountryFlag';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@enclaveid/ui/accordion';
 
 interface VerticalSerendipitousPathsProps {
   initialData?: SerendipitousPathsResponse[];
@@ -26,7 +27,7 @@ export function VerticalSerendipitousPaths({
   const [error, setError] = useState<string | null>(initialError);
   const [data, setData] = useState<SerendipitousPathsResponse[]>(initialData);
   const [selectedUserIndex, setSelectedUserIndex] = useState(0);
-  const [selectedPathIndex, setSelectedPathIndex] = useState(0);
+  const [selectedPathIndex, setSelectedPathIndex] = useState<number | null>(null);
 
   if (loading) {
     return <LoadingState />;
@@ -42,12 +43,8 @@ export function VerticalSerendipitousPaths({
 
   const handleUserSelect = (index: number) => {
     setSelectedUserIndex(index);
-    // Find the first path index for this user
-    const firstPathIndex = data.findIndex(
-      (item) => item.connectedUser.id === data[index].connectedUser.id
-    );
-    // Set to the first path for this user
-    setSelectedPathIndex(firstPathIndex !== -1 ? firstPathIndex : 0);
+    // Reset the selected path when changing users
+    setSelectedPathIndex(null);
   };
 
   const handlePathSelect = (index: number) => {
@@ -55,7 +52,11 @@ export function VerticalSerendipitousPaths({
   };
 
   const selectedUser = data[selectedUserIndex].connectedUser;
-  const selectedPathData = data[selectedPathIndex];
+  // For header display, use the first path data for this user
+  const userPathsData = data.filter(item => item.connectedUser.id === selectedUser.id);
+  const headerPathData = userPathsData[0];
+  // For content, use the selected path data or undefined if nothing selected
+  const selectedPathData = selectedPathIndex !== null ? data[selectedPathIndex] : undefined;
 
   return (
     <div className="flex h-full">
@@ -94,45 +95,14 @@ export function VerticalSerendipitousPaths({
         </ScrollArea>
       </div>
 
-      {/* Second Section - Path Summaries */}
-      <div className="w-1/3 border-r">
-        <div className="p-4 border-b">
+      {/* Combined Section (2+3) - Path Summaries as accordions with Path Details */}
+      <div className="flex-1">
+        <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-semibold">
-            {selectedPathData.totalUserPaths > 1
+            {headerPathData.totalUserPaths > 1
               ? `Paths with ${selectedUser.name}`
               : `Path with ${selectedUser.name}`}
           </h2>
-        </div>
-        <ScrollArea className="h-[calc(100%-56px)]">
-          <div className="p-2 space-y-2">
-            {/* Find all paths for the selected user */}
-            {data
-              .filter((item) => item.connectedUser.id === selectedUser.id)
-              .map((pathData, index) => {
-                // Get the actual index in the full data array
-                const dataIndex = data.findIndex(
-                  (d) =>
-                    d.path.id === pathData.path.id &&
-                    d.connectedUser.id === selectedUser.id
-                );
-
-                return (
-                  <PathSummaryCard
-                    key={pathData.path.id}
-                    path={pathData.path}
-                    isActive={selectedPathIndex === dataIndex}
-                    onClick={() => handlePathSelect(dataIndex)}
-                  />
-                );
-              })}
-          </div>
-        </ScrollArea>
-      </div>
-
-      {/* Third Section - Path Details */}
-      <div className="w-5/12">
-        <div className="p-4 border-b flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Path Details</h2>
           <ChatButton
             otherUserId={selectedUser.id}
             otherUserName={selectedUser.name}
@@ -141,8 +111,62 @@ export function VerticalSerendipitousPaths({
             className="flex items-center"
           ></ChatButton>
         </div>
-        <ScrollArea className="h-[calc(100%-56px)] p-4">
-          <PathDetails pathData={selectedPathData} />
+        <ScrollArea className="h-[calc(100%-56px)]">
+          <div className="p-2">
+            <Accordion 
+              type="single" 
+              collapsible 
+              defaultValue={undefined}
+              value={selectedPathIndex !== null ? selectedPathIndex.toString() : undefined}
+              onValueChange={(value) => {
+                if (value) {
+                  handlePathSelect(parseInt(value));
+                } else {
+                  setSelectedPathIndex(null);
+                }
+              }}
+              className="space-y-2"
+            >
+              {/* Find all paths for the selected user and display as accordions */}
+              {data
+                .filter((item) => item.connectedUser.id === selectedUser.id)
+                .map((pathData, index) => {
+                  // Get the actual index in the full data array
+                  const dataIndex = data.findIndex(
+                    (d) =>
+                      d.path.id === pathData.path.id &&
+                      d.connectedUser.id === selectedUser.id
+                  );
+
+                  return (
+                    <AccordionItem 
+                      key={pathData.path.id} 
+                      value={dataIndex.toString()}
+                      className="border rounded-lg overflow-hidden shadow-sm"
+                    >
+                      <div className={cn(
+                        "bg-background rounded-lg hover:bg-muted/50 transition-colors",
+                        selectedPathIndex === dataIndex && "bg-muted/50"
+                      )}>
+                        <AccordionTrigger className="px-3 py-3 hover:no-underline rounded-lg focus:outline-none">
+                          <div className="w-full text-left">
+                            <div className="font-medium mb-1">Connection</div>
+                            <div className="text-sm text-muted-foreground">{pathData.path.summary}</div>
+                          </div>
+                        </AccordionTrigger>
+                      </div>
+
+                      <AccordionContent 
+                        className="px-4 pt-2 pb-4 border-t transition-all"
+                        forceMount
+                      >
+                        <PathDetails pathData={pathData} />
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+            </Accordion>
+          </div>
         </ScrollArea>
       </div>
     </div>
@@ -197,7 +221,8 @@ function UserCard({
   );
 }
 
-// Path Summary Card Component
+// This component is no longer used as we've integrated it directly into the accordion
+// Keeping it for reference
 function PathSummaryCard({
   path,
   isActive = false,
@@ -301,7 +326,7 @@ function LoadingState() {
   return (
     <div className="flex h-full">
       {/* First column loading */}
-      <div className="w-1/4 border-r">
+      <div className="w-1/6 border-r">
         <div className="p-4 border-b">
           <Skeleton className="h-7 w-40" />
         </div>
@@ -320,8 +345,8 @@ function LoadingState() {
         </div>
       </div>
 
-      {/* Second column loading */}
-      <div className="w-1/3 border-r">
+      {/* Combined column loading (sections 2+3) */}
+      <div className="flex-1">
         <div className="p-4 border-b">
           <Skeleton className="h-7 w-40" />
         </div>
@@ -329,33 +354,29 @@ function LoadingState() {
           {Array(3)
             .fill(0)
             .map((_, i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-3 w-full" />
+              <div key={i} className="space-y-2 mb-6">
+                <div className="p-3 rounded-lg border">
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <Skeleton className="h-3 w-full" />
+                </div>
+
+                {/* None expanded by default */}
+                {false && (
+                  <div className="mt-2 p-4 rounded-lg border space-y-6">
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-5/6" />
+                    </div>
+                    <Skeleton className="h-1 w-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-24 w-full" />
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
-        </div>
-      </div>
-
-      {/* Third column loading */}
-      <div className="w-5/12">
-        <div className="p-4 border-b">
-          <Skeleton className="h-7 w-40" />
-        </div>
-        <div className="p-4 space-y-6">
-          <div className="space-y-2">
-            <Skeleton className="h-5 w-32" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-5/6" />
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="h-5 w-32" />
-            {Array(2)
-              .fill(0)
-              .map((_, i) => (
-                <Skeleton key={i} className="h-24 w-full" />
-              ))}
-          </div>
         </div>
       </div>
     </div>
