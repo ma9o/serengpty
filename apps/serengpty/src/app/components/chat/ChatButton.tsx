@@ -2,7 +2,7 @@
 
 import { Button } from '@enclaveid/ui/button';
 import { ChatBubbleIcon } from '@radix-ui/react-icons';
-import { useUser } from './UserContext';
+import { useStreamChatUser } from './StreamChatUserContext';
 import { useChatClient } from '../../services/streamChat';
 import { useStartChat } from './useStartChat';
 import { toast } from 'sonner';
@@ -22,7 +22,7 @@ export function ChatButton({
   size = 'sm',
   className,
 }: ChatButtonProps) {
-  const { userId, userToken } = useUser();
+  const { userId, userToken } = useStreamChatUser();
   const { client } = useChatClient(userId, userToken);
   const { startChatWithUser, isLoading, error } = useStartChat();
 

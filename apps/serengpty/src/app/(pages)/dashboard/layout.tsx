@@ -13,6 +13,7 @@ import {
   ChatBubbleIcon,
   MixerHorizontalIcon,
 } from '@radix-ui/react-icons';
+import { StreamChatUserProvider } from '../../components/chat/StreamChatUserContext';
 
 const sidebarItems = {
   navMain: [
@@ -56,16 +57,21 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
-      <AppSidebar LogoutButton={<LogoutButton />} sidebarItems={sidebarItems} />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <DashboardBreadcrumb />
-        </header>
-        <div className="flex flex-1 flex-col gap-4 p-8">{children}</div>
-      </SidebarInset>
-    </SidebarProvider>
+    <StreamChatUserProvider>
+      <SidebarProvider>
+        <AppSidebar
+          LogoutButton={<LogoutButton />}
+          sidebarItems={sidebarItems}
+        />
+        <SidebarInset>
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <DashboardBreadcrumb />
+          </header>
+          <div className="flex flex-1 flex-col gap-4 p-8">{children}</div>
+        </SidebarInset>
+      </SidebarProvider>
+    </StreamChatUserProvider>
   );
 }

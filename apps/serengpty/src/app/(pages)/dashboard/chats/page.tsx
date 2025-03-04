@@ -1,12 +1,12 @@
 'use client';
 
-import { UserProvider, useUser } from '../../../components/chat/UserContext';
+import { useStreamChatUser } from '../../../components/chat/StreamChatUserContext';
 import { ChatProvider } from '../../../components/chat/ChatProvider';
 import { ChatInterface } from '../../../components/chat/ChatInterface';
 
 // Wrapper component that handles the user authentication and chat initialization
 const ChatApp = () => {
-  const { userId, userToken, isLoading, error } = useUser();
+  const { userId, userToken, isLoading, error } = useStreamChatUser();
 
   if (isLoading) {
     return (
@@ -42,9 +42,7 @@ const ChatsPage = () => {
   return (
     <div className="flex h-full flex-col">
       <div className="flex-1">
-        <UserProvider>
-          <ChatApp />
-        </UserProvider>
+        <ChatApp />
       </div>
     </div>
   );
