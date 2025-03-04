@@ -44,7 +44,7 @@ export function VerticalSerendipitousPaths({
     setSelectedUserIndex(index);
     // Find the first path index for this user
     const firstPathIndex = data.findIndex(
-      item => item.connectedUser.id === data[index].connectedUser.id
+      (item) => item.connectedUser.id === data[index].connectedUser.id
     );
     // Set to the first path for this user
     setSelectedPathIndex(firstPathIndex !== -1 ? firstPathIndex : 0);
@@ -110,11 +110,12 @@ export function VerticalSerendipitousPaths({
               .filter((item) => item.connectedUser.id === selectedUser.id)
               .map((pathData, index) => {
                 // Get the actual index in the full data array
-                const dataIndex = data.findIndex(d => 
-                  d.path.id === pathData.path.id && 
-                  d.connectedUser.id === selectedUser.id
+                const dataIndex = data.findIndex(
+                  (d) =>
+                    d.path.id === pathData.path.id &&
+                    d.connectedUser.id === selectedUser.id
                 );
-                
+
                 return (
                   <PathSummaryCard
                     key={pathData.path.id}
@@ -171,9 +172,9 @@ function UserCard({
       onClick={onClick}
     >
       <Avatar className={cn('h-10 w-10', isActive && 'ring-2 ring-primary')}>
-        <AvatarImage 
-          src={user.image || getIdenticon(user.id)} 
-          alt={user.name} 
+        <AvatarImage
+          src={user.image || getIdenticon(user.name)}
+          alt={user.name}
         />
         <AvatarFallback>
           {user.name.substring(0, 2).toUpperCase()}

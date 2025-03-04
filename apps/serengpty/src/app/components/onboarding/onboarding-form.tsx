@@ -8,7 +8,6 @@ import { Save, Shield } from 'lucide-react';
 import countries from 'i18n-iso-countries';
 import enLocale from 'i18n-iso-countries/langs/en.json';
 import { useState, useMemo, useEffect } from 'react';
-import { getUniqueUsername } from '../../actions/getUniqueUsername';
 import { saveUserProfile } from '../../actions/saveUserProfile';
 import { UsernameStatus } from './username-status';
 

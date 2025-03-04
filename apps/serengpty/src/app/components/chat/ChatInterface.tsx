@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { ChannelFilters } from 'stream-chat';
 import {
   Channel,
-  ChannelHeader,
   DefaultStreamChatGenerics,
   ChannelList,
   MessageInput,
@@ -13,6 +12,8 @@ import {
   Window,
   useChatContext,
 } from 'stream-chat-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@enclaveid/ui/avatar';
+import { getIdenticon } from '../../utils/getIdenticon';
 
 interface ChatInterfaceProps {
   activeChannelId?: string;
@@ -30,6 +31,26 @@ const EmptyState = () => (
   </div>
 );
 
+// Custom avatar component using identicons
+const CustomAvatar = (props: any) => {
+  const { image, name, size } = props;
+  const userId = props.userId || name;
+
+  return (
+    <div className={`str-chat__avatar str-chat__avatar--${size}`}>
+      <Avatar>
+        <AvatarImage
+          src={image || (userId ? getIdenticon(userId) : undefined)}
+          alt={name || 'User avatar'}
+        />
+        <AvatarFallback>
+          {name ? name.substring(0, 2).toUpperCase() : '??'}
+        </AvatarFallback>
+      </Avatar>
+    </div>
+  );
+};
+
 export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
   // Start with no filters until we have a valid userId
   const [filters, setFilters] = useState<{
@@ -39,6 +60,20 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
     type: 'messaging',
   });
   const [hasChannels, setHasChannels] = useState<boolean | null>(null);
+  const [activeChannel, setActiveChannel] = useState<string | undefined>(
+    activeChannelId
+  );
+
+  // Check for channel ID in URL on client side
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      const channelId = url.searchParams.get('cid');
+      if (channelId) {
+        setActiveChannel(channelId);
+      }
+    }
+  }, []);
 
   // Update filters when the user changes
   useEffect(() => {
@@ -92,9 +127,9 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
 
         checkChannels();
       }
-    }, [client]);
+    }, [client, activeChannel]);
 
-    return <ChannelList {...props} />;
+    return <ChannelList {...props} customActiveChannel={activeChannelId} />;
   };
 
   return (
@@ -105,6 +140,7 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
             filters={filters}
             sort={{ last_message_at: -1 }}
             options={{ state: true, presence: true, limit: 10 }}
+            Avatar={CustomAvatar}
           />
         </div>
         <div className="flex-1">
@@ -113,7 +149,7 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
           ) : (
             <Channel>
               <Window>
-                <ChannelHeader />
+                {/* <ChannelHeader /> */}
                 <MessageList />
                 <MessageInput focus />
               </Window>
