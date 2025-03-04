@@ -1,7 +1,6 @@
-import DiscordIcon from '~icons/mdi/discord.tsx';
-import GitHubIcon from '~icons/mdi/github.tsx';
+import { Icon } from '@iconify/react';
 import Image from 'next/image';
-import { Logo } from '../../../../libs/ui/src/logo';
+import { Logo } from '@enclaveid/ui/logo';
 import { Button } from '@enclaveid/ui/button';
 import Link from 'next/link';
 import { LandingGuidance } from './components/landing/landing-guidance';
@@ -42,7 +41,7 @@ function Header() {
               rel="noopener noreferrer"
               className="text-content-secondary hover:text-content-primary"
             >
-              <DiscordIcon className="w-6 h-6" />
+              <Icon icon="mdi:discord" className="w-6 h-6" />
             </a>
             <a
               href="https://github.com/enclaveid/enclaveid"
@@ -50,7 +49,7 @@ function Header() {
               rel="noopener noreferrer"
               className="text-content-secondary hover:text-content-primary"
             >
-              <GitHubIcon className="w-6 h-6" />
+              <Icon icon="mdi:github" className="w-6 h-6" />
             </a>
 
             <Link href="/dashboard/home">

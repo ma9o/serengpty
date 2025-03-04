@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import MaterialSymbolsArrowForwardIosRounded from '~icons/material-symbols/arrow-forward-ios-rounded';
+import { Icon } from '@iconify/react';
 import React from 'react';
 import { Card, CardContent } from '@enclaveid/ui/card';
 
@@ -55,7 +55,7 @@ export function LandingGuidance() {
                 </div>
                 {index < steps.length - 1 && (
                   <div className="flex items-center justify-center">
-                    <MaterialSymbolsArrowForwardIosRounded className="w-8 h-8 text-gray-400" />
+                    <Icon icon="material-symbols:arrow-forward-ios-rounded" className="w-8 h-8 text-gray-400" />
                   </div>
                 )}
               </React.Fragment>

@@ -8,7 +8,7 @@ import { FileArchive, Loader2, XCircle } from 'lucide-react';
 import { useToast } from '@enclaveid/ui/hooks/use-toast';
 import { Toaster } from '@enclaveid/ui/toaster';
 import { processZipFile } from '../../utils/clientZipUtils';
-import MageRobotHappy from '~icons/mage/robot-happy';
+import { Icon } from '@iconify/react';
 
 /**
  * generatePassword function for client-side password generation.
@@ -174,7 +174,8 @@ export function ZipOnboardingForm() {
             {/* Robot icon message */}
             {!processing && (
               <div className="mb-2 flex items-center justify-center">
-                <MageRobotHappy
+                <Icon
+                  icon="mage:robot-happy"
                   width="24"
                   height="24"
                   className="text-gray-500 mr-2"
@@ -189,7 +190,7 @@ export function ZipOnboardingForm() {
             {processing ? (
               <div className="w-full mb-8 md:mb-0 border-2 border-dashed border-gray-300 p-6 rounded-lg flex flex-col items-center justify-center text-center">
                 <div className="flex flex-col items-center">
-                  <MageRobotHappy width="24" height="24" className=" mb-2" />
+                  <Icon icon="mage:robot-happy" width="24" height="24" className="mb-2" />
                   <div className="flex items-center">
                     <Loader2 className="animate-spin mr-2" size={16} />
                     <span className="">We're anonymizing the data...</span>
@@ -228,7 +229,8 @@ export function ZipOnboardingForm() {
             {/* Error feedback with robot */}
             {error && (
               <div className="mt-4 text-red-600 flex items-center">
-                <MageRobotHappy
+                <Icon
+                  icon="mage:robot-happy"
                   width="24"
                   height="24"
                   className="text-red-500 mr-2"
