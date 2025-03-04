@@ -28,8 +28,6 @@ export const useStartChat = () => {
       const channel = chatClient.channel('messaging', {
         members: [currentUserId, otherUserId],
         created_by_id: currentUserId,
-        name: `${otherUserName}`,
-        
       });
 
       await channel.watch();

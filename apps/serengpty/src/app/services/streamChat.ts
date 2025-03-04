@@ -14,7 +14,11 @@ let chatClient: StreamChat | undefined;
 let isListening = false;
 let notificationCallbacks: ((count: number) => void)[] = [];
 
-export const useChatClient = (userId?: string, userToken?: string) => {
+export const useChatClient = (
+  userId?: string,
+  userToken?: string,
+  userName?: string
+) => {
   const [client, setClient] = useState<StreamChat | undefined>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>();
@@ -56,7 +60,6 @@ export const useChatClient = (userId?: string, userToken?: string) => {
         await chatClient!.connectUser(
           {
             id: userId,
-            name: userId,
           },
           userToken
         );
@@ -86,7 +89,7 @@ export const useChatClient = (userId?: string, userToken?: string) => {
     return () => {
       chatClient?.off('connection.error', handleConnectionError);
     };
-  }, [userId, userToken]);
+  }, [userId, userToken, userName]);
 
   return {
     client,
@@ -100,51 +103,58 @@ export const useChatClient = (userId?: string, userToken?: string) => {
 // Set up global notification listeners
 function setupNotificationListeners(client: StreamChat) {
   if (isListening) return;
-  
+
   const updateNotifications = async () => {
     if (!client) return;
-    
+
     try {
       // Get unread count from the client
       const unreadData = await client.getUnreadCount();
       const totalUnread = unreadData.total_unread_count || 0;
-      
+
       // Notify all registered callbacks
-      notificationCallbacks.forEach(callback => callback(totalUnread));
+      notificationCallbacks.forEach((callback) => callback(totalUnread));
     } catch (err) {
       console.error('Error getting unread count:', err);
     }
   };
-  
+
   // Set up event listeners for notifications
   client.on('notification.message_new', updateNotifications);
   client.on('notification.mark_read', updateNotifications);
   client.on('channel.truncated', updateNotifications);
-  
+
   // Do initial update
   updateNotifications();
-  
+
   // Mark as listening
   isListening = true;
 }
 
 // Register to listen for notification updates
-export function registerNotificationCallback(callback: (count: number) => void) {
+export function registerNotificationCallback(
+  callback: (count: number) => void
+) {
   notificationCallbacks.push(callback);
-  
+
   // If we already have a client and it's connected, update immediately
   if (chatClient && chatClient.userID) {
-    chatClient.getUnreadCount().then(data => {
-      const count = data.total_unread_count || 0;
-      callback(count);
-    }).catch(err => {
-      console.error('Error getting initial unread count:', err);
-    });
+    chatClient
+      .getUnreadCount()
+      .then((data) => {
+        const count = data.total_unread_count || 0;
+        callback(count);
+      })
+      .catch((err) => {
+        console.error('Error getting initial unread count:', err);
+      });
   }
-  
+
   // Return function to unregister
   return () => {
-    notificationCallbacks = notificationCallbacks.filter(cb => cb !== callback);
+    notificationCallbacks = notificationCallbacks.filter(
+      (cb) => cb !== callback
+    );
   };
 }
 
@@ -158,10 +168,17 @@ export const getTestToken = (userId: string) => {
   return chatClient.devToken(userId);
 };
 
-export const createStreamChatUser = async (userId: string) => {
+export const createStreamChatUser = async (
+  userId: string,
+  userName?: string
+) => {
   if (!chatClient) {
     chatClient = StreamChat.getInstance(API_KEY);
   }
 
-  await chatClient.upsertUser({ id: userId, role: 'user' });
+  await chatClient.upsertUser({
+    id: userId,
+    role: 'user',
+    name: userName,
+  });
 };

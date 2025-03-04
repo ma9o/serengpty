@@ -8,13 +8,13 @@ const streamChatClient = StreamChat.getInstance(
 );
 
 // Seed the database with some test data
-const seed = async (prisma: PrismaClient): Promise<string[]> => {
+const seed = async (prisma: PrismaClient) => {
   // Create users
   const giovanni = await prisma.user.upsert({
-    where: { id: 'cm0i27jdj0000aqpa73ghpcxf' },
+    where: { id: 'ma9o' },
     update: {},
     create: {
-      id: 'cm0i27jdj0000aqpa73ghpcxf',
+      id: 'ma9o',
       name: 'giovanni',
       country: 'IT', // Italy - Using ISO country code
       passwordHash: await bcrypt.hash('securePassword1', 10),
@@ -39,6 +39,7 @@ const seed = async (prisma: PrismaClient): Promise<string[]> => {
       email: 'bob@example.com',
       name: 'bob',
       country: 'GB', // UK - Using ISO country code (Great Britain)
+      passwordHash: await bcrypt.hash('securePassword3', 10),
     },
   });
 
@@ -49,6 +50,7 @@ const seed = async (prisma: PrismaClient): Promise<string[]> => {
       email: 'charlie@example.com',
       name: 'charlie',
       country: 'CA', // Canada - Using ISO country code
+      passwordHash: await bcrypt.hash('securePassword4', 10),
     },
   });
 
@@ -59,6 +61,7 @@ const seed = async (prisma: PrismaClient): Promise<string[]> => {
       email: 'diana@example.com',
       name: 'diana',
       country: 'FR', // France - Using ISO country code
+      passwordHash: await bcrypt.hash('securePassword5', 10),
     },
   });
 
@@ -414,7 +417,7 @@ const seed = async (prisma: PrismaClient): Promise<string[]> => {
   });
 
   // Return all user IDs
-  return [giovanni.id, alice.id, bob.id, charlie.id, diana.id];
+  return [giovanni, alice, bob, charlie, diana];
 };
 
 // Execute the script
@@ -429,11 +432,27 @@ const seed = async (prisma: PrismaClient): Promise<string[]> => {
 
   try {
     console.log('Seeding database...');
-    const userIds = await seed(prisma);
+    const users = await seed(prisma);
+
+    console.log('Deleting Stream Chat users...');
+    const streamChatUsers = await streamChatClient.queryUsers({
+      id: { $nin: ['ma9o'] },
+    });
+
+    if (streamChatUsers.users.length > 0) {
+      await streamChatClient.deleteUsers(
+        streamChatUsers.users.map((user) => user.id),
+        { conversations: 'hard' }
+      );
+    }
 
     console.log('Creating Stream Chat users...');
     await streamChatClient.upsertUsers(
-      userIds.map((userId) => ({ id: userId, role: 'user' }))
+      users.map((user) => ({
+        id: user.id,
+        role: 'user',
+        name: user.name,
+      }))
     );
 
     await prisma.$disconnect();

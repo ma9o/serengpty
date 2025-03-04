@@ -6,7 +6,6 @@ import {
   Channel,
   ChannelList,
   DefaultStreamChatGenerics,
-  Message,
   MessageInput,
   MessageList,
   Thread,
