@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ChannelFilters } from 'stream-chat';
 import {
   Channel,
   ChannelList,
+  DefaultStreamChatGenerics,
   MessageInput,
   MessageList,
   Thread,
@@ -11,33 +13,21 @@ import {
 } from 'stream-chat-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@enclaveid/ui/avatar';
 import { getIdenticon } from '../../utils/getIdenticon';
+import { useStreamChatUser } from './StreamChatUserContext';
 
 interface ChatInterfaceProps {
   activeChannelId?: string;
 }
 
-// Empty state component for when no chats are active
-const EmptyState = () => (
-  <div className="flex h-full w-full flex-col items-center justify-center">
-    <div className="text-center">
-      <h3 className="mb-2 text-lg font-semibold">No chats found</h3>
-      <p className="text-sm text-gray-500">
-        Start a conversation to see it here
-      </p>
-    </div>
-  </div>
-);
-
 // Custom avatar component using identicons
 const CustomAvatar = (props: any) => {
   const { image, name, size } = props;
-  const userId = props.userId || name;
 
   return (
     <div className={`str-chat__avatar str-chat__avatar--${size}`}>
       <Avatar>
         <AvatarImage
-          src={image || (userId ? getIdenticon(userId) : undefined)}
+          src={image || (name ? getIdenticon(name) : undefined)}
           alt={name || 'User avatar'}
         />
         <AvatarFallback>
@@ -49,14 +39,7 @@ const CustomAvatar = (props: any) => {
 };
 
 export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
-  // Start with no filters until we have a valid userId
-  const [filters, setFilters] = useState<{
-    type: string;
-    members?: { $in: string[] };
-  }>({
-    type: 'messaging',
-  });
-  const [hasChannels, setHasChannels] = useState<boolean | null>(null);
+  const { userId } = useStreamChatUser();
   const [activeChannel, setActiveChannel] = useState<string | undefined>(
     activeChannelId
   );
@@ -72,21 +55,16 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
     }
   }, []);
 
-  // Update filters when the user changes
-  useEffect(() => {
-    const userInfo = JSON.parse(localStorage.getItem('user-info') || '{}');
-    const userId = userInfo.id;
+  // If userId is not available, don't render the chat interface
+  if (!userId) {
+    return null;
+  }
 
-    if (userId) {
-      console.log('Setting filters with userId:', userId);
-      setFilters({
-        type: 'messaging',
-        members: { $in: [userId] },
-      });
-    } else {
-      console.warn('No userId available for chat filters');
-    }
-  }, []);
+  // Prepare filters with the userId from context
+  const filters: ChannelFilters<DefaultStreamChatGenerics> = {
+    type: 'messaging',
+    members: { $in: [userId] }
+  };
 
   return (
     <div className="flex h-full overflow-hidden rounded-lg border shadow">
@@ -101,18 +79,14 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
           />
         </div>
         <div className="flex-1">
-          {hasChannels === false ? (
-            <EmptyState />
-          ) : (
-            <Channel>
-              <Window>
-                {/* <ChannelHeader /> */}
-                <MessageList />
-                <MessageInput focus />
-              </Window>
-              <Thread />
-            </Channel>
-          )}
+          <Channel>
+            <Window>
+              {/* <ChannelHeader /> */}
+              <MessageList />
+              <MessageInput focus />
+            </Window>
+            <Thread />
+          </Channel>
         </div>
       </div>
     </div>
