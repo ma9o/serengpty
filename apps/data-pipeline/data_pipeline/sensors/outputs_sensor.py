@@ -1,4 +1,5 @@
 import ast
+import os
 
 import requests
 from dagster import (
@@ -29,14 +30,13 @@ def outputs_sensor(context: SensorEvaluationContext) -> SensorResult | SkipReaso
     all_partitions = {d.stem for d in asset_folder.iterdir() if d.is_file()}
 
     partitions_to_add = all_partitions - current_state
-    # TODO: partitions_to_delete = current_state - all_partitions
 
     results = list(
         map(
             lambda user_id: requests.post(
-                "https://api.enclaveid.com/webhooks/pipeline-finished",
+                os.getenv("API_URL") + "/api/pipeline-finished",
                 json={"userId": user_id},
-                timeout=60 * 2,  # TODO: azure psql slow af
+                timeout=60,
             ).json(),
             partitions_to_add,
         )

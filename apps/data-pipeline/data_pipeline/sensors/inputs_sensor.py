@@ -44,9 +44,6 @@ def inputs_sensor(
     partitions_to_add = all_partitions - current_state
     partitions_to_delete = current_state - all_partitions
 
-    # TODO: check if phone number is verified in the database
-    # postgres.execute_query("SELECT * FROM phone_numbers WHERE phone_number = %s", {"phone_number": phone_number})
-
     # Delete materializations for partitions that are no longer present
     if partitions_to_delete:
         glob_pattern = f"**/*({' | '.join(partitions_to_delete)}).snappy"

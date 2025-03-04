@@ -60,9 +60,9 @@ export function VerticalSerendipitousPaths({
   return (
     <div className="flex h-full">
       {/* First Section - Users List */}
-      <div className="w-1/4 border-r">
+      <div className="w-1/5 border-r">
         <div className="p-4 border-b">
-          <h2 className="text-xl font-semibold">Serendipitous Connections</h2>
+          <h2 className="text-xl font-semibold">Connections</h2>
         </div>
         <ScrollArea className="h-[calc(100%-56px)]">
           <div className="p-2 space-y-2">
