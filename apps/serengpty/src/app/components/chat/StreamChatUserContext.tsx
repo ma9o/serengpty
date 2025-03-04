@@ -7,7 +7,10 @@ import {
   useState,
   ReactNode,
 } from 'react';
-import { getTestToken, registerNotificationCallback } from '../../services/streamChat';
+import {
+  getTestToken,
+  registerNotificationCallback,
+} from '../../services/streamChat';
 import { getCurrentUser } from '../../actions/getCurrentUser';
 import { getChatToken } from '../../actions/getChatToken';
 
@@ -35,19 +38,21 @@ interface StreamChatUserProviderProps {
   children: ReactNode;
 }
 
-export const StreamChatUserProvider = ({ children }: StreamChatUserProviderProps) => {
+export const StreamChatUserProvider = ({
+  children,
+}: StreamChatUserProviderProps) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [userToken, setUserToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
-  
+
   // Register for notification updates
   useEffect(() => {
     const unregister = registerNotificationCallback((count) => {
       setUnreadCount(count);
     });
-    
+
     // Clean up on unmount
     return () => {
       unregister();
@@ -69,7 +74,6 @@ export const StreamChatUserProvider = ({ children }: StreamChatUserProviderProps
         // Fetch token using server action
         let token;
         try {
-          // Import the server action dynamically to avoid server component issues
           const result = await getChatToken();
 
           if ('error' in result) {
@@ -88,15 +92,6 @@ export const StreamChatUserProvider = ({ children }: StreamChatUserProviderProps
 
         setUserId(user.id);
         setUserToken(token);
-
-        // Store user info in localStorage for components that need it
-        localStorage.setItem(
-          'user-info',
-          JSON.stringify({
-            id: user.id,
-            name: user.name || user.id,
-          })
-        );
       } catch (err) {
         console.error('Error fetching user:', err);
         setError(
@@ -111,14 +106,16 @@ export const StreamChatUserProvider = ({ children }: StreamChatUserProviderProps
   }, []);
 
   return (
-    <StreamChatUserContext.Provider value={{ 
-      userId, 
-      userToken, 
-      isLoading, 
-      error,
-      unreadCount,
-      setUnreadCount
-    }}>
+    <StreamChatUserContext.Provider
+      value={{
+        userId,
+        userToken,
+        isLoading,
+        error,
+        unreadCount,
+        setUnreadCount,
+      }}
+    >
       {children}
     </StreamChatUserContext.Provider>
   );

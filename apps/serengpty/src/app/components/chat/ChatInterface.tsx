@@ -6,6 +6,7 @@ import {
   Channel,
   ChannelList,
   DefaultStreamChatGenerics,
+  Message,
   MessageInput,
   MessageList,
   Thread,
@@ -22,12 +23,27 @@ interface ChatInterfaceProps {
 // Custom avatar component using identicons
 const CustomAvatar = (props: any) => {
   const { image, name, size } = props;
+  const userId = props.userId || name;
+
+  // Convert size string to a number for the SVG generation
+  const sizeMap: Record<string, number> = {
+    xs: 24,
+    sm: 32,
+    md: 40,
+    lg: 48,
+    xl: 72,
+  };
+
+  const pixelSize = typeof size === 'string' ? sizeMap[size] || 40 : 40;
 
   return (
     <div className={`str-chat__avatar str-chat__avatar--${size}`}>
       <Avatar>
         <AvatarImage
-          src={image || (name ? getIdenticon(name) : undefined)}
+          src={
+            image ||
+            (userId ? getIdenticon(userId, { size: pixelSize }) : undefined)
+          }
           alt={name || 'User avatar'}
         />
         <AvatarFallback>
@@ -63,7 +79,7 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
   // Prepare filters with the userId from context
   const filters: ChannelFilters<DefaultStreamChatGenerics> = {
     type: 'messaging',
-    members: { $in: [userId] }
+    members: { $in: [userId] },
   };
 
   return (
@@ -79,11 +95,16 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
           />
         </div>
         <div className="flex-1">
-          <Channel>
+          <Channel
+            Avatar={
+              // Disable avatars in thread
+              () => <></>
+            }
+            markReadOnMount
+          >
             <Window>
-              {/* <ChannelHeader /> */}
               <MessageList />
-              <MessageInput focus />
+              <MessageInput focus noFiles />
             </Window>
             <Thread />
           </Channel>

@@ -432,10 +432,8 @@ const seed = async (prisma: PrismaClient): Promise<string[]> => {
     const userIds = await seed(prisma);
 
     console.log('Creating Stream Chat users...');
-    await Promise.all(
-      userIds.map((userId) =>
-        streamChatClient.upsertUser({ id: userId, role: 'user' })
-      )
+    await streamChatClient.upsertUsers(
+      userIds.map((userId) => ({ id: userId, role: 'user' }))
     );
 
     await prisma.$disconnect();

@@ -29,6 +29,7 @@ export const useStartChat = () => {
         members: [currentUserId, otherUserId],
         created_by_id: currentUserId,
         name: `${otherUserName}`,
+        
       });
 
       await channel.watch();
