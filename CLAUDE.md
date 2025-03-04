@@ -31,3 +31,9 @@
 - Components: Follow existing patterns in similar files
 - Naming: camelCase for JS/TS variables, PascalCase for components/classes
 - CI runs: `bun nx affected -t lint test build`
+
+## Documentation
+- Architecture: `docs/architecture.md`
+- Monorepo Structure: `docs/monorepo-structure.md`
+- Verification: `docs/verification.md`
+- Stream Chat Implementation: `docs/stream-chat.md`
