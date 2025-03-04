@@ -120,7 +120,7 @@ const seed = async (prisma: PrismaClient) => {
   });
 
   // Create common conversations
-  const techConversation1 = await prisma.conversation.create({
+  await prisma.conversation.create({
     data: {
       uniqueSummary: 'Discussion about TypeScript and React',
       datetime: new Date('2024-02-15T14:30:00Z'),
@@ -128,7 +128,7 @@ const seed = async (prisma: PrismaClient) => {
     },
   });
 
-  const techConversation2 = await prisma.conversation.create({
+  await prisma.conversation.create({
     data: {
       uniqueSummary: 'Talking about backend technologies',
       datetime: new Date('2024-02-16T10:15:00Z'),
@@ -136,7 +136,7 @@ const seed = async (prisma: PrismaClient) => {
     },
   });
 
-  const travelConversation1 = await prisma.conversation.create({
+  await prisma.conversation.create({
     data: {
       uniqueSummary: 'Experiences in Southeast Asia',
       datetime: new Date('2024-01-20T16:45:00Z'),
@@ -144,7 +144,7 @@ const seed = async (prisma: PrismaClient) => {
     },
   });
 
-  const travelConversation2 = await prisma.conversation.create({
+  await prisma.conversation.create({
     data: {
       uniqueSummary: 'European city recommendations',
       datetime: new Date('2024-01-25T09:30:00Z'),
@@ -152,7 +152,7 @@ const seed = async (prisma: PrismaClient) => {
     },
   });
 
-  const foodConversation = await prisma.conversation.create({
+  await prisma.conversation.create({
     data: {
       uniqueSummary: 'Favorite Italian dishes',
       datetime: new Date('2024-02-05T19:20:00Z'),
@@ -160,7 +160,7 @@ const seed = async (prisma: PrismaClient) => {
     },
   });
 
-  const musicConversation = await prisma.conversation.create({
+  await prisma.conversation.create({
     data: {
       uniqueSummary: 'Jazz and classical music preferences',
       datetime: new Date('2024-02-10T20:45:00Z'),

@@ -23,9 +23,9 @@ export function VerticalSerendipitousPaths({
   initialData = [],
   initialError = null,
 }: VerticalSerendipitousPathsProps) {
-  const [loading, setLoading] = useState(!initialData.length && !initialError);
-  const [error, setError] = useState<string | null>(initialError);
-  const [data, setData] = useState<SerendipitousPathsResponse[]>(initialData);
+  const [loading] = useState(!initialData.length && !initialError);
+  const [error] = useState<string | null>(initialError);
+  const [data] = useState<SerendipitousPathsResponse[]>(initialData);
   const [selectedUserIndex, setSelectedUserIndex] = useState(0);
   const [selectedPathIndex, setSelectedPathIndex] = useState<number | null>(null);
 
@@ -55,8 +55,6 @@ export function VerticalSerendipitousPaths({
   // For header display, use the first path data for this user
   const userPathsData = data.filter(item => item.connectedUser.id === selectedUser.id);
   const headerPathData = userPathsData[0];
-  // For content, use the selected path data or undefined if nothing selected
-  const selectedPathData = selectedPathIndex !== null ? data[selectedPathIndex] : undefined;
 
   return (
     <div className="flex h-full">
@@ -221,30 +219,6 @@ function UserCard({
   );
 }
 
-// This component is no longer used as we've integrated it directly into the accordion
-// Keeping it for reference
-function PathSummaryCard({
-  path,
-  isActive = false,
-  onClick,
-}: {
-  path: SerendipitousPathsResponse['path'];
-  isActive?: boolean;
-  onClick?: () => void;
-}) {
-  return (
-    <div
-      className={cn(
-        'p-3 rounded-lg cursor-pointer hover:bg-muted transition-colors',
-        isActive && 'bg-muted'
-      )}
-      onClick={onClick}
-    >
-      <div className="font-medium mb-1">Connection</div>
-      <div className="text-sm text-muted-foreground">{path.summary}</div>
-    </div>
-  );
-}
 
 // Path Details Component
 function PathDetails({ pathData }: { pathData: SerendipitousPathsResponse }) {
@@ -310,7 +284,7 @@ function PathDetails({ pathData }: { pathData: SerendipitousPathsResponse }) {
 }
 
 // Conversation Card Component
-function ConversationCard({ conversation }: { conversation: any }) {
+function ConversationCard({ conversation }: { conversation: { summary: string; datetime: string } }) {
   return (
     <div className="p-3 bg-muted rounded-lg">
       <div className="font-medium">{conversation.summary}</div>

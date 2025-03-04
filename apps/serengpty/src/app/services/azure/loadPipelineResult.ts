@@ -29,7 +29,7 @@ export async function loadPipelineResults(blobName: string): Promise<Buffer> {
     );
 
     return new Promise((resolve, reject) => {
-      fs.readFile(localPath, (err: any, data: Buffer) => {
+      fs.readFile(localPath, (err: NodeJS.ErrnoException | null, data: Buffer) => {
         if (err) reject(err);
         else resolve(data);
       });

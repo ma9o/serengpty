@@ -1,4 +1,3 @@
-import { User } from '@prisma/client';
 
 // Custom interfaces to match the transformed data in getSerendipitousPaths
 export interface ConversationSummary {

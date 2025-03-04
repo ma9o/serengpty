@@ -20,7 +20,12 @@ interface ChatInterfaceProps {
 }
 
 // Custom avatar component using identicons
-const CustomAvatar = (props: any) => {
+const CustomAvatar = (props: {
+  image?: string;
+  name?: string;
+  size?: string;
+  userId?: string;
+}) => {
   const { image, name, size } = props;
   const userId = props.userId || name;
 

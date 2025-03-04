@@ -114,7 +114,7 @@ export async function getSerendipitousPaths(): Promise<
     }
     
     // Calculate average score for each user
-    for (const [userId, userData] of userMap.entries()) {
+    for (const userData of userMap.values()) {
       const totalScore = userData.paths.reduce((sum, path) => sum + path.path.score, 0);
       userData.averageScore = totalScore / userData.paths.length;
       

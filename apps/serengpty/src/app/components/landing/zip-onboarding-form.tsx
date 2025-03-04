@@ -33,11 +33,10 @@ export function ZipOnboardingForm() {
   const { toast } = useToast();
 
   const [processing, setProcessing] = useState(false);
-  const [status, setStatus] = useState('');
   const [error, setError] = useState('');
   const [password, setPassword] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [cleanedConversations, setCleanedConversations] = useState<any>(null);
+  const [cleanedConversations, setCleanedConversations] = useState<Record<string, unknown>>(null);
 
   async function handleFileDrop(files: File[]) {
     const file = files[0];
@@ -45,18 +44,13 @@ export function ZipOnboardingForm() {
 
     // Reset state for a new upload.
     setError('');
-    setStatus('Processing archive...');
     setProcessing(true);
     setReady(false);
     setPassword(null);
     setCleanedConversations(null);
 
-    // Record the start time to ensure minimum loading duration
-    const startTime = Date.now();
-
     try {
       // Process the zip file on the client side
-      setStatus('Extracting and cleaning data...');
       const result = await processZipFile(file);
 
       if (!result.success || !result.conversations) {
@@ -67,14 +61,11 @@ export function ZipOnboardingForm() {
 
       setCleanedConversations(result.conversations);
 
-      // Ensure minimum loading time before showing password
-      await ensureMinimumLoadingTime(startTime);
+      // Give some time for UI effects
 
-      setStatus('Generating password...');
       // Generate a strong password on the client.
       const newPassword = generatePassword();
       setPassword(newPassword);
-      setStatus('All done! You are now ready to sign up.');
       setReady(true);
     } catch (err) {
       console.error(err);
@@ -84,17 +75,6 @@ export function ZipOnboardingForm() {
     }
   }
 
-  // Helper function to ensure loading state lasts at least 2 seconds
-  async function ensureMinimumLoadingTime(startTime: number) {
-    const minLoadingTime = 2000; // 2 seconds in milliseconds
-    const elapsedTime = Date.now() - startTime;
-    if (elapsedTime < minLoadingTime) {
-      return new Promise((resolve) =>
-        setTimeout(resolve, minLoadingTime - elapsedTime)
-      );
-    }
-    return Promise.resolve(); // Always return a promise for consistent behavior
-  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -104,11 +84,7 @@ export function ZipOnboardingForm() {
       return;
     }
 
-    // Record the start time to ensure minimum loading duration
-    const startTime = Date.now();
-
     try {
-      setStatus('Creating your account...');
       setProcessing(true);
 
       // Create FormData with only the cleaned data
@@ -128,8 +104,7 @@ export function ZipOnboardingForm() {
         throw new Error(data.error || 'Failed to sign up');
       }
 
-      // Get the response
-      const data = await response.json();
+      // Success - proceed to notification
 
       // Success - redirect to login page
       toast({
@@ -143,16 +118,17 @@ export function ZipOnboardingForm() {
       setTimeout(() => {
         window.location.href = '/login';
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'An error occurred during sign up.');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred during sign up.';
+      setError(errorMessage);
     } finally {
       setProcessing(false);
     }
   }
 
   // Set up the dropzone directly in this component
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps } = useDropzone({
     onDrop: handleFileDrop,
     accept: { 'application/zip': ['.zip'] },
     multiple: false,

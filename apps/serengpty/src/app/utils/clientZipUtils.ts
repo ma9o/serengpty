@@ -49,17 +49,17 @@ function cleanText(text: string): string {
  * @param data the input data (could be string, array or object)
  * @returns the data after processing string values.
  */
-function cleanData(data: any): any {
+function cleanData<T>(data: T): T {
   if (typeof data === 'string') {
-    return cleanText(data);
+    return cleanText(data) as unknown as T;
   } else if (Array.isArray(data)) {
-    return data.map((item) => cleanData(item));
+    return data.map((item) => cleanData(item)) as unknown as T;
   } else if (data && typeof data === 'object') {
-    const result: any = {};
+    const result: Record<string, unknown> = {};
     for (const key in data) {
-      result[key] = cleanData(data[key]);
+      result[key] = cleanData((data as Record<string, unknown>)[key]);
     }
-    return result;
+    return result as unknown as T;
   }
   return data;
 }
@@ -69,7 +69,7 @@ function cleanData(data: any): any {
  * @param file the uploaded ZIP file
  * @returns Promise with cleaned conversations data or null if error
  */
-export async function processZipFile(file: File): Promise<{ success: boolean; conversations: any }> {
+export async function processZipFile(file: File): Promise<{ success: boolean; conversations: Record<string, unknown> | null }> {
   try {
     // Load the zip file
     const zip = new JSZip();
