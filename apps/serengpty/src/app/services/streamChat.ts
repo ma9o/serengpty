@@ -97,3 +97,11 @@ export const getTestToken = (userId: string) => {
   // WARNING: Never use this in production!
   return chatClient.devToken(userId);
 };
+
+export const createStreamChatUser = async (userId: string) => {
+  if (!chatClient) {
+    chatClient = StreamChat.getInstance(API_KEY);
+  }
+
+  await chatClient.upsertUser({ id: userId, role: 'user' });
+};

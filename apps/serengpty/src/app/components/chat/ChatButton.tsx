@@ -32,16 +32,24 @@ export function ChatButton({
       return;
     }
 
-    try {
-      await startChatWithUser(
-        userId,
-        otherUserId,
-        client,
-        `Chat with ${otherUserName}`
-      );
+    if (!otherUserId) {
+      toast.error('Cannot start chat with invalid user');
+      return;
+    }
 
-      if (error) {
-        toast.error(`Failed to start chat: ${error.message}`);
+    // Make sure client is initialized
+    if (!client) {
+      toast.error('Chat client not initialized. Please try again later.');
+      return;
+    }
+
+    try {
+      console.log('Starting chat with:', { userId, otherUserId });
+
+      const result = await startChatWithUser(userId, otherUserId, client, otherUserName);
+
+      if (!result) {
+        toast.error(`Failed to start chat${error ? `: ${error.message}` : ''}`);
       }
     } catch (err) {
       console.error('Error in chat button:', err);

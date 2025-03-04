@@ -1,14 +1,14 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { StreamChat } from 'stream-chat';
 
-// Create HNSW indexes for all vector embedding fields
-// const createHnsw = async (prisma: PrismaClient) => {
-//   await prisma.$executeRaw`CREATE INDEX IF NOT EXISTS causal_graph_node_embedding_idx ON "CausalGraphNode" USING hnsw (embedding vector_l2_ops) WITH (m = 16, ef_construction = 64)`;
-//   await prisma.$executeRaw`CREATE INDEX IF NOT EXISTS raw_data_chunk_embedding_idx ON "RawDataChunk" USING hnsw (embedding vector_l2_ops) WITH (m = 16, ef_construction = 64)`;
-// };
+const streamChatClient = StreamChat.getInstance(
+  process.env.NEXT_PUBLIC_STREAM_CHAT_API_KEY!,
+  process.env.STREAM_CHAT_API_SECRET
+);
 
 // Seed the database with some test data
-const seed = async (prisma: PrismaClient) => {
+const seed = async (prisma: PrismaClient): Promise<string[]> => {
   // Create users
   const giovanni = await prisma.user.upsert({
     where: { id: 'cm0i27jdj0000aqpa73ghpcxf' },
@@ -92,7 +92,7 @@ const seed = async (prisma: PrismaClient) => {
       score: 0.81,
     },
   });
-  
+
   // Additional paths for testing multiple connections between users
   const gamingPath = await prisma.serendipitousPath.create({
     data: {
@@ -100,14 +100,14 @@ const seed = async (prisma: PrismaClient) => {
       score: 0.75,
     },
   });
-  
+
   const bookClubPath = await prisma.serendipitousPath.create({
     data: {
       commonSummary: 'Connected through book recommendations and discussions',
       score: 0.88,
     },
   });
-  
+
   const sportPath = await prisma.serendipitousPath.create({
     data: {
       commonSummary: 'Connected through sports interests and activities',
@@ -334,7 +334,7 @@ const seed = async (prisma: PrismaClient) => {
       userPathId: dianaMusicPath.id,
     },
   });
-  
+
   // Create unique conversations for the new paths
   // Book Club Path - Alice and Giovanni
   await prisma.conversation.create({
@@ -344,7 +344,7 @@ const seed = async (prisma: PrismaClient) => {
       userPathId: gioAliceBookPath.id,
     },
   });
-  
+
   await prisma.conversation.create({
     data: {
       uniqueSummary: 'Book club organizing skills',
@@ -352,7 +352,7 @@ const seed = async (prisma: PrismaClient) => {
       userPathId: aliceBookPath.id,
     },
   });
-  
+
   // Sport Path - Charlie and Giovanni
   await prisma.conversation.create({
     data: {
@@ -361,7 +361,7 @@ const seed = async (prisma: PrismaClient) => {
       userPathId: gioSportPath.id,
     },
   });
-  
+
   await prisma.conversation.create({
     data: {
       uniqueSummary: 'Mountain biking trails',
@@ -369,7 +369,7 @@ const seed = async (prisma: PrismaClient) => {
       userPathId: charlieSportPath.id,
     },
   });
-  
+
   // Gaming Path - Bob and Giovanni
   await prisma.conversation.create({
     data: {
@@ -378,7 +378,7 @@ const seed = async (prisma: PrismaClient) => {
       userPathId: gioGamingPath.id,
     },
   });
-  
+
   await prisma.conversation.create({
     data: {
       uniqueSummary: 'Game development frameworks',
@@ -386,7 +386,7 @@ const seed = async (prisma: PrismaClient) => {
       userPathId: bobGamingPath.id,
     },
   });
-  
+
   // Add common conversations for the new paths
   await prisma.conversation.create({
     data: {
@@ -395,7 +395,7 @@ const seed = async (prisma: PrismaClient) => {
       serendipitousPathId: bookClubPath.id,
     },
   });
-  
+
   await prisma.conversation.create({
     data: {
       uniqueSummary: 'Sports analytics and statistics',
@@ -403,7 +403,7 @@ const seed = async (prisma: PrismaClient) => {
       serendipitousPathId: sportPath.id,
     },
   });
-  
+
   await prisma.conversation.create({
     data: {
       uniqueSummary: 'Multiplayer game coordination',
@@ -411,6 +411,9 @@ const seed = async (prisma: PrismaClient) => {
       serendipitousPathId: gamingPath.id,
     },
   });
+
+  // Return all user IDs
+  return [giovanni.id, alice.id, bob.id, charlie.id, diana.id];
 };
 
 // Execute the script
@@ -424,11 +427,15 @@ const seed = async (prisma: PrismaClient) => {
   });
 
   try {
-    // console.log('Creating HNSW indexes...');
-    // await createHnsw(prisma);
-
     console.log('Seeding database...');
-    await seed(prisma);
+    const userIds = await seed(prisma);
+
+    console.log('Creating Stream Chat users...');
+    await Promise.all(
+      userIds.map((userId) =>
+        streamChatClient.upsertUser({ id: userId, role: 'user' })
+      )
+    );
 
     await prisma.$disconnect();
   } catch (e) {

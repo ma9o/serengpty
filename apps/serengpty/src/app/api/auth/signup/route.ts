@@ -5,6 +5,7 @@ import { azureContainerClient } from '../../../services/azure/storage';
 import path from 'path';
 import fs from 'fs';
 import { getUniqueUsername } from '../../../actions/getUniqueUsername';
+import { createStreamChatUser } from '../../../services/streamChat';
 
 /**
  * Anonymous user signup API endpoint
@@ -70,6 +71,8 @@ export async function POST(request: NextRequest) {
         conversationsJson
       );
     }
+
+    await createStreamChatUser(user.id);
 
     return NextResponse.json({
       success: true,

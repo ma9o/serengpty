@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ChannelFilters } from 'stream-chat';
 import {
   Channel,
   ChannelHeader,
+  DefaultStreamChatGenerics,
   ChannelList,
   MessageInput,
   MessageList,
@@ -29,9 +31,12 @@ const EmptyState = () => (
 );
 
 export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
-  const [filters, setFilters] = useState({
+  // Start with no filters until we have a valid userId
+  const [filters, setFilters] = useState<{
+    type: string;
+    members?: { $in: string[] };
+  }>({
     type: 'messaging',
-    members: { $in: [undefined] },
   });
   const [hasChannels, setHasChannels] = useState<boolean | null>(null);
 
@@ -41,10 +46,13 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
     const userId = userInfo.id;
 
     if (userId) {
+      console.log('Setting filters with userId:', userId);
       setFilters({
         type: 'messaging',
         members: { $in: [userId] },
       });
+    } else {
+      console.warn('No userId available for chat filters');
     }
   }, []);
 
@@ -56,15 +64,25 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
       if (client) {
         const checkChannels = async () => {
           try {
+            // Make sure userID is valid before querying
+            if (!client.userID) {
+              console.error('No valid userID available for channel query');
+              setHasChannels(false);
+              return;
+            }
+
+            // Use the exact same filter format as mentioned in the error message
             const filter = {
               type: 'messaging',
               members: { $in: [client.userID] },
-            };
-            const response = await client.queryChannels(
-              filter,
-              { last_message_at: -1 },
-              { limit: 1 }
+            } as ChannelFilters<DefaultStreamChatGenerics>;
+
+            console.log(
+              'Checking channels with filter:',
+              JSON.stringify(filter)
             );
+
+            const response = await client.queryChannels(filter);
             setHasChannels(response.length > 0);
           } catch (error) {
             console.error('Error checking channels:', error);
