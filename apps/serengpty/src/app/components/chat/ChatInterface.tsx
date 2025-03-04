@@ -1,16 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChannelFilters } from 'stream-chat';
 import {
   Channel,
-  DefaultStreamChatGenerics,
   ChannelList,
   MessageInput,
   MessageList,
   Thread,
   Window,
-  useChatContext,
 } from 'stream-chat-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@enclaveid/ui/avatar';
 import { getIdenticon } from '../../utils/getIdenticon';
@@ -91,52 +88,12 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
     }
   }, []);
 
-  // Custom list component that can check if channels exist
-  const CustomChannelList = (props: any) => {
-    const { client } = useChatContext();
-
-    useEffect(() => {
-      if (client) {
-        const checkChannels = async () => {
-          try {
-            // Make sure userID is valid before querying
-            if (!client.userID) {
-              console.error('No valid userID available for channel query');
-              setHasChannels(false);
-              return;
-            }
-
-            // Use the exact same filter format as mentioned in the error message
-            const filter = {
-              type: 'messaging',
-              members: { $in: [client.userID] },
-            } as ChannelFilters<DefaultStreamChatGenerics>;
-
-            console.log(
-              'Checking channels with filter:',
-              JSON.stringify(filter)
-            );
-
-            const response = await client.queryChannels(filter);
-            setHasChannels(response.length > 0);
-          } catch (error) {
-            console.error('Error checking channels:', error);
-            setHasChannels(false);
-          }
-        };
-
-        checkChannels();
-      }
-    }, [client, activeChannel]);
-
-    return <ChannelList {...props} customActiveChannel={activeChannelId} />;
-  };
-
   return (
-    <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-lg border shadow">
+    <div className="flex h-full overflow-hidden rounded-lg border shadow">
       <div className="flex h-full w-full">
         <div className="w-64 border-r dark:border-gray-800">
-          <CustomChannelList
+          <ChannelList
+            customActiveChannel={activeChannel}
             filters={filters}
             sort={{ last_message_at: -1 }}
             options={{ state: true, presence: true, limit: 10 }}

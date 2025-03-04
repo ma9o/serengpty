@@ -34,7 +34,7 @@ export const useStartChat = () => {
       await channel.watch();
 
       // Navigate to the chat page with the specific channel ID
-      router.push(`/dashboard/chats?cid=${encodeURIComponent(channel.cid)}`);
+      router.push(`/dashboard/chats?cid=${encodeURIComponent(channel.id)}`);
 
       return channel;
     } catch (err) {
