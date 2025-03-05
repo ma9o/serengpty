@@ -201,7 +201,7 @@ def serendipity_optimized(
 
     This asset focuses purely on finding meaningful connections between conversation pairs
     that have already been identified as potentially related based on embedding similarity
-    and categorized as either "humanistic" or "practical".
+    and categorized as either "coding", "humanistic", or "practical".
 
     Processing steps:
     1. Groups conversation pairs by cluster_id

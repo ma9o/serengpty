@@ -63,10 +63,13 @@ def generate_serendipity_prompt(
           Output in this JSON format:
           {{
             "common_indices": [list of integer IDs from both users' CONVERSATIONS whose themes are shared],
-            "user1_unique_indices": [list of integer IDs from USER 1 CONVERSATIONS that are UNIQUE/COMPLEMENTARY to USER 2],
-            "user2_unique_indices": [list of integer IDs from USER 2 CONVERSATIONS that are UNIQUE/COMPLEMENTARY to USER 1],
-            "common_background": "A detailed description of the shared background between the two users (without the unique branches)",
-            "unique_branches": "A detailed description of the unique branches of the serendipitous path (without the common background)"
+            "user1_unique_indices": [list of integer IDs from USER 1 CONVERSATIONS that explore topics unique to USER 1, not present in USER 2],
+            "user2_unique_indices": [list of integer IDs from USER 2 CONVERSATIONS that explore topics unique to USER 2, not present in USER 1],
+            "common_background": "A detailed description of the shared background between the two users (without the unique parts)",
+            "user_1_unique_branches": "A summary of the unique path undertaken by USER 1",
+            "user_2_unique_branches": "A summary of the unique path undertaken by USER 2",
+            "user_1_call_to_action": "A short prompt describing what USER 1 should ask USER 2, given their differences and similarities",
+            "user_2_call_to_action": "A short prompt describing what USER 2 should ask USER 1, given their differences and similarities"
           }}
 
           If you cannot find a serendipitous path, return an empty object: {{}}
