@@ -7,7 +7,8 @@ import polars as pl
 from dagster import (
     AssetExecutionContext,
     AssetIn,
-    asset,
+    AssetOut,
+    multi_asset,
 )
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.preprocessing import normalize
@@ -240,16 +241,23 @@ def create_conversation_pairs_for_clusters(
     return pairs
 
 
-@asset(
+@multi_asset(
     partitions_def=user_partitions_def,
     ins={"conversations_embeddings": AssetIn(key="conversations_embeddings")},
-    io_manager_key="parquet_io_manager",
+    outs={
+        "conversation_pair_clusters": AssetOut(
+            key="conversation_pair_clusters", io_manager_key="parquet_io_manager"
+        ),
+        "user_similarities": AssetOut(
+            key="user_similarities", io_manager_key="parquet_io_manager"
+        ),
+    },
 )
 def conversation_pair_clusters(
     context: AssetExecutionContext,
     config: ConversationPairClustersConfig,
     conversations_embeddings: pl.DataFrame,
-) -> pl.DataFrame:
+) -> tuple[pl.DataFrame, pl.DataFrame]:
     """
     Create semantically related conversation pairs grouped by clusters using agglomerative clustering.
 
@@ -268,11 +276,15 @@ def conversation_pair_clusters(
     - max_items_per_cluster: Maximum number of items allowed per cluster (default: 1000)
     - linkage: Clustering criterion for agglomerative clustering (default: "ward")
 
-    Returns a DataFrame with schema:
-    - user_id: The user ID
-    - match_group_id: ID for the user pair
-    - conversation: Struct with conversation details (ID, title, summary, dates)
-    - cluster_id: Global cluster ID grouping semantically related conversations
+    Returns a tuple of two DataFrames:
+    1. Conversation pairs DataFrame with schema:
+       - user_id: The user ID
+       - match_group_id: ID for the user pair
+       - conversation: Struct with conversation details (ID, title, summary, dates)
+       - cluster_id: Global cluster ID grouping semantically related conversations
+    2. User similarities DataFrame with schema:
+       - user_id: The user ID
+       - similarity: Similarity score between the current user and this user
     """
     current_user_id = context.partition_key
     logger = context.log
@@ -282,7 +294,9 @@ def conversation_pair_clusters(
 
     if not other_user_ids:
         logger.info("No other users found for conversation clustering.")
-        return create_empty_result()
+        return create_empty_result(), pl.DataFrame(
+            schema={"user_id": pl.Utf8, "similarity": pl.Float32}
+        )
 
     logger.info(
         f"Processing {len(other_user_ids)} users for conversation clusters with user {current_user_id}"
@@ -294,7 +308,9 @@ def conversation_pair_clusters(
 
     if not emb1_list:
         logger.info("No embeddings for current user, nothing to cluster.")
-        return create_empty_result()
+        return create_empty_result(), pl.DataFrame(
+            schema={"user_id": pl.Utf8, "similarity": pl.Float32}
+        )
 
     emb1_array = np.array(emb1_list, dtype=np.float32)
     current_user_avg_embedding = calculate_user_average_embedding(emb1_array)
@@ -307,9 +323,23 @@ def conversation_pair_clusters(
         current_user_avg_embedding, user_avg_embeddings, config.top_k_users
     )
 
+    # Create user similarities DataFrame
+    user_similarities_data = [
+        {"user_id": user_id, "similarity": similarity}
+        for user_id, similarity in top_users
+    ]
+    user_similarities_df = (
+        pl.DataFrame(
+            user_similarities_data,
+            schema={"user_id": pl.Utf8, "similarity": pl.Float32},
+        )
+        if user_similarities_data
+        else pl.DataFrame(schema={"user_id": pl.Utf8, "similarity": pl.Float32})
+    )
+
     if not top_users:
         logger.info("No similar users found.")
-        return create_empty_result()
+        return create_empty_result(), user_similarities_df
 
     all_pairs = []
     # Create a global counter for unique cluster IDs
@@ -428,7 +458,6 @@ def conversation_pair_clusters(
 
     if all_pairs:
         result_df = pl.DataFrame(all_pairs, schema=CONVERSATION_PAIR_SCHEMA)
-
-        return result_df.sort(["cluster_id"], descending=[False])
+        return result_df.sort(["cluster_id"], descending=[False]), user_similarities_df
     else:
-        return create_empty_result()
+        return create_empty_result(), user_similarities_df
