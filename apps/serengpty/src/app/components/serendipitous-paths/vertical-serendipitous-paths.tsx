@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Avatar, AvatarImage, AvatarFallback } from '@enclaveid/ui/avatar';
 import { Skeleton } from '@enclaveid/ui/skeleton';
 import { Button } from '@enclaveid/ui/button';
@@ -12,7 +13,12 @@ import { SerendipitousPathsResponse } from '../../types/serendipitous-paths';
 import { ScoreCircle } from './score-circle';
 import { getIdenticon } from '../../utils/getIdenticon';
 import { getCountryFlag } from '../../utils/getCountryFlag';
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@enclaveid/ui/accordion';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@enclaveid/ui/accordion';
 
 interface VerticalSerendipitousPathsProps {
   initialData?: SerendipitousPathsResponse[];
@@ -53,7 +59,9 @@ export function VerticalSerendipitousPaths({
 
   const selectedUser = data[selectedUserIndex].connectedUser;
   // For header display, use the first path data for this user
-  const userPathsData = data.filter(item => item.connectedUser.id === selectedUser.id);
+  const userPathsData = data.filter(
+    (item) => item.connectedUser.id === selectedUser.id
+  );
   const headerPathData = userPathsData[0];
 
   return (
@@ -111,8 +119,8 @@ export function VerticalSerendipitousPaths({
         </div>
         <ScrollArea className="h-[calc(100%-56px)]">
           <div className="p-2">
-            <Accordion 
-              type="single" 
+            <Accordion
+              type="single"
               collapsible
               value={selectedPathId}
               onValueChange={(value) => {
@@ -125,26 +133,28 @@ export function VerticalSerendipitousPaths({
                 .filter((item) => item.connectedUser.id === selectedUser.id)
                 .map((pathData) => {
                   return (
-                    <AccordionItem 
-                      key={pathData.path.id} 
+                    <AccordionItem
+                      key={pathData.path.id}
                       value={pathData.path.id}
                       className="border rounded-lg overflow-hidden shadow-sm"
                     >
-                      <div className={cn(
-                        "bg-background rounded-lg hover:bg-muted/50 transition-colors",
-                        selectedPathId === pathData.path.id && "bg-muted/50"
-                      )}>
+                      <div
+                        className={cn(
+                          'bg-background rounded-lg hover:bg-muted/50 transition-colors',
+                          selectedPathId === pathData.path.id && 'bg-muted/50'
+                        )}
+                      >
                         <AccordionTrigger className="px-3 py-3 hover:no-underline rounded-lg focus:outline-none">
                           <div className="w-full text-left">
                             <div className="font-medium mb-1">Connection</div>
-                            <div className="text-sm text-muted-foreground">{pathData.path.summary}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {pathData.path.summary}
+                            </div>
                           </div>
                         </AccordionTrigger>
                       </div>
 
-                      <AccordionContent 
-                        className="px-4 pt-2 pb-4 border-t transition-all"
-                      >
+                      <AccordionContent className="px-4 pt-2 pb-4 border-t transition-all">
                         <PathDetails pathData={pathData} />
                       </AccordionContent>
                     </AccordionItem>
@@ -206,64 +216,86 @@ function UserCard({
   );
 }
 
-
 // Path Details Component
 function PathDetails({ pathData }: { pathData: SerendipitousPathsResponse }) {
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium mb-2">Connection Summary</h3>
-        <p className="text-muted-foreground">{pathData.path.summary}</p>
-      </div>
+      {/* Horizontal Flow Container */}
+      <div className="flex flex-row items-center justify-between gap-4">
+        {/* Section 1: Common Path */}
+        {pathData.commonConversations.length > 0 ? (
+          pathData.commonConversations.map((convo) => (
+            <ConversationCard key={convo.id} conversation={convo} />
+          ))
+        ) : (
+          <div className="text-center p-4 text-muted-foreground">
+            No common conversations found
+          </div>
+        )}
 
-      <div>
-        <h3 className="text-lg font-medium mb-2">Common Interests</h3>
-        <div className="space-y-3">
-          {pathData.commonConversations.length > 0 ? (
-            pathData.commonConversations.map((convo) => (
-              <ConversationCard key={convo.id} conversation={convo} />
-            ))
-          ) : (
-            <div className="text-center p-4 text-muted-foreground">
-              No common conversations found
-            </div>
-          )}
+        {/* Separator: Merge Arrow */}
+        <div className="flex-shrink-0">
+          <Image
+            src="/arrow-split.svg"
+            alt="Paths split"
+            width={40}
+            height={40}
+            className="w-auto"
+          />
         </div>
-      </div>
 
-      <Separator />
+        {/* Section 2: Path Differences - Stacked */}
+        <div className="flex">
+          <div className="space-y-2">
+            {/* Your Path */}
+            {pathData.currentUserUniqueConversations.length > 0 ? (
+              pathData.currentUserUniqueConversations.map((convo) => (
+                <ConversationCard key={convo.id} conversation={convo} />
+              ))
+            ) : (
+              <div className="text-center p-4 text-muted-foreground">
+                No unique conversations found
+              </div>
+            )}
 
-      <div>
-        <h3 className="text-lg font-medium mb-2">Your Unique Interests</h3>
-        <div className="space-y-3">
-          {pathData.currentUserUniqueConversations.length > 0 ? (
-            pathData.currentUserUniqueConversations.map((convo) => (
-              <ConversationCard key={convo.id} conversation={convo} />
-            ))
-          ) : (
-            <div className="text-center p-4 text-muted-foreground">
-              No unique conversations found
-            </div>
-          )}
+            <Separator />
+
+            {/* Their Path */}
+            {pathData.connectedUserUniqueConversations.length > 0 ? (
+              pathData.connectedUserUniqueConversations.map((convo) => (
+                <ConversationCard key={convo.id} conversation={convo} />
+              ))
+            ) : (
+              <div className="text-center p-4 text-muted-foreground">
+                No unique conversations found for {pathData.connectedUser.name}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      <Separator />
+        {/* Separator: Split Arrow */}
+        <div className="flex-shrink-0">
+          <Image
+            src="/arrow-merge.svg"
+            alt="Paths merge"
+            width={40}
+            height={40}
+            className="w-auto"
+          />
+        </div>
 
-      <div>
-        <h3 className="text-lg font-medium mb-2">
-          {pathData.connectedUser.name}&apos;s Unique Interests
-        </h3>
-        <div className="space-y-3">
-          {pathData.connectedUserUniqueConversations.length > 0 ? (
-            pathData.connectedUserUniqueConversations.map((convo) => (
-              <ConversationCard key={convo.id} conversation={convo} />
-            ))
-          ) : (
-            <div className="text-center p-4 text-muted-foreground">
-              No unique conversations found for {pathData.connectedUser.name}
-            </div>
-          )}
+        {/* Section 3: Call to Action */}
+        <div className="flex-1 bg-muted p-4 rounded-lg text-center flex flex-col items-center justify-center">
+          <h3 className="text-lg font-medium mb-2">Start a Conversation</h3>
+          <p className="text-muted-foreground mb-3">
+            Connect with {pathData.connectedUser.name}
+          </p>
+          <ChatButton
+            otherUserId={pathData.connectedUser.id}
+            otherUserName={pathData.connectedUser.name}
+            variant="default"
+            size="md"
+          />
         </div>
       </div>
     </div>
@@ -271,7 +303,11 @@ function PathDetails({ pathData }: { pathData: SerendipitousPathsResponse }) {
 }
 
 // Conversation Card Component
-function ConversationCard({ conversation }: { conversation: { summary: string; datetime: string } }) {
+function ConversationCard({
+  conversation,
+}: {
+  conversation: { summary: string; datetime: string };
+}) {
   return (
     <div className="p-3 bg-muted rounded-lg">
       <div className="font-medium">{conversation.summary}</div>

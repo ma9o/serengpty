@@ -10,24 +10,25 @@ datasource db {
 }
 
 model User {
-  id           String  @id @default(cuid())
-  email        String?
-  passwordHash String?
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  email        String? // TODO: remove?
+  passwordHash String  @unique
 
   name              String  @unique
   country           String  @default("INTERNET")
   sensitiveMatching Boolean @default(false)
+
+  userPaths    UserPath[]
+  usersMatches UsersMatch[]
 
   // Auth.js fields
   emailVerified DateTime?
   image         String?
   accounts      Account[]
   sessions      Session[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  userPaths UserPath[]
 }
 
 model Conversation {
@@ -35,8 +36,9 @@ model Conversation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  uniqueSummary String
-  datetime      DateTime
+  title    String
+  summary  String
+  datetime DateTime
 
   // If the conversation is part of the common conversations of a serendipitous path
   serendipitousPath   SerendipitousPath? @relation(fields: [serendipitousPathId], references: [id])
@@ -52,31 +54,46 @@ model SerendipitousPath {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  commonSummary String
-  score         Float
+  commonConversations Conversation[] // Conversations common/similar to all users in this path
 
-  commonConversations Conversation[]
+  commonSummary String // Summary of the common conversations
 
   // Through this relation, we can get the unique conversations for each user of a serendipitous path
   userPaths UserPath[]
+
+  usersMatchId String?
+  usersMatch   UsersMatch? @relation(fields: [usersMatchId], references: [id])
 }
 
-// New join table between User and SerendipitousPath
 model UserPath {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Links user and serendipitous path
+  uniqueConversations Conversation[] // Conversations unique to this user-path pair
+
+  uniqueSummary      String // Summary of the unique conversations
+  uniqueCallToAction String // What the user should ask the other user about, to complement their unique knowledge
+
+  // Functions as join table between user and serendipitous path
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
   path   SerendipitousPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
   pathId String
 
-  uniqueConversations Conversation[]
-
   @@unique([userId, pathId])
+}
+
+model UsersMatch {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  score Float // Similarity score between users
+
+  users              User[]
+  serendipitousPaths SerendipitousPath[]
 }
 
 // -------------------- Auth.js models --------------------
