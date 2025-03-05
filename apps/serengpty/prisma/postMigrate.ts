@@ -70,36 +70,36 @@ const seed = async (prisma: PrismaClient) => {
     data: {
       score: 0.85,
       users: {
-        connect: [{ id: giovanni.id }, { id: alice.id }]
-      }
-    }
+        connect: [{ id: giovanni.id }, { id: alice.id }],
+      },
+    },
   });
 
   const gioCharlieMatch = await prisma.usersMatch.create({
     data: {
       score: 0.78,
       users: {
-        connect: [{ id: giovanni.id }, { id: charlie.id }]
-      }
-    }
+        connect: [{ id: giovanni.id }, { id: charlie.id }],
+      },
+    },
   });
 
   const gioBobMatch = await prisma.usersMatch.create({
     data: {
       score: 0.88,
       users: {
-        connect: [{ id: giovanni.id }, { id: bob.id }]
-      }
-    }
+        connect: [{ id: giovanni.id }, { id: bob.id }],
+      },
+    },
   });
 
   const gioDianaMatch = await prisma.usersMatch.create({
     data: {
       score: 0.81,
       users: {
-        connect: [{ id: giovanni.id }, { id: diana.id }]
-      }
-    }
+        connect: [{ id: giovanni.id }, { id: diana.id }],
+      },
+    },
   });
 
   // Create serendipitous paths
@@ -109,8 +109,8 @@ const seed = async (prisma: PrismaClient) => {
       commonSummary:
         'Connected through tech interests and programming languages',
       usersMatch: {
-        connect: { id: gioAliceMatch.id }
-      }
+        connect: { id: gioAliceMatch.id },
+      },
     },
   });
 
@@ -120,8 +120,8 @@ const seed = async (prisma: PrismaClient) => {
       commonSummary:
         'Connected through travel experiences in similar locations',
       usersMatch: {
-        connect: { id: gioCharlieMatch.id }
-      }
+        connect: { id: gioCharlieMatch.id },
+      },
     },
   });
 
@@ -131,8 +131,8 @@ const seed = async (prisma: PrismaClient) => {
       commonSummary:
         'Connected through culinary interests and favorite restaurants',
       usersMatch: {
-        connect: { id: gioBobMatch.id }
-      }
+        connect: { id: gioBobMatch.id },
+      },
     },
   });
 
@@ -141,8 +141,8 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Melody Makers',
       commonSummary: 'Connected through music tastes and concert experiences',
       usersMatch: {
-        connect: { id: gioDianaMatch.id }
-      }
+        connect: { id: gioDianaMatch.id },
+      },
     },
   });
 
@@ -152,8 +152,8 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Gaming Guild',
       commonSummary: 'Connected through gaming interests and strategies',
       usersMatch: {
-        connect: { id: gioBobMatch.id }
-      }
+        connect: { id: gioBobMatch.id },
+      },
     },
   });
 
@@ -162,8 +162,8 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Literary League',
       commonSummary: 'Connected through book recommendations and discussions',
       usersMatch: {
-        connect: { id: gioAliceMatch.id }
-      }
+        connect: { id: gioAliceMatch.id },
+      },
     },
   });
 
@@ -172,8 +172,8 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Active Athletes',
       commonSummary: 'Connected through sports interests and activities',
       usersMatch: {
-        connect: { id: gioCharlieMatch.id }
-      }
+        connect: { id: gioCharlieMatch.id },
+      },
     },
   });
 
@@ -239,7 +239,8 @@ const seed = async (prisma: PrismaClient) => {
       userId: giovanni.id,
       pathId: techPath.id,
       uniqueSummary: "Giovanni's knowledge of machine learning projects",
-      uniqueCallToAction: "Ask about advanced ML implementation details"
+      uniqueCallToAction:
+        'Ask how to optimize the frontend for your ML applications',
     },
   });
 
@@ -248,7 +249,7 @@ const seed = async (prisma: PrismaClient) => {
       userId: alice.id,
       pathId: techPath.id,
       uniqueSummary: "Alice's expertise in frontend design patterns",
-      uniqueCallToAction: "Ask about React component optimization techniques"
+      uniqueCallToAction: 'Ask how ML could enhance your frontend applications',
     },
   });
 
@@ -258,7 +259,7 @@ const seed = async (prisma: PrismaClient) => {
       userId: giovanni.id,
       pathId: bookClubPath.id,
       uniqueSummary: "Giovanni's science fiction novel recommendations",
-      uniqueCallToAction: "Ask about classic sci-fi authors and their impact"
+      uniqueCallToAction: 'Ask how to organize a sci-fi book club discussion',
     },
   });
 
@@ -267,7 +268,8 @@ const seed = async (prisma: PrismaClient) => {
       userId: alice.id,
       pathId: bookClubPath.id,
       uniqueSummary: "Alice's book club organizing skills",
-      uniqueCallToAction: "Ask about managing diverse reading preferences"
+      uniqueCallToAction:
+        'Ask for sci-fi recommendations for your next book club',
     },
   });
 
@@ -277,7 +279,8 @@ const seed = async (prisma: PrismaClient) => {
       userId: giovanni.id,
       pathId: travelPath.id,
       uniqueSummary: "Giovanni's travel algorithms and ML applications",
-      uniqueCallToAction: "Ask about using ML for travel recommendations"
+      uniqueCallToAction:
+        'Ask how your ML recommendations would work for backpackers',
     },
   });
 
@@ -286,7 +289,7 @@ const seed = async (prisma: PrismaClient) => {
       userId: charlie.id,
       pathId: travelPath.id,
       uniqueSummary: "Charlie's backpacking experiences in New Zealand",
-      uniqueCallToAction: "Ask about off-the-beaten-path destinations"
+      uniqueCallToAction: 'Ask how ML could optimize your backpacking routes',
     },
   });
 
@@ -296,7 +299,8 @@ const seed = async (prisma: PrismaClient) => {
       userId: giovanni.id,
       pathId: sportPath.id,
       uniqueSummary: "Giovanni's marathon training schedule",
-      uniqueCallToAction: "Ask about endurance training techniques"
+      uniqueCallToAction:
+        'Ask how mountain biking could complement your endurance training',
     },
   });
 
@@ -305,7 +309,8 @@ const seed = async (prisma: PrismaClient) => {
       userId: charlie.id,
       pathId: sportPath.id,
       uniqueSummary: "Charlie's mountain biking knowledge",
-      uniqueCallToAction: "Ask about the best mountain biking gear"
+      uniqueCallToAction:
+        'Ask how marathon training principles could improve your biking stamina',
     },
   });
 
@@ -315,7 +320,8 @@ const seed = async (prisma: PrismaClient) => {
       userId: giovanni.id,
       pathId: foodPath.id,
       uniqueSummary: "Giovanni's Italian cooking techniques",
-      uniqueCallToAction: "Ask about authentic pasta preparation"
+      uniqueCallToAction:
+        'Ask how to automate repetitive cooking tasks with DevOps principles',
     },
   });
 
@@ -324,7 +330,8 @@ const seed = async (prisma: PrismaClient) => {
       userId: bob.id,
       pathId: foodPath.id,
       uniqueSummary: "Bob's DevOps knowledge",
-      uniqueCallToAction: "Ask about CI/CD pipeline optimization"
+      uniqueCallToAction:
+        'Ask how Italian cooking techniques could inspire better team workflows',
     },
   });
 
@@ -334,7 +341,8 @@ const seed = async (prisma: PrismaClient) => {
       userId: giovanni.id,
       pathId: gamingPath.id,
       uniqueSummary: "Giovanni's strategy game tournament experience",
-      uniqueCallToAction: "Ask about competitive gaming strategies"
+      uniqueCallToAction:
+        'Ask how game development insights could improve competitive strategy',
     },
   });
 
@@ -343,7 +351,8 @@ const seed = async (prisma: PrismaClient) => {
       userId: bob.id,
       pathId: gamingPath.id,
       uniqueSummary: "Bob's game development framework knowledge",
-      uniqueCallToAction: "Ask about game engine architecture"
+      uniqueCallToAction:
+        'Ask how competitive gaming strategies influence game design',
     },
   });
 
@@ -353,7 +362,8 @@ const seed = async (prisma: PrismaClient) => {
       userId: giovanni.id,
       pathId: musicPath.id,
       uniqueSummary: "Giovanni's classical composers analysis",
-      uniqueCallToAction: "Ask about Baroque compositional techniques"
+      uniqueCallToAction:
+        'Ask which wines pair best with specific classical compositions',
     },
   });
 
@@ -362,7 +372,8 @@ const seed = async (prisma: PrismaClient) => {
       userId: diana.id,
       pathId: musicPath.id,
       uniqueSummary: "Diana's wine tasting experiences",
-      uniqueCallToAction: "Ask about wine pairing with classical music"
+      uniqueCallToAction:
+        'Ask which classical pieces enhance different wine tasting experiences',
     },
   });
 
@@ -543,26 +554,26 @@ const seed = async (prisma: PrismaClient) => {
     console.log('Seeding database...');
     const users = await seed(prisma);
 
-    console.log('Deleting Stream Chat users...');
-    const streamChatUsers = await streamChatClient.queryUsers({
-      id: { $nin: ['ma9o'] },
-    });
+    // console.log('Deleting Stream Chat users...');
+    // const streamChatUsers = await streamChatClient.queryUsers({
+    //   id: { $nin: ['ma9o'] },
+    // });
 
-    if (streamChatUsers.users.length > 0) {
-      await streamChatClient.deleteUsers(
-        streamChatUsers.users.map((user) => user.id),
-        { conversations: 'hard' }
-      );
-    }
+    // if (streamChatUsers.users.length > 0) {
+    //   await streamChatClient.deleteUsers(
+    //     streamChatUsers.users.map((user) => user.id),
+    //     { conversations: 'hard' }
+    //   );
+    // }
 
-    console.log('Creating Stream Chat users...');
-    await streamChatClient.upsertUsers(
-      users.map((user) => ({
-        id: user.id,
-        role: 'user',
-        name: user.name,
-      }))
-    );
+    // console.log('Creating Stream Chat users...');
+    // await streamChatClient.upsertUsers(
+    //   users.map((user) => ({
+    //     id: user.id,
+    //     role: 'user',
+    //     name: user.name,
+    //   }))
+    // );
 
     await prisma.$disconnect();
   } catch (e) {
