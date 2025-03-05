@@ -60,6 +60,7 @@ CREATE TABLE "UsersMatch" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "score" DOUBLE PRECISION NOT NULL,
+    "viewed" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "UsersMatch_pkey" PRIMARY KEY ("id")
 );

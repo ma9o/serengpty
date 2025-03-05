@@ -8,9 +8,11 @@ import {
 } from '@radix-ui/react-icons';
 import { useStreamChatUser } from './chat/StreamChatUserContext';
 import { LogoutButton } from './logout-button';
+import { useUnviewedMatches } from './serendipitous-paths/UnviewedMatchesContext';
 
 export function DashboardSidebar() {
   const { unreadCount } = useStreamChatUser();
+  const { unviewedCount } = useUnviewedMatches();
   
   const sidebarItems = {
     navMain: [
@@ -21,6 +23,7 @@ export function DashboardSidebar() {
             title: 'Home',
             url: '/dashboard/home',
             icon: <HomeIcon />,
+            badge: unviewedCount > 0 ? unviewedCount : undefined,
           },
           {
             title: 'Chats',

@@ -9,6 +9,7 @@ import {
 } from '@enclaveid/ui/sidebar';
 import { DashboardBreadcrumb } from '../../components/dashboard-breadcrumb';
 import { StreamChatUserProvider } from '../../components/chat/StreamChatUserContext';
+import { UnviewedMatchesProvider } from '../../components/serendipitous-paths/UnviewedMatchesContext';
 
 // Import our new component
 import { DashboardSidebar } from '../../components/dashboard-sidebar';
@@ -34,7 +35,9 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <StreamChatUserProvider>
-      <DashboardLayout>{children}</DashboardLayout>
+      <UnviewedMatchesProvider>
+        <DashboardLayout>{children}</DashboardLayout>
+      </UnviewedMatchesProvider>
     </StreamChatUserProvider>
   );
 }

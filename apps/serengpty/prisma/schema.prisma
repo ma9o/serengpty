@@ -95,7 +95,8 @@ model UsersMatch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  score Float // Similarity score between users
+  score  Float // Similarity score between users
+  viewed Boolean @default(false)
 
   users              User[]
   serendipitousPaths SerendipitousPath[]

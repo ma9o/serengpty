@@ -18,7 +18,8 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from '@enclaveid/ui/accordion';
-import { getSerendipitousPaths } from '../../actions/getSerendipitousPaths';
+import { getSerendipitousPaths, markUserMatchAsViewed } from '../../actions/getSerendipitousPaths';
+import { useUnviewedMatches } from './UnviewedMatchesContext';
 import {
   Dialog,
   DialogTrigger,
@@ -46,7 +47,7 @@ export function VerticalSerendipitousPaths({
 }: VerticalSerendipitousPathsProps) {
   const [loading] = useState(initialData.length === 0 && !initialError);
   const [error] = useState<string | null>(initialError);
-  const [data] = useState<UserPathsResponse>(initialData);
+  const [data, setData] = useState<UserPathsResponse>(initialData);
   const [selectedMatchIndex, setSelectedMatchIndex] = useState(0);
   const [selectedPathId, setSelectedPathId] = useState<string | null>(null);
 
@@ -62,7 +63,27 @@ export function VerticalSerendipitousPaths({
     return <EmptyState />;
   }
 
-  const handleUserSelect = (index: number) => {
+  const { decrementCount } = useUnviewedMatches();
+
+  const handleUserSelect = async (index: number) => {
+    const match = data[index];
+    
+    // If the match hasn't been viewed yet, mark it as viewed
+    if (!match.viewed) {
+      try {
+        await markUserMatchAsViewed(match.id);
+        // Update the local state to reflect the change
+        const updatedData = [...data];
+        updatedData[index] = { ...match, viewed: true };
+        setData(updatedData);
+        
+        // Update the unviewed count in context
+        decrementCount();
+      } catch (error) {
+        console.error('Failed to mark match as viewed:', error);
+      }
+    }
+    
     setSelectedMatchIndex(index);
     setSelectedPathId(null);
   };
@@ -71,8 +92,11 @@ export function VerticalSerendipitousPaths({
     setSelectedPathId(pathId);
   };
 
+  // Sort the data array by score in descending order
+  const sortedData = [...data].sort((a, b) => b.score - a.score);
+
   // Get the current selected match
-  const selectedMatch = data[selectedMatchIndex];
+  const selectedMatch = sortedData[selectedMatchIndex];
   // Get the matched user (the one who is not the current user)
   const matchedUser = selectedMatch.users[0];
 
@@ -85,7 +109,7 @@ export function VerticalSerendipitousPaths({
         </div>
         <ScrollArea className="h-[calc(100%-56px)]">
           <div className="p-2 space-y-2">
-            {data.map((match, index) => {
+            {sortedData.map((match, index) => {
               const user = match.users[0];
               return (
                 <UserCard
@@ -94,6 +118,7 @@ export function VerticalSerendipitousPaths({
                   score={match.score}
                   totalPaths={match.serendipitousPaths.length}
                   isActive={index === selectedMatchIndex}
+                  viewed={match.viewed}
                   onClick={() => handleUserSelect(index)}
                 />
               );
@@ -123,7 +148,7 @@ export function VerticalSerendipitousPaths({
             <Accordion
               type="single"
               collapsible
-              value={selectedPathId}
+              value={selectedPathId || undefined}
               onValueChange={(value) => {
                 handlePathSelect(value || null);
               }}
@@ -171,18 +196,21 @@ function UserCard({
   totalPaths = 1,
   isActive = false,
   onClick,
+  viewed = true,
 }: {
   user: User;
   score: number;
   totalPaths?: number;
   isActive?: boolean;
   onClick?: () => void;
+  viewed?: boolean;
 }) {
   return (
     <div
       className={cn(
         'p-3 rounded-lg flex items-center gap-3 cursor-pointer hover:bg-muted transition-colors',
-        isActive && 'bg-muted'
+        isActive && 'bg-muted',
+        !viewed && 'bg-primary/10'
       )}
       onClick={onClick}
     >
@@ -193,7 +221,12 @@ function UserCard({
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 overflow-hidden">
-        <div className="font-medium truncate">{user.name}</div>
+        <div className="font-medium truncate flex items-center gap-2">
+          {user.name}
+          {!viewed && (
+            <span className="inline-flex h-2 w-2 rounded-full bg-primary"></span>
+          )}
+        </div>
         <div className="flex items-center gap-1">
           <div className="text-xs text-muted-foreground">
             <span className="mr-1">{getCountryFlag(user.country)}</span>
@@ -367,12 +400,12 @@ function PathDetails({
 function ConversationsList({
   conversations = [],
 }: {
-  conversations?: Array<{ 
-    id: string; 
-    summary: string; 
+  conversations?: Array<{
+    id: string;
+    summary: string;
     datetime: Date;
-    user?: { 
-      id: string; 
+    user?: {
+      id: string;
       name: string;
     };
   }>;
@@ -395,9 +428,9 @@ function ConversationsList({
               {conversation.user && (
                 <div className="flex items-center gap-2">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage 
-                      src={getIdenticon(conversation.user.name)} 
-                      alt={conversation.user.name} 
+                    <AvatarImage
+                      src={getIdenticon(conversation.user.name)}
+                      alt={conversation.user.name}
                     />
                     <AvatarFallback>
                       {conversation.user.name.substring(0, 2).toUpperCase()}

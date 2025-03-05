@@ -3,6 +3,54 @@
 import { auth } from '../services/auth';
 import { prisma } from '../services/db/prisma';
 
+export async function markUserMatchAsViewed(matchId: string) {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      throw new Error('Authentication required');
+    }
+
+    await prisma.usersMatch.update({
+      where: { id: matchId },
+      data: { viewed: true },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error marking match as viewed:', error);
+    throw error;
+  }
+}
+
+export async function getUnviewedMatchesCount() {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      throw new Error('Authentication required');
+    }
+
+    const currentUserId = session.user.id;
+
+    const count = await prisma.usersMatch.count({
+      where: {
+        users: {
+          some: {
+            id: currentUserId,
+          },
+        },
+        viewed: false,
+      },
+    });
+
+    return count;
+  } catch (error) {
+    console.error('Error fetching unviewed matches count:', error);
+    throw error;
+  }
+}
+
 export async function getSerendipitousPaths() {
   try {
     const session = await auth();
@@ -16,6 +64,9 @@ export async function getSerendipitousPaths() {
     // This query fetches all user matches for the current user along with associated serendipitous paths
     return await prisma.usersMatch.findMany({
       // Find all UsersMatch records that include the current user
+      orderBy: {
+        score: 'desc',
+      },
       where: {
         users: {
           some: {
@@ -24,7 +75,9 @@ export async function getSerendipitousPaths() {
         },
       },
       select: {
+        id: true, // Include the match ID
         score: true, // Similarity score between users
+        viewed: true,
         // Include other users in the match, but exclude the current user
         users: {
           select: {
