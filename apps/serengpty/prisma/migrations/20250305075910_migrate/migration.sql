@@ -1,15 +1,15 @@
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     "email" TEXT,
-    "passwordHash" TEXT,
+    "passwordHash" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "country" TEXT NOT NULL DEFAULT 'INTERNET',
     "sensitiveMatching" BOOLEAN NOT NULL DEFAULT false,
     "emailVerified" TIMESTAMP(3),
     "image" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -19,7 +19,8 @@ CREATE TABLE "Conversation" (
     "id" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "uniqueSummary" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "summary" TEXT NOT NULL,
     "datetime" TIMESTAMP(3) NOT NULL,
     "serendipitousPathId" TEXT,
     "userPathId" TEXT,
@@ -32,8 +33,9 @@ CREATE TABLE "SerendipitousPath" (
     "id" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "title" TEXT NOT NULL,
     "commonSummary" TEXT NOT NULL,
-    "score" DOUBLE PRECISION NOT NULL,
+    "usersMatchId" TEXT,
 
     CONSTRAINT "SerendipitousPath_pkey" PRIMARY KEY ("id")
 );
@@ -43,10 +45,22 @@ CREATE TABLE "UserPath" (
     "id" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "uniqueSummary" TEXT NOT NULL,
+    "uniqueCallToAction" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "pathId" TEXT NOT NULL,
 
     CONSTRAINT "UserPath_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UsersMatch" (
+    "id" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "score" DOUBLE PRECISION NOT NULL,
+
+    CONSTRAINT "UsersMatch_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -86,6 +100,17 @@ CREATE TABLE "VerificationToken" (
     CONSTRAINT "VerificationToken_pkey" PRIMARY KEY ("identifier","token")
 );
 
+-- CreateTable
+CREATE TABLE "_UserToUsersMatch" (
+    "A" TEXT NOT NULL,
+    "B" TEXT NOT NULL,
+
+    CONSTRAINT "_UserToUsersMatch_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_passwordHash_key" ON "User"("passwordHash");
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_name_key" ON "User"("name");
 
@@ -95,11 +120,17 @@ CREATE UNIQUE INDEX "UserPath_userId_pathId_key" ON "UserPath"("userId", "pathId
 -- CreateIndex
 CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
 
+-- CreateIndex
+CREATE INDEX "_UserToUsersMatch_B_index" ON "_UserToUsersMatch"("B");
+
 -- AddForeignKey
 ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_serendipitousPathId_fkey" FOREIGN KEY ("serendipitousPathId") REFERENCES "SerendipitousPath"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_userPathId_fkey" FOREIGN KEY ("userPathId") REFERENCES "UserPath"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SerendipitousPath" ADD CONSTRAINT "SerendipitousPath_usersMatchId_fkey" FOREIGN KEY ("usersMatchId") REFERENCES "UsersMatch"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UserPath" ADD CONSTRAINT "UserPath_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -112,3 +143,9 @@ ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId"
 
 -- AddForeignKey
 ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_UserToUsersMatch" ADD CONSTRAINT "_UserToUsersMatch_A_fkey" FOREIGN KEY ("A") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_UserToUsersMatch" ADD CONSTRAINT "_UserToUsersMatch_B_fkey" FOREIGN KEY ("B") REFERENCES "UsersMatch"("id") ON DELETE CASCADE ON UPDATE CASCADE;
