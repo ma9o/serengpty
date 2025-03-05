@@ -72,6 +72,8 @@ def generate_serendipity_prompt(
             "user_2_call_to_action": "A short prompt describing what USER 2 should ask USER 1, given their differences and similarities"
           }}
 
+          In the text, replace any references to the users with "<USER_1>" and "<USER_2>".
+
           If you cannot find a serendipitous path, return an empty object: {{}}
 
           USER 1 CONVERSATIONS:
@@ -113,7 +115,10 @@ def parse_serendipity_result(content: str) -> Dict:
             "user1_unique_indices": user1_unique_indices,
             "user2_unique_indices": user2_unique_indices,
             "common_background": result["common_background"],
-            "unique_branches": result["unique_branches"],
+            "user_1_unique_branches": result.get("user_1_unique_branches", ""),
+            "user_2_unique_branches": result.get("user_2_unique_branches", ""),
+            "user_1_call_to_action": result.get("user_1_call_to_action", ""),
+            "user_2_call_to_action": result.get("user_2_call_to_action", ""),
         }
     except Exception:
         return {}

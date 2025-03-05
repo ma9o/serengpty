@@ -66,10 +66,15 @@ def _create_path_entry(
     user1_unique_indices = path_obj.get("user1_unique_indices", [])
     user2_unique_indices = path_obj.get("user2_unique_indices", [])
     common_background = path_obj.get("common_background", "")
-    unique_branches = path_obj.get("unique_branches", "")
+    
+    # Get the new fields from the LLM response
+    user_1_unique_branches = path_obj.get("user_1_unique_branches", "")
+    user_2_unique_branches = path_obj.get("user_2_unique_branches", "")
+    user_1_call_to_action = path_obj.get("user_1_call_to_action", "")
+    user_2_call_to_action = path_obj.get("user_2_call_to_action", "")
 
     # Create the path description from the common background and unique branches
-    path_description = f"{common_background}\n\n{unique_branches}".strip()
+    path_description = common_background.strip()
 
     # Build map of row_idx to user_id (only needed for identifying user2)
     idx_to_user = {}
@@ -110,6 +115,10 @@ def _create_path_entry(
         "user1_path_length": user1_total_length,
         "user2_path_length": user2_total_length,
         "path_description": path_description,
+        "user1_unique_branches": user_1_unique_branches,
+        "user2_unique_branches": user_2_unique_branches,
+        "user1_call_to_action": user_1_call_to_action,
+        "user2_call_to_action": user_2_call_to_action,
         "iteration": iteration,
         "created_at": datetime.datetime.now(),
         "llm_output": response_text,
@@ -136,6 +145,11 @@ def _get_enhanced_schema():
     schema["common_indices"] = pl.List(pl.Int64)
     schema["user1_indices"] = pl.List(pl.Int64)
     schema["user2_indices"] = pl.List(pl.Int64)
+    # Add new fields for user branches and call to actions
+    schema["user1_unique_branches"] = pl.Utf8
+    schema["user2_unique_branches"] = pl.Utf8
+    schema["user1_call_to_action"] = pl.Utf8
+    schema["user2_call_to_action"] = pl.Utf8
     return schema
 
 
@@ -363,7 +377,10 @@ def serendipity_optimized(
                 or path_obj.get("user1_unique_indices")
                 or path_obj.get("user2_unique_indices")
                 or path_obj.get("common_background")
-                or path_obj.get("unique_branches")
+                or path_obj.get("user_1_unique_branches")
+                or path_obj.get("user_2_unique_branches")
+                or path_obj.get("user_1_call_to_action")
+                or path_obj.get("user_2_call_to_action")
             ):
                 paths_found_any = True
                 cluster_info_data["paths_found"] += 1
@@ -413,6 +430,10 @@ def serendipity_optimized(
                 "user1_indices": pl.List(pl.Int64),
                 "user2_indices": pl.List(pl.Int64),
                 "category": pl.Utf8,
+                "user1_unique_branches": pl.Utf8,
+                "user2_unique_branches": pl.Utf8,
+                "user1_call_to_action": pl.Utf8,
+                "user2_call_to_action": pl.Utf8,
             },
         )
 
@@ -479,4 +500,9 @@ def serendipity_optimized(
         schema["common_conversation_ids"] = pl.List(pl.Utf8)
         schema["user1_conversation_ids"] = pl.List(pl.Utf8)
         schema["user2_conversation_ids"] = pl.List(pl.Utf8)
+        # Ensure new text fields are also present
+        schema["user1_unique_branches"] = pl.Utf8
+        schema["user2_unique_branches"] = pl.Utf8
+        schema["user1_call_to_action"] = pl.Utf8
+        schema["user2_call_to_action"] = pl.Utf8
         return pl.DataFrame(schema=schema)
