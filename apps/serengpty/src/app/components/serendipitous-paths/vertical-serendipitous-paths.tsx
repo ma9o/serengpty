@@ -367,7 +367,15 @@ function PathDetails({
 function ConversationsList({
   conversations = [],
 }: {
-  conversations?: Array<{ id: string; summary: string; datetime: Date }>;
+  conversations?: Array<{ 
+    id: string; 
+    summary: string; 
+    datetime: Date;
+    user?: { 
+      id: string; 
+      name: string;
+    };
+  }>;
 }) {
   if (!conversations || conversations.length === 0) {
     return (
@@ -382,7 +390,25 @@ function ConversationsList({
       <ScrollArea className="max-h-[500px] pr-3">
         {conversations.map((conversation) => (
           <div key={conversation.id} className="mb-4 p-4 border rounded-lg">
-            <h4 className="font-medium">Conversation</h4>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium">Conversation</h4>
+              {conversation.user && (
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage 
+                      src={getIdenticon(conversation.user.name)} 
+                      alt={conversation.user.name} 
+                    />
+                    <AvatarFallback>
+                      {conversation.user.name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs text-muted-foreground">
+                    {conversation.user.name}
+                  </span>
+                </div>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground mb-2">
               {new Date(conversation.datetime).toLocaleDateString()} at{' '}
               {new Date(conversation.datetime).toLocaleTimeString()}

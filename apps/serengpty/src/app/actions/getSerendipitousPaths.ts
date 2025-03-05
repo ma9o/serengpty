@@ -50,6 +50,12 @@ export async function getSerendipitousPaths() {
                 id: true,
                 summary: true,
                 datetime: true,
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             },
             // Include user-specific paths containing unique conversations

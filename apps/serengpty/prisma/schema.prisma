@@ -21,8 +21,9 @@ model User {
   country           String  @default("INTERNET")
   sensitiveMatching Boolean @default(false)
 
-  userPaths    UserPath[]
-  usersMatches UsersMatch[]
+  userPaths     UserPath[]
+  usersMatches  UsersMatch[]
+  conversations Conversation[]
 
   // Auth.js fields
   emailVerified DateTime?
@@ -47,6 +48,9 @@ model Conversation {
   // If the conversation is part of the unique conversations of a serendipitous path
   userPath   UserPath? @relation(fields: [userPathId], references: [id])
   userPathId String?
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 }
 
 model SerendipitousPath {

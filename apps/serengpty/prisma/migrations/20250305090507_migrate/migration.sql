@@ -24,6 +24,7 @@ CREATE TABLE "Conversation" (
     "datetime" TIMESTAMP(3) NOT NULL,
     "serendipitousPathId" TEXT,
     "userPathId" TEXT,
+    "userId" TEXT NOT NULL,
 
     CONSTRAINT "Conversation_pkey" PRIMARY KEY ("id")
 );
@@ -128,6 +129,9 @@ ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_serendipitousPathId_fkey
 
 -- AddForeignKey
 ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_userPathId_fkey" FOREIGN KEY ("userPathId") REFERENCES "UserPath"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "SerendipitousPath" ADD CONSTRAINT "SerendipitousPath_usersMatchId_fkey" FOREIGN KEY ("usersMatchId") REFERENCES "UsersMatch"("id") ON DELETE SET NULL ON UPDATE CASCADE;

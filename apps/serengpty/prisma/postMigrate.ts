@@ -184,6 +184,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Discussion about TypeScript and React',
       datetime: new Date('2024-02-15T14:30:00Z'),
       serendipitousPathId: techPath.id,
+      userId: giovanni.id, // Adding user relationship
     },
   });
 
@@ -193,6 +194,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Talking about backend technologies',
       datetime: new Date('2024-02-16T10:15:00Z'),
       serendipitousPathId: techPath.id,
+      userId: alice.id, // Adding user relationship
     },
   });
 
@@ -202,6 +204,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Experiences in Southeast Asia',
       datetime: new Date('2024-01-20T16:45:00Z'),
       serendipitousPathId: travelPath.id,
+      userId: giovanni.id, // Adding user relationship
     },
   });
 
@@ -211,6 +214,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'European city recommendations',
       datetime: new Date('2024-01-25T09:30:00Z'),
       serendipitousPathId: travelPath.id,
+      userId: charlie.id, // Adding user relationship
     },
   });
 
@@ -220,6 +224,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Favorite Italian dishes',
       datetime: new Date('2024-02-05T19:20:00Z'),
       serendipitousPathId: foodPath.id,
+      userId: giovanni.id, // Adding user relationship
     },
   });
 
@@ -229,6 +234,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Jazz and classical music preferences',
       datetime: new Date('2024-02-10T20:45:00Z'),
       serendipitousPathId: musicPath.id,
+      userId: diana.id, // Adding user relationship
     },
   });
 
@@ -384,6 +390,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Machine learning projects',
       datetime: new Date('2024-02-12T11:30:00Z'),
       userPathId: gioAliceTechPath.id,
+      userId: giovanni.id, // Adding user relationship
     },
   });
 
@@ -393,6 +400,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Frontend design patterns',
       datetime: new Date('2024-02-13T14:20:00Z'),
       userPathId: aliceTechPath.id,
+      userId: alice.id, // Adding user relationship
     },
   });
 
@@ -402,6 +410,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Travel algorithms and ML',
       datetime: new Date('2024-01-19T15:30:00Z'),
       userPathId: gioTravelPath.id,
+      userId: giovanni.id, // Adding user relationship
     },
   });
 
@@ -411,6 +420,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Backpacking in New Zealand',
       datetime: new Date('2024-01-18T16:30:00Z'),
       userPathId: charlieTravelPath.id,
+      userId: charlie.id, // Adding user relationship
     },
   });
 
@@ -420,6 +430,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Italian cooking techniques',
       datetime: new Date('2024-02-04T18:10:00Z'),
       userPathId: gioFoodPath.id,
+      userId: giovanni.id, // Adding user relationship
     },
   });
 
@@ -429,6 +440,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'DevOps and CI/CD pipelines',
       datetime: new Date('2024-02-14T09:45:00Z'),
       userPathId: bobFoodPath.id,
+      userId: bob.id, // Adding user relationship
     },
   });
 
@@ -438,6 +450,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Classical composers analysis',
       datetime: new Date('2024-02-11T21:00:00Z'),
       userPathId: gioMusicPath.id,
+      userId: giovanni.id, // Adding user relationship
     },
   });
 
@@ -447,6 +460,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Wine tasting experiences',
       datetime: new Date('2024-02-03T17:15:00Z'),
       userPathId: dianaMusicPath.id,
+      userId: diana.id, // Adding user relationship
     },
   });
 
@@ -458,6 +472,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Science fiction novel recommendations',
       datetime: new Date('2024-02-20T13:45:00Z'),
       userPathId: gioAliceBookPath.id,
+      userId: giovanni.id, // Adding user relationship
     },
   });
 
@@ -467,6 +482,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Book club organizing skills',
       datetime: new Date('2024-02-21T16:30:00Z'),
       userPathId: aliceBookPath.id,
+      userId: alice.id, // Adding user relationship
     },
   });
 
@@ -477,6 +493,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Marathon training schedule',
       datetime: new Date('2024-01-28T08:15:00Z'),
       userPathId: gioSportPath.id,
+      userId: giovanni.id, // Adding user relationship
     },
   });
 
@@ -486,6 +503,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Mountain biking trails',
       datetime: new Date('2024-01-29T09:45:00Z'),
       userPathId: charlieSportPath.id,
+      userId: charlie.id, // Adding user relationship
     },
   });
 
@@ -496,6 +514,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Strategy game tournament',
       datetime: new Date('2024-02-07T20:30:00Z'),
       userPathId: gioGamingPath.id,
+      userId: giovanni.id, // Adding user relationship
     },
   });
 
@@ -505,6 +524,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Game development frameworks',
       datetime: new Date('2024-02-08T19:15:00Z'),
       userPathId: bobGamingPath.id,
+      userId: bob.id, // Adding user relationship
     },
   });
 
@@ -515,6 +535,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Literary podcasts and analysis',
       datetime: new Date('2024-02-19T14:30:00Z'),
       serendipitousPathId: bookClubPath.id,
+      userId: giovanni.id, // Adding user relationship
     },
   });
 
@@ -524,6 +545,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Sports analytics and statistics',
       datetime: new Date('2024-01-27T10:15:00Z'),
       serendipitousPathId: sportPath.id,
+      userId: charlie.id, // Adding user relationship
     },
   });
 
@@ -533,6 +555,7 @@ const seed = async (prisma: PrismaClient) => {
       summary: 'Multiplayer game coordination',
       datetime: new Date('2024-02-06T21:00:00Z'),
       serendipitousPathId: gamingPath.id,
+      userId: bob.id, // Adding user relationship
     },
   });
 
