@@ -22,21 +22,19 @@ def get_conversation_summary_prompt_sequence(conversation: str) -> PromptSequenc
         dedent(
             f"""
               You will be given a conversation between a user and an AI assistant.
-              Sometimes, users paste content from an external source into their questions, such as articles, code snippets, etc.
 
-              Your job is to provide a summary of the conversation that captures the essence of what was discussed.
+              Your job is to provide a summary as follows:
+              1. Provide a summary that describes the progression of the conversation and what the user obtains at the end.
+              2. Determine if the conversation is highly sensitive, containing topics such as physical and mental health problems, relationship advice, erotic content, private legal matters, etc.
+              3. If the conversation is not in English, your summary should be in English.
+              4. Keep it under 150 words.
+              5. In the summary, every occurrence of "the user" should be replaced with "<USER>"
 
-              Additionally:
-              1. If the conversation is not in English, translate it to English.
-              2. Determine if the conversation is highly sensitive, containing topics such as physical and mental health problems, relationship advice and private legal matters.
-              3. Descriptively summarize what the user wants to do, without mentioning what the AI replies.
-              4. Categorize the conversation by its domain as either "humanistic" (health, relationships, personal growth, philosophy, art, etc.) or "practical" (work, technology, house chores, taxes, etc.).
 
               Use this output schema:
               {{
                   "summary": str,
                   "is_sensitive": bool,
-                  "category": str
               }}
 
               Here is the conversation:
@@ -50,15 +48,13 @@ def parse_conversation_summaries(completion: str) -> dict | None:
     try:
         res = repair_json(completion, return_objects=True)
 
-        # Now expect a JSON object with "is_sensitive", "summary", and "category" fields.
+        # Now expect a JSON object with "is_sensitive", "summary" fields.
         if (
             isinstance(res, dict)
             and "is_sensitive" in res
             and "summary" in res
-            and "category" in res
             and isinstance(res["is_sensitive"], bool)
             and isinstance(res["summary"], str)
-            and isinstance(res["category"], str)
         ):
             return res
         else:
@@ -103,7 +99,6 @@ async def conversation_summaries(
     - start_time: Time when the conversation started
     - datetime_conversations: Combined date/time/question/answer text
     - is_sensitive: Boolean flag for sensitive content
-    - category: Classification as "humanistic" or "practical" domain
     - summary: LLM-generated conversation summary
     """
     llm = gpt4o_mini
@@ -187,9 +182,6 @@ async def conversation_summaries(
                 pl.col("raw_summary")
                 .map_elements(lambda rs: rs["summary"])
                 .alias("summary"),
-                pl.col("raw_summary")
-                .map_elements(lambda rs: rs["category"])
-                .alias("category"),
             ]
         )
         .drop("raw_summary")

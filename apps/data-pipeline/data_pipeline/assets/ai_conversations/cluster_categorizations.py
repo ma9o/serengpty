@@ -39,33 +39,30 @@ def get_cluster_categorization_prompt_sequence(
         dedent(
             f"""
             You will be given a set of conversation summaries that have been grouped together based on their semantic similarity.
-            Your task is to categorize this cluster of conversations by its domain as either "humanistic" or "practical".
+            Your task is to categorize this cluster of conversations by its domain as either "coding", "humanistic" or "practical".
 
             Definitions:
+            - "coding": Topics related to programming, software development, coding languages, algorithms, debugging, etc. This category takes precedence over the others.
             - "humanistic": Topics related to health, relationships, personal growth, philosophy, art, ethics, emotions, etc.
             - "practical": Topics related to work, technology, house chores, taxes, finance, educational content, etc.
 
             First analyze each conversation and then determine the overarching theme of the cluster.
-
-            Here are the conversations:
-
-            {conversations_text}
+            IMPORTANT: If the conversations are related to coding or programming, you MUST categorize as "coding" even if they could also fit into another category.
 
             Use this output schema:
             {{
                 "category": str,
-                "reasoning": str
             }}
 
-            The "category" MUST be either "humanistic" or "practical".
-            The "reasoning" should explain why you chose that category for this cluster.
+            Here are the conversations:
+            {conversations_text}
             """
         ).strip(),
     ]
 
 
 def parse_cluster_categorization(completion: str) -> dict:
-    """Parse the LLM's cluster categorization response and return the category and reasoning."""
+    """Parse the LLM's cluster categorization response and return the category."""
     try:
         res = repair_json(completion, return_objects=True)
 
@@ -73,23 +70,20 @@ def parse_cluster_categorization(completion: str) -> dict:
             isinstance(res, dict)
             and "category" in res
             and isinstance(res["category"], str)
-            and res["category"].lower() in ["humanistic", "practical"]
+            and res["category"].lower() in ["coding", "humanistic", "practical"]
         ):
             return {
                 "category": res["category"].lower(),
-                "reasoning": res.get("reasoning", "No reasoning provided"),
             }
         else:
             # Default to practical if parsing fails
             return {
                 "category": "practical",
-                "reasoning": "Parsing failed: Invalid category format",
             }
     except Exception:
         # Default to practical if parsing fails
         return {
             "category": "practical",
-            "reasoning": "Parsing failed: Exception occurred",
         }
 
 
@@ -167,9 +161,16 @@ def cluster_categorizations(
 
             # Store prompt and corresponding cluster_id
             all_prompt_sequences.append(prompt_sequence)
-            cluster_ids.append(int(cluster_id))
+            # Ensure cluster_id is an integer
+            if isinstance(cluster_id, (int, float, str)):
+                cluster_ids.append(int(cluster_id))
+            else:
+                # Log a warning and skip this cluster if cluster_id can't be converted to int
+                logger.warning(
+                    f"Skipping cluster with non-convertible cluster_id: {cluster_id}"
+                )
 
-    # Dictionary to store cluster_id -> category and reasoning mapping
+    # Dictionary to store cluster_id -> category mapping
     cluster_results = {}
 
     # Only make LLM call if we have prompts to process
@@ -188,15 +189,15 @@ def cluster_categorizations(
                 result = parse_cluster_categorization(completion[-1])
             else:
                 # Default categorization if LLM call fails
-                result = {"category": "practical", "reasoning": "LLM call failed"}
+                result = {"category": "practical"}
                 logger.warning(f"Failed to get categorization for cluster {cluster_id}")
 
-            # Store the category and reasoning for this cluster
+            # Store the category for this cluster
             cluster_results[cluster_id] = result
     else:
         logger.info("No prompts to process")
 
-    # Add the category and reasoning columns to the original DataFrame
+    # Add the category column to the original DataFrame
     if cluster_results:
         result_df = conversation_pair_clusters.with_columns(
             [
@@ -208,27 +209,16 @@ def cluster_categorizations(
                 )
                 .otherwise(pl.lit("practical"))
                 .alias("category"),
-                pl.when(pl.col("cluster_id").is_in(list(cluster_results.keys())))
-                .then(
-                    pl.col("cluster_id").map_elements(
-                        lambda x: cluster_results[x]["reasoning"]
-                    )
-                )
-                .otherwise(pl.lit("No categorization performed"))
-                .alias("reasoning"),
             ]
         )
 
-        logger.info(
-            f"Added categories and reasoning to {len(cluster_results)} clusters"
-        )
+        logger.info(f"Added categories to {len(cluster_results)} clusters")
         return result_df
     else:
-        # If no categories were found, add default category and reasoning
-        logger.info("No categories found, adding default category and reasoning")
+        # If no categories were found, add default category
+        logger.info("No categories found, adding default category")
         return conversation_pair_clusters.with_columns(
             [
                 pl.lit("practical").alias("category"),
-                pl.lit("No categorization performed").alias("reasoning"),
             ]
         )

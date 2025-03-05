@@ -1,14 +1,17 @@
 import asyncio
 from typing import List, Tuple
 
-from ai_agents.embeddings.base_embedder_client import BaseEmbedderClient
-from ai_agents.embeddings.deepinfra_embedder_client import DeepInfraEmbedderClient
 from dagster import (
     ConfigurableResource,
     InitResourceContext,
     get_dagster_logger,
 )
 from pydantic import PrivateAttr
+
+from data_pipeline.resources.embeddings.base_embedder_client import BaseEmbedderClient
+from data_pipeline.resources.embeddings.deepinfra_embedder_client import (
+    DeepInfraEmbedderClient,
+)
 
 
 class BatchEmbedderResource(ConfigurableResource, BaseEmbedderClient):
