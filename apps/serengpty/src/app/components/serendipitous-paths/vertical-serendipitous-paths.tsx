@@ -19,6 +19,14 @@ import {
   AccordionContent,
 } from '@enclaveid/ui/accordion';
 import { getSerendipitousPaths } from '../../actions/getSerendipitousPaths';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@enclaveid/ui/dialog';
 
 type UserPathsResponse = Awaited<ReturnType<typeof getSerendipitousPaths>>;
 
@@ -229,10 +237,28 @@ function PathDetails({
     <div className="space-y-6">
       {/* Path Flow Container */}
       <div className="flex flex-row items-center justify-between gap-4">
-        {/* Common Summary */}
-        <div className="p-4 bg-muted rounded-lg">
+        {/* Common Summary with View Conversations Button */}
+        <div className="p-4 bg-muted rounded-lg relative">
           <h3 className="text-lg font-medium mb-2">Common Interest</h3>
           <p>{path.commonSummary}</p>
+          <div className="mt-3">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  View Conversations
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-auto">
+                <DialogHeader>
+                  <DialogTitle>Common Conversations</DialogTitle>
+                  <DialogDescription>
+                    Conversations shared between users in this path
+                  </DialogDescription>
+                </DialogHeader>
+                <ConversationsList conversations={path.commonConversations} />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Separator: Split Arrow */}
@@ -252,6 +278,26 @@ function PathDetails({
           <div className="p-4 bg-muted rounded-lg">
             <h3 className="text-lg font-medium mb-2">Your Perspective</h3>
             <p>{currentUserPath.uniqueSummary}</p>
+            <div className="mt-3">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    View Conversations
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-auto">
+                  <DialogHeader>
+                    <DialogTitle>Your Unique Conversations</DialogTitle>
+                    <DialogDescription>
+                      Conversations unique to your perspective
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ConversationsList
+                    conversations={currentUserPath.uniqueConversations}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           <Separator />
@@ -259,9 +305,32 @@ function PathDetails({
           {/* Their Path */}
           <div className="p-4 bg-muted rounded-lg">
             <h3 className="text-lg font-medium mb-2">
-              {matchedUser.name}'s Perspective
+              {matchedUser.name}&apos;s Perspective
             </h3>
             <p>{matchedUserPath.uniqueSummary}</p>
+            <div className="mt-3">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    View Conversations
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {matchedUser.name}&apos;s Unique Conversations
+                    </DialogTitle>
+                    <DialogDescription>
+                      Conversations unique to {matchedUser.name}&apos;s
+                      perspective
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ConversationsList
+                    conversations={matchedUserPath.uniqueConversations}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
 
@@ -286,10 +355,42 @@ function PathDetails({
             otherUserId={matchedUser.id}
             otherUserName={matchedUser.name}
             variant="default"
-            size="md"
+            size="default"
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+// Conversations list component for modals
+function ConversationsList({
+  conversations = [],
+}: {
+  conversations?: Array<{ id: string; summary: string; datetime: Date }>;
+}) {
+  if (!conversations || conversations.length === 0) {
+    return (
+      <div className="text-center py-4 text-muted-foreground">
+        No conversations found
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 mt-4">
+      <ScrollArea className="max-h-[500px] pr-3">
+        {conversations.map((conversation) => (
+          <div key={conversation.id} className="mb-4 p-4 border rounded-lg">
+            <h4 className="font-medium">Conversation</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              {new Date(conversation.datetime).toLocaleDateString()} at{' '}
+              {new Date(conversation.datetime).toLocaleTimeString()}
+            </p>
+            <p>{conversation.summary}</p>
+          </div>
+        ))}
+      </ScrollArea>
     </div>
   );
 }
