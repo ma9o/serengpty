@@ -110,16 +110,24 @@ def parse_serendipity_result(content: str) -> Dict:
             - set(common_indices)
         )
 
-        return {
-            "common_indices": common_indices,
-            "user1_unique_indices": user1_unique_indices,
-            "user2_unique_indices": user2_unique_indices,
-            "common_background": result["common_background"],
-            "user_1_unique_branches": result.get("user_1_unique_branches", ""),
-            "user_2_unique_branches": result.get("user_2_unique_branches", ""),
-            "user_1_call_to_action": result.get("user_1_call_to_action", ""),
-            "user_2_call_to_action": result.get("user_2_call_to_action", ""),
-        }
+        # If any of these lists are empty, the path doesnt make sense
+        if (
+            len(common_indices) == 0
+            or len(user1_unique_indices) == 0
+            or len(user2_unique_indices) == 0
+        ):
+            return {}
+        else:
+            return {
+                "common_indices": common_indices,
+                "user1_unique_indices": user1_unique_indices,
+                "user2_unique_indices": user2_unique_indices,
+                "common_background": result["common_background"],
+                "user_1_unique_branches": result.get("user_1_unique_branches", ""),
+                "user_2_unique_branches": result.get("user_2_unique_branches", ""),
+                "user_1_call_to_action": result.get("user_1_call_to_action", ""),
+                "user_2_call_to_action": result.get("user_2_call_to_action", ""),
+            }
     except Exception:
         return {}
 
