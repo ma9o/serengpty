@@ -65,7 +65,7 @@ def generate_serendipity_prompt(
 
           Output in this JSON format:
           {{
-            "path_title": "A concise, engaging title for this serendipitous path that captures the essence of the connection.",
+            "path_title": "A concise, engaging title for this serendipitous path that captures the essence of the connection. Add an emoji at the beginning of the title.",
             "common_indices": [list of integer IDs from both users' CONVERSATIONS whose themes are shared],
             "user1_unique_indices": [list of integer IDs from USER 1 CONVERSATIONS that explore topics unique to USER 1, not present in USER 2],
             "user2_unique_indices": [list of integer IDs from USER 2 CONVERSATIONS that explore topics unique to USER 2, not present in USER 1],

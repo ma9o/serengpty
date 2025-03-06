@@ -135,7 +135,7 @@ def _prepare_clusters(
 def _generate_paths(
     cluster_data: Dict[int, Dict],
     current_user_id: str,
-    gpt4o_mini: BaseLlmResource,
+    gemini_flash: BaseLlmResource,
     logger,
     config: SerendipityOptimizedConfig,
 ) -> List[Dict]:
@@ -199,7 +199,7 @@ def _generate_paths(
                 continue
 
             # Generate path (batch size of 1)
-            completions, cost = gpt4o_mini.get_prompt_sequences_completions_batch(
+            completions, cost = gemini_flash.get_prompt_sequences_completions_batch(
                 [[prompt]]
             )
             total_cost += cost
@@ -323,7 +323,7 @@ def _fix_duplicates(df: pl.DataFrame, logger) -> pl.DataFrame:
 def serendipity_optimized(
     context: AssetExecutionContext,
     config: SerendipityOptimizedConfig,
-    gpt4o_mini: BaseLlmResource,
+    gemini_flash: BaseLlmResource,
     cluster_categorizations: pl.DataFrame,
 ) -> pl.DataFrame:
     """
@@ -332,7 +332,7 @@ def serendipity_optimized(
     Args:
         context: Dagster execution context.
         config: Configuration with max_paths_per_match_group.
-        gpt4o_mini: LLM resource for path generation.
+        gemini_flash: LLM resource for path generation.
         cluster_categorizations: DataFrame with categorized conversation clusters.
 
     Returns:
@@ -361,7 +361,12 @@ def serendipity_optimized(
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_group = {
             executor.submit(
-                _generate_paths, group_data, current_user_id, gpt4o_mini, logger, config
+                _generate_paths,
+                group_data,
+                current_user_id,
+                gemini_flash,
+                logger,
+                config,
             ): mg_id
             for mg_id, group_data in match_group_data.items()
         }
