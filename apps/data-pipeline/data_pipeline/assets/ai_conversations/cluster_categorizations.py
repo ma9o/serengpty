@@ -42,9 +42,9 @@ def get_cluster_categorization_prompt_sequence(
             Your task is to categorize this cluster of conversations by its domain as either "coding", "humanistic" or "practical".
 
             Definitions:
-            - "coding": Topics related to programming, software development, coding languages, algorithms, debugging, etc. This category takes precedence over the others.
-            - "humanistic": Topics related to health, relationships, personal growth, philosophy, art, ethics, emotions, etc.
-            - "practical": Topics related to work, technology, house chores, taxes, finance, educational content, etc.
+            - "humanistic": Focus on values, beliefs, and worldviews. Invite vulnerability and self-disclosure
+            - "coding": Topics related to programming, software development, coding languages, algorithms, debugging, etc. This category takes precedence over "practical".
+            - "practical": Task focused conversations. Generally less personal or emotionally revealing.
 
             First analyze each conversation and then determine the overarching theme of the cluster.
             IMPORTANT: If the conversations are related to coding or programming, you MUST categorize as "coding" even if they could also fit into another category.

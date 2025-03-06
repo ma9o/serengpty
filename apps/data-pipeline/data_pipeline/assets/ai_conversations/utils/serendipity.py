@@ -237,7 +237,13 @@ def get_out_df_schema() -> Dict:
         "user1_call_to_action": pl.Utf8,
         "user2_call_to_action": pl.Utf8,
         "balance_score": pl.Float64,
-        "balance_scores_detailed": pl.Dict(pl.Utf8, pl.Float64),
+        "balance_scores_detailed": pl.Struct(
+            {
+                "imbalance": pl.Float64,
+                "magnitude_factor": pl.Float64,
+                "dist": pl.Float64,
+            }
+        ),
     }
 
 
@@ -318,7 +324,7 @@ def calculate_balance_scores(
     sim = get_approx_user_sim(np.array(embeddings_current), np.array(embeddings_other))
     dist = 1 - sim
 
-    return imbalance * magnitude_factor * dist, {
+    return imbalance + magnitude_factor + dist, {
         "imbalance": imbalance,
         "magnitude_factor": magnitude_factor,
         "dist": dist,
