@@ -62,6 +62,7 @@ def generate_serendipity_prompt(
 
           Output in this JSON format:
           {{
+            "path_title": "A concise, engaging title for this serendipitous path that captures the essence of the connection. Add an emoji at the end of the title.",
             "common_indices": [list of integer IDs from both users' CONVERSATIONS whose themes are shared],
             "user1_unique_indices": [list of integer IDs from USER 1 CONVERSATIONS that explore topics unique to USER 1, not present in USER 2],
             "user2_unique_indices": [list of integer IDs from USER 2 CONVERSATIONS that explore topics unique to USER 2, not present in USER 1],
@@ -119,6 +120,7 @@ def parse_serendipity_result(content: str) -> Dict:
             return {}
         else:
             return {
+                "path_title": result.get("path_title", "Serendipitous Connection"),
                 "common_indices": common_indices,
                 "user1_unique_indices": user1_unique_indices,
                 "user2_unique_indices": user2_unique_indices,
@@ -211,6 +213,7 @@ def get_out_df_schema() -> Dict:
         "path_id": pl.Utf8,
         "user1_id": pl.Utf8,
         "user2_id": pl.Utf8,
+        "path_title": pl.Utf8,
         "common_conversation_ids": pl.List(pl.Utf8),
         "user1_conversation_ids": pl.List(pl.Utf8),
         "user2_conversation_ids": pl.List(pl.Utf8),

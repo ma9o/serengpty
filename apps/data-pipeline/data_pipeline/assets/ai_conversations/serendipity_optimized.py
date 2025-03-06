@@ -78,6 +78,7 @@ def _create_path_entry(
         "path_id": str(uuid.uuid4()),
         "user1_id": current_user_id,
         "user2_id": user2_id,
+        "path_title": path_obj.get("path_title", "Serendipitous Connection"),
         "common_indices": common_indices,
         "user1_indices": user1_indices,
         "user2_indices": user2_indices,
@@ -163,7 +164,13 @@ def _generate_paths(
         return paths
 
     def calculate_balance_score(data: Dict) -> float:
-        """Calculate balance score based on remaining conversations."""
+        """Calculate balance score based on remaining conversations.
+
+        Returns a score that prioritizes:
+        1. Larger total number of conversations
+        2. More balanced ratio between sides
+        Lower scores are better.
+        """
         remaining_current = [
             s for s in data["current_summaries"] if s["row_idx"] not in exclusions
         ]
@@ -174,8 +181,16 @@ def _generate_paths(
         len_other = len(remaining_other)
         if len_other == 0 or len_current == 0:
             return float("inf")  # Deprioritize if either side has no conversations
+
+        # Calculate imbalance penalty (smaller is better)
         ratio = len_current / len_other
-        return abs(math.log(ratio))
+        imbalance = abs(math.log(ratio))
+
+        # Calculate magnitude bonus (larger total is better)
+        total_conversations = len_current + len_other
+        magnitude_factor = 1 / total_conversations  # Inverse so smaller is better
+
+        return imbalance * magnitude_factor
 
     # Process each category sequentially
     for category in sorted_categories:
