@@ -1,16 +1,12 @@
 import datetime
 import uuid
+from typing import Dict, List, Set
 
 import polars as pl
-from dagster import (
-    AssetExecutionContext,
-    AssetIn,
-    asset,
-)
+from dagster import AssetExecutionContext, AssetIn, asset
 
 from data_pipeline.assets.ai_conversations.utils.serendipity import (
     generate_serendipity_prompt,
-    get_empty_result_schema,
     parse_serendipity_result,
 )
 from data_pipeline.constants.custom_config import RowLimitConfig
@@ -19,15 +15,23 @@ from data_pipeline.resources.batch_inference.base_llm_resource import BaseLlmRes
 
 
 class SerendipityOptimizedConfig(RowLimitConfig):
-    # Maximum paths to return per user
+    """Configuration for serendipity_optimized asset."""
+
     max_paths_per_user: int = 10
 
+    category_ratios: Dict[str, float] = {
+        "coding": 0.0,
+        "humanistic": 0.7,
+        "practical": 0.3,
+    }
 
-def _extract_conversation_summaries(df: pl.DataFrame, is_current_user: bool = False):
-    """Helper function to extract conversation summaries from a dataframe."""
-    summaries = []
-    for row in df.iter_rows(named=True):
-        summary = {
+
+def _extract_conversation_summaries(
+    df: pl.DataFrame, is_current_user: bool = False
+) -> List[Dict]:
+    """Extract and sort conversation summaries from a DataFrame."""
+    summaries = [
+        {
             "row_idx": row["row_idx"],
             "conversation_id": row["conversation_id"],
             "title": row["title"],
@@ -35,172 +39,296 @@ def _extract_conversation_summaries(df: pl.DataFrame, is_current_user: bool = Fa
             "date": f"{row['start_date']} {row['start_time']}",
             "start_date": row["start_date"],
             "start_time": row["start_time"],
+            **({"user_id": row["user_id"]} if not is_current_user else {}),
         }
-
-        # Add user_id only for non-current users
-        if not is_current_user:
-            summary["user_id"] = row["user_id"]
-
-        summaries.append(summary)
-
-    # Sort summaries by date and time
-    summaries.sort(key=lambda x: (x.get("start_date", ""), x.get("start_time", "")))
-    return summaries
+        for row in df.iter_rows(named=True)
+    ]
+    return sorted(summaries, key=lambda x: (x["start_date"], x["start_time"]))
 
 
 def _create_path_entry(
-    path_obj: dict,
-    summaries: list,
-    current_user_summaries: list,
+    path_obj: Dict,
+    summaries: List[Dict],
     current_user_id: str,
     cluster_id: int,
     match_group_id: int,
-    all_users: list,
+    all_users: List[str],
     response_text: str,
-    category: str = "practical",
+    category: str,
     iteration: int = 0,
-) -> dict:
-    """Create a path entry from LLM response"""
-    # Updated to work with common_indices instead of separate user indices
+) -> Dict:
+    """Create a path entry from an LLM response."""
     common_indices = path_obj.get("common_indices", [])
-    user1_unique_indices = path_obj.get("user1_unique_indices", [])
-    user2_unique_indices = path_obj.get("user2_unique_indices", [])
-    common_background = path_obj.get("common_background", "")
-    
-    # Get the new fields from the LLM response
-    user_1_unique_branches = path_obj.get("user_1_unique_branches", "")
-    user_2_unique_branches = path_obj.get("user_2_unique_branches", "")
-    user_1_call_to_action = path_obj.get("user_1_call_to_action", "")
-    user_2_call_to_action = path_obj.get("user_2_call_to_action", "")
+    user1_indices = path_obj.get("user1_unique_indices", [])
+    user2_indices = path_obj.get("user2_unique_indices", [])
 
-    # Create the path description from the common background and unique branches
-    path_description = common_background.strip()
+    # Identify user2 from summaries
+    idx_to_user = {s["row_idx"]: s["user_id"] for s in summaries}
+    user2_ids = {
+        idx_to_user[idx]
+        for idx in (user2_indices + common_indices)
+        if idx in idx_to_user
+    }
+    user2_id = next(iter(user2_ids)) if user2_ids else None
 
-    # Build map of row_idx to user_id (only needed for identifying user2)
-    idx_to_user = {}
-
-    # Map for other users
-    for summary in summaries:
-        idx_to_user[summary["row_idx"]] = summary["user_id"]
-
-    # Find which user_id(s) the user2 conversations belong to
-    user2_ids = set()
-
-    # Check user2 unique indices
-    for idx in user2_unique_indices:
-        if idx in idx_to_user:
-            user2_ids.add(idx_to_user[idx])
-
-    # Also check common indices for user2 identification
-    for idx in common_indices:
-        if idx in idx_to_user:
-            user2_ids.add(idx_to_user[idx])
-
-    # Convert user2_ids to list, using primary user if empty
-    user2_id_list = list(user2_ids)
-    primary_user2_id = user2_id_list[0] if user2_id_list else None
-
-    # Calculate total path lengths using common indices and unique indices
-    user1_total_length = len(user1_unique_indices) + len(common_indices)
-    user2_total_length = len(user2_unique_indices) + len(common_indices)
-
-    # Build the path entry
     return {
         "path_id": str(uuid.uuid4()),
         "user1_id": current_user_id,
-        "user2_id": primary_user2_id,
+        "user2_id": user2_id,
         "common_indices": common_indices,
-        "user1_indices": user1_unique_indices,
-        "user2_indices": user2_unique_indices,
-        "user1_path_length": user1_total_length,
-        "user2_path_length": user2_total_length,
-        "path_description": path_description,
-        "user1_unique_branches": user_1_unique_branches,
-        "user2_unique_branches": user_2_unique_branches,
-        "user1_call_to_action": user_1_call_to_action,
-        "user2_call_to_action": user_2_call_to_action,
+        "user1_indices": user1_indices,
+        "user2_indices": user2_indices,
+        "user1_path_length": len(user1_indices) + len(common_indices),
+        "user2_path_length": len(user2_indices) + len(common_indices),
+        "path_description": path_obj.get("common_background", "").strip(),
+        "user1_unique_branches": path_obj.get("user_1_unique_branches", ""),
+        "user2_unique_branches": path_obj.get("user_2_unique_branches", ""),
+        "user1_call_to_action": path_obj.get("user_1_call_to_action", ""),
+        "user2_call_to_action": path_obj.get("user_2_call_to_action", ""),
         "iteration": iteration,
         "created_at": datetime.datetime.now(),
         "llm_output": response_text,
         "user_similarity_score": 0.0,
-        "cluster_id": int(cluster_id),
-        "match_group_id": int(match_group_id),
+        "cluster_id": cluster_id,
+        "match_group_id": match_group_id,
         "all_user_ids": all_users,
         "category": category,
     }
 
 
-def _get_enhanced_schema():
-    """Get the schema with all required fields"""
-    schema = get_empty_result_schema()
-    schema["user1_id"] = pl.Utf8
-    schema["user_similarity_score"] = pl.Float32
-    schema["user1_path_length"] = pl.Int32
-    schema["user2_path_length"] = pl.Int32
-    schema["cluster_id"] = pl.UInt8
-    schema["match_group_id"] = pl.UInt32
-    schema["all_user_ids"] = pl.List(pl.Utf8)
-    schema["category"] = pl.Utf8
-    # Update schema for indices instead of conversation_ids
-    schema["common_indices"] = pl.List(pl.Int64)
-    schema["user1_indices"] = pl.List(pl.Int64)
-    schema["user2_indices"] = pl.List(pl.Int64)
-    # Add new fields for user branches and call to actions
-    schema["user1_unique_branches"] = pl.Utf8
-    schema["user2_unique_branches"] = pl.Utf8
-    schema["user1_call_to_action"] = pl.Utf8
-    schema["user2_call_to_action"] = pl.Utf8
-    return schema
+def _get_out_df_schema() -> Dict:
+    """Return the complete schema for the result DataFrame."""
+
+    return {
+        "path_id": pl.Utf8,
+        "user1_id": pl.Utf8,
+        "user2_id": pl.Utf8,
+        "common_conversation_ids": pl.List(pl.Utf8),
+        "user1_conversation_ids": pl.List(pl.Utf8),
+        "user2_conversation_ids": pl.List(pl.Utf8),
+        "path_description": pl.Utf8,
+        "iteration": pl.Int32,
+        "created_at": pl.Datetime,
+        "llm_output": pl.Utf8,
+        "user_similarity_score": pl.Float32,
+        "user1_path_length": pl.Int32,
+        "user2_path_length": pl.Int32,
+        "cluster_id": pl.UInt8,
+        "match_group_id": pl.UInt32,
+        "all_user_ids": pl.List(pl.Utf8),
+        "category": pl.Utf8,
+        "common_indices": pl.List(pl.Int64),
+        "user1_indices": pl.List(pl.Int64),
+        "user2_indices": pl.List(pl.Int64),
+        "user1_unique_branches": pl.Utf8,
+        "user2_unique_branches": pl.Utf8,
+        "user1_call_to_action": pl.Utf8,
+        "user2_call_to_action": pl.Utf8,
+    }
 
 
 def _remap_indices_to_conversation_ids(
     paths_df: pl.DataFrame, clusters_df: pl.DataFrame
 ) -> pl.DataFrame:
+    """Remap row indices to conversation IDs, ensuring that the number of new IDs
+    (conversation IDs) matches the number of original indices.
+
+    Raises:
+        ValueError: If any index cannot be mapped to a conversation ID or if the
+        resulting list length does not match the original list length.
     """
-    Remap row indices in the paths DataFrame back to their corresponding conversation_ids.
+    idx_to_conv_id = dict(clusters_df.select(["row_idx", "conversation_id"]).rows())
 
-    Args:
-        paths_df: DataFrame containing path information with row indices
-        clusters_df: Original DataFrame with row_idx to conversation_id mapping
+    def remap(indices: pl.Series):
+        # Convert indices to a list for processing
+        original_indices = indices.to_list() if not indices.is_empty() else []
+        # Map each index to a conversation id; if a conversation id is missing, raise an error.
+        mapped = []
+        for idx in original_indices:
+            conv_id = idx_to_conv_id.get(idx)
+            if conv_id is None:
+                raise ValueError(
+                    f"Mapping error: Conversation id for index {idx} is missing."
+                )
+            mapped.append(conv_id)
+        # Verify that the original and mapped lists have the same length.
+        if len(mapped) != len(original_indices):
+            raise ValueError(
+                f"Length mismatch: {len(original_indices)} original indices vs {len(mapped)} mapped conversation IDs."
+            )
+        return mapped
 
-    Returns:
-        DataFrame with indices replaced by conversation_ids
-    """
-    # Create a mapping dictionary from row_idx to conversation_id
-    idx_to_conv_id = {}
-    for row in clusters_df.select(["row_idx", "conversation_id"]).iter_rows(named=True):
-        idx_to_conv_id[row["row_idx"]] = row["conversation_id"]
-
-    # Function to remap a list of indices to conversation_ids
-    def remap_list(indices):
-        if indices is None:
-            return []
-        return [idx_to_conv_id.get(idx) for idx in indices if idx in idx_to_conv_id]
-
-    # Apply remapping to each list column
-    result_df = paths_df.with_columns(
+    return paths_df.with_columns(
         [
             pl.col("common_indices")
-            .map_elements(remap_list)
+            .map_elements(remap)
             .alias("common_conversation_ids"),
-            pl.col("user1_indices")
-            .map_elements(remap_list)
-            .alias("user1_conversation_ids"),
-            pl.col("user2_indices")
-            .map_elements(remap_list)
-            .alias("user2_conversation_ids"),
+            pl.col("user1_indices").map_elements(remap).alias("user1_conversation_ids"),
+            pl.col("user2_indices").map_elements(remap).alias("user2_conversation_ids"),
         ]
     )
 
-    # Keep original indices columns and add new conversation_id columns
-    return result_df
+
+def _prepare_clusters(
+    clusters_df: pl.DataFrame, current_user_id: str, logger
+) -> Dict[int, Dict]:
+    """Prepare cluster data from categorized conversations."""
+    clusters_df = clusters_df.drop("row_idx").with_row_count("row_idx")
+    if clusters_df.height == 0:
+        logger.info("No conversation pairs found.")
+        return {}
+
+    cluster_data = {}
+    for cluster_id, cluster_df in clusters_df.group_by("cluster_id"):
+        cluster_id = cluster_id[0]
+        all_users = cluster_df["user_id"].unique().to_list()
+        user1_df = cluster_df.filter(pl.col("user_id") == current_user_id)
+        if user1_df.height == 0:
+            continue
+
+        cluster_data[cluster_id] = {
+            "current_summaries": _extract_conversation_summaries(user1_df, True),
+            "summaries": _extract_conversation_summaries(
+                cluster_df.filter(pl.col("user_id") != current_user_id)
+            ),
+            "all_users": all_users,
+            "paths_found": 0,
+            "iteration": 0,
+            "match_group_id": cluster_df["match_group_id"][0],
+            "category": cluster_df["category"][0],
+        }
+    logger.info(f"Prepared {len(cluster_data)} clusters.")
+    return cluster_data
+
+
+def _generate_paths(
+    cluster_data: Dict[int, Dict],
+    current_user_id: str,
+    max_paths_per_cluster: int,
+    gemini_flash: BaseLlmResource,
+    logger,
+) -> List[Dict]:
+    """Generate serendipitous paths using LLM batch processing."""
+    paths = []
+    total_cost = 0
+    exclusions: Set[int] = set()
+
+    while True:
+        prompts, cluster_ids = [], []
+        for cid, data in cluster_data.items():
+            if data["paths_found"] >= max_paths_per_cluster:
+                continue
+            if prompt := generate_serendipity_prompt(
+                data["current_summaries"], data["summaries"], exclusions
+            ):
+                prompts.append([prompt])
+                cluster_ids.append(cid)
+
+        if not prompts:
+            break
+
+        completions, cost = gemini_flash.get_prompt_sequences_completions_batch(prompts)
+        total_cost += cost
+        paths_found = False
+
+        for i, completion in enumerate(completions):
+            cid = cluster_ids[i]
+            data = cluster_data[cid]
+            try:
+                response = completion[-1]
+                path_obj = parse_serendipity_result(response)
+                if not isinstance(path_obj, dict):
+                    continue
+            except Exception as e:
+                logger.warning(f"Error parsing LLM response for cluster {cid}: {e}")
+                continue
+
+            if any(
+                path_obj.get(k)
+                for k in [
+                    "common_indices",
+                    "user1_unique_indices",
+                    "user2_unique_indices",
+                    "common_background",
+                    "user_1_unique_branches",
+                    "user_2_unique_branches",
+                    "user_1_call_to_action",
+                    "user_2_call_to_action",
+                ]
+            ):
+                paths_found = True
+                data["paths_found"] += 1
+                path = _create_path_entry(
+                    path_obj,
+                    data["summaries"],
+                    current_user_id,
+                    cid,
+                    data["match_group_id"],
+                    data["all_users"],
+                    response,
+                    data["category"],
+                    data["iteration"],
+                )
+                paths.append(path)
+                exclusions.update(
+                    path_obj.get("common_indices", [])
+                    + path_obj.get("user1_unique_indices", [])
+                    + path_obj.get("user2_unique_indices", [])
+                )
+            data["iteration"] += 1
+
+        if not paths_found:
+            break
+
+    logger.info(f"Total LLM cost: ${total_cost:.6f}")
+    return paths
+
+
+def _fix_duplicates(df: pl.DataFrame, logger) -> pl.DataFrame:
+    """Validate and remove duplicate indices within match groups.
+
+    For each match group (based on "match_group_id"), this function iterates over the rows,
+    and for each of the list columns ["common_indices", "user1_indices", "user2_indices"],
+    it removes any index that has already been encountered in that match group (keeping only the first occurrence).
+
+    Args:
+        df: DataFrame containing the path data.
+        logger: Logger for recording status.
+
+    Returns:
+        A new DataFrame with duplicate indices removed.
+    """
+    total_removed = 0
+    new_rows = []
+    # Process by unique match_group_id values
+    for mg_id in df["match_group_id"].unique().to_list():
+        group_df = df.filter(pl.col("match_group_id") == mg_id)
+        seen: set = set()
+        for row in group_df.iter_rows(named=True):
+            new_row = row.copy()
+            for col in ["common_indices", "user1_indices", "user2_indices"]:
+                new_list = []
+                for item in row[col]:
+                    if item in seen:
+                        total_removed += 1
+                    else:
+                        seen.add(item)
+                        new_list.append(item)
+                new_row[col] = new_list
+            new_rows.append(new_row)
+
+    if total_removed == 0:
+        logger.info("No duplicates found within match groups.")
+    else:
+        logger.info(f"Removed {total_removed} duplicate entries across match groups.")
+
+    # Return a new DataFrame with the same schema as the original.
+    return pl.DataFrame(new_rows, schema=df.schema)
 
 
 @asset(
     partitions_def=user_partitions_def,
-    ins={
-        "cluster_categorizations": AssetIn(key="cluster_categorizations"),
-    },
+    ins={"cluster_categorizations": AssetIn(key="cluster_categorizations")},
     io_manager_key="parquet_io_manager",
 )
 def serendipity_optimized(
@@ -210,299 +338,39 @@ def serendipity_optimized(
     cluster_categorizations: pl.DataFrame,
 ) -> pl.DataFrame:
     """
-    Discovers serendipitous paths between users' conversations using pre-filtered
-    conversation pairs that have been categorized in the cluster_categorizations asset.
+    Discover serendipitous paths between users' conversations using categorized clusters.
 
-    This asset focuses purely on finding meaningful connections between conversation pairs
-    that have already been identified as potentially related based on embedding similarity
-    and categorized as either "coding", "humanistic", or "practical".
+    Args:
+        context: Dagster execution context.
+        config: Configuration with max_paths_per_user.
+        gemini_flash: LLM resource for path generation.
+        cluster_categorizations: DataFrame with categorized conversation clusters.
 
-    Processing steps:
-    1. Groups conversation pairs by cluster_id
-    2. For each cluster, extracts conversation details and sorts by date and time
-    3. Iteratively generates prompts and calls the LLM to find serendipitous paths
-    4. Identifies both shared/common topics and unique/complementary topics between users
-    5. Builds a result DataFrame with path information including category
-
-    The conversations are sorted chronologically before being sent to the LLM to help it
-    identify temporal progression in topics and interests.
-
-    Output columns:
-    - path_id
-    - user1_id
-    - user2_id
-    - common_indices (list of row indices representing shared/similar topics)
-    - user1_indices (list of row indices representing unique/complementary topics for user1)
-    - user2_indices (list of row indices representing unique/complementary topics for user2)
-    - path_description
-    - iteration
-    - created_at
-    - llm_output (raw JSON response from the LLM)
-    - user_similarity_score (average similarity of the conversation embeddings)
-    - cluster_id (the cluster that these conversations were grouped in)
-    - category: Classification as "humanistic" or "practical" domain
+    Returns:
+        DataFrame with serendipitous path details.
     """
     current_user_id = context.partition_key
     logger = context.log
 
-    # The input is now cluster_categorizations, which is the original conversation_pair_clusters
-    # with category information added
-    conversation_pair_clusters = cluster_categorizations.drop("row_idx").with_row_count(
-        "row_idx"
+    # Prepare cluster data
+    cluster_data = _prepare_clusters(cluster_categorizations, current_user_id, logger)
+    if not cluster_data:
+        return pl.DataFrame(schema=_get_out_df_schema())
+
+    # Set max paths per cluster
+    max_paths_per_cluster = max(1, config.max_paths_per_user // len(cluster_data))
+    logger.info(f"Processing with max {max_paths_per_cluster} paths per cluster")
+
+    # Generate paths
+    paths = _generate_paths(
+        cluster_data, current_user_id, max_paths_per_cluster, gemini_flash, logger
     )
+    if not paths:
+        return pl.DataFrame(schema=_get_out_df_schema())
 
-    if conversation_pair_clusters.height == 0:
-        logger.info("No conversation pair candidates found, returning empty result.")
-        return pl.DataFrame(schema=_get_enhanced_schema())
+    # Build and validate result DataFrame
+    result_df = pl.DataFrame(paths, schema_overrides=_get_out_df_schema())
+    result_df = _fix_duplicates(result_df, logger)
+    result_df = _remap_indices_to_conversation_ids(result_df, cluster_categorizations)
 
-    # Group by cluster_id to process each cluster separately
-    cluster_groups = conversation_pair_clusters.group_by("cluster_id")
-    num_clusters = cluster_groups.count().sum().get_column("count").item()
-
-    # Calculate max paths per cluster based on total allowed paths per user and number of clusters
-    # Ensure at least 1 path per cluster, but don't exceed max_paths_per_user in total
-    max_paths_per_cluster = (
-        max(1, config.max_paths_per_user // num_clusters)
-        if num_clusters > 0
-        else config.max_paths_per_user
-    )
-    logger.info(
-        f"Processing clusters with max {max_paths_per_cluster} paths per cluster"
-    )
-
-    # Organize conversation pairs by cluster_id
-    cluster_data = {}
-
-    # Single global set for all excluded conversation indices
-    global_exclusions = set()
-
-    for cid_tuple, cluster_df in cluster_groups:
-        cluster_id = cid_tuple[0]
-        # Get all users in this cluster
-        all_users_in_cluster = cluster_df["user_id"].unique().to_list()
-        # Separate current user conversations from other users
-        user1_df = cluster_df.filter(pl.col("user_id") == current_user_id)
-        user2_df = cluster_df.filter(pl.col("user_id") != current_user_id)
-
-        # Skip clusters where current user isn't present
-        if user1_df.height == 0:
-            continue
-
-        # Extract summaries using helper function
-        user1_summaries = _extract_conversation_summaries(
-            user1_df, is_current_user=True
-        )
-        user2_summaries = _extract_conversation_summaries(user2_df)
-
-        # Get the match_group_id for this cluster (for user similarity reference)
-        match_group_id = cluster_df["match_group_id"][0] if cluster_df.height > 0 else 0
-
-        # Store data for this cluster
-        cluster_data[cluster_id] = {
-            "current_summaries": user1_summaries,
-            "summaries": user2_summaries,
-            "all_users": all_users_in_cluster,
-            "paths_found": 0,
-            "iteration": 0,
-            "match_group_id": match_group_id,
-        }
-
-    logger.info(f"Processing {len(cluster_data)} clusters for serendipitous paths")
-
-    # Iteratively find paths across clusters
-    all_paths = []
-    total_cost = 0
-
-    while True:
-        prompt_sequences = []
-        cluster_info = []
-
-        # Generate prompts for each cluster that hasn't reached max_paths
-        for cluster_id, data in cluster_data.items():
-            if data["paths_found"] >= max_paths_per_cluster:
-                continue
-
-            # Generate prompt using row indices directly
-            prompt = generate_serendipity_prompt(
-                data["current_summaries"],
-                data["summaries"],
-                excluded_indices=global_exclusions,
-            )
-
-            if prompt:
-                prompt_sequences.append([prompt])
-                cluster_info.append(
-                    {
-                        "cluster_id": cluster_id,
-                        "all_users": data["all_users"],
-                        "match_group_id": data["match_group_id"],
-                    }
-                )
-
-        if not prompt_sequences:
-            # No more prompts to process → break out
-            break
-
-        # Get batch completions from the LLM
-        completions, cost = gemini_flash.get_prompt_sequences_completions_batch(
-            prompt_sequences
-        )
-        total_cost += cost
-
-        # Process each LLM response
-        paths_found_any = False
-        for i, completion in enumerate(completions):
-            cluster_id = cluster_info[i]["cluster_id"]
-            all_users = cluster_info[i]["all_users"]
-            match_group_id = cluster_info[i]["match_group_id"]
-            cluster_info_data = cluster_data[cluster_id]
-
-            # Parse the JSON from the LLM
-            try:
-                response_text = completion[-1]  # last message is the LLM's response
-                path_obj = parse_serendipity_result(response_text)
-            except (IndexError, Exception) as e:
-                logger.warning(
-                    f"Error processing LLM response for cluster {cluster_id}: {str(e)}"
-                )
-                continue
-
-            # Make sure it has the expected structure
-            if not isinstance(path_obj, dict):
-                continue
-
-            # If we got a non-empty path
-            if (
-                path_obj.get("common_indices")
-                or path_obj.get("user1_unique_indices")
-                or path_obj.get("user2_unique_indices")
-                or path_obj.get("common_background")
-                or path_obj.get("user_1_unique_branches")
-                or path_obj.get("user_2_unique_branches")
-                or path_obj.get("user_1_call_to_action")
-                or path_obj.get("user_2_call_to_action")
-            ):
-                paths_found_any = True
-                cluster_info_data["paths_found"] += 1
-
-                # Create path entry using helper function with summaries for mapping
-                path_entry = _create_path_entry(
-                    path_obj,
-                    cluster_info_data["summaries"],
-                    cluster_info_data["current_summaries"],
-                    current_user_id,
-                    cluster_id,
-                    match_group_id,
-                    all_users,
-                    response_text,
-                    category="practical",
-                    iteration=cluster_info_data["iteration"],
-                )
-                all_paths.append(path_entry)
-
-                # Update exclusions with row indices directly
-                global_exclusions.update(path_obj.get("common_indices", []))
-                global_exclusions.update(path_obj.get("user1_unique_indices", []))
-                global_exclusions.update(path_obj.get("user2_unique_indices", []))
-
-            # Increment iteration for the cluster
-            cluster_info_data["iteration"] += 1
-
-        # If in this entire batch we found no paths, there's no need to continue
-        if not paths_found_any:
-            break
-
-    logger.info(f"Total cost of LLM calls: ${total_cost:.6f}")
-
-    # Build the final result DataFrame
-    if all_paths:
-        result_df = pl.DataFrame(
-            all_paths,
-            schema_overrides={
-                "iteration": pl.Int32,
-                "user_similarity_score": pl.Float32,
-                "user1_path_length": pl.Int32,
-                "user2_path_length": pl.Int32,
-                "cluster_id": pl.UInt8,
-                "match_group_id": pl.UInt32,
-                "all_user_ids": pl.List(pl.Utf8),
-                "common_indices": pl.List(pl.Int64),
-                "user1_indices": pl.List(pl.Int64),
-                "user2_indices": pl.List(pl.Int64),
-                "category": pl.Utf8,
-                "user1_unique_branches": pl.Utf8,
-                "user2_unique_branches": pl.Utf8,
-                "user1_call_to_action": pl.Utf8,
-                "user2_call_to_action": pl.Utf8,
-            },
-        )
-
-        context.log.info(f"Result DataFrame: {result_df.head()}")
-
-        # Assert that there are no duplicates within each match_group_id
-        user1_exploded = (
-            result_df.select("match_group_id", "user1_indices")
-            .explode("user1_indices")
-            .rename({"user1_indices": "row_idx"})
-        )
-
-        user2_exploded = (
-            result_df.select("match_group_id", "user2_indices")
-            .explode("user2_indices")
-            .rename({"user2_indices": "row_idx"})
-        )
-
-        common_exploded = (
-            result_df.select("match_group_id", "common_indices")
-            .explode("common_indices")
-            .rename({"common_indices": "row_idx"})
-        )
-
-        # Concatenate and group by match_group_id
-        all_exploded = pl.concat([user1_exploded, user2_exploded, common_exploded])
-
-        # Check for duplicates within each match group
-        total_duplicates = 0
-        for match_group_id in all_exploded["match_group_id"].unique():
-            group_df = all_exploded.filter(pl.col("match_group_id") == match_group_id)
-            group_unique = group_df.select("row_idx").unique()
-            duplicates = group_df.height - group_unique.height
-            if duplicates > 0:
-                # Find and print the specific duplicate row indices
-                duplicate_indices = (
-                    group_df.group_by("row_idx")
-                    .agg(pl.count().alias("count"))
-                    .filter(pl.col("count") > 1)
-                    .sort("count", descending=True)
-                )
-                logger.error(
-                    f"Found {duplicates} duplicate row indices within match_group_id {match_group_id}:\n{duplicate_indices}"
-                )
-                total_duplicates += duplicates
-
-        if total_duplicates > 0:
-            logger.error(
-                f"Found {total_duplicates} total duplicate row indices across all match groups"
-            )
-        else:
-            logger.info("No duplicate row indices found within any match group")
-
-        # Remap row indices to conversation IDs before returning
-        result_df = _remap_indices_to_conversation_ids(
-            result_df, conversation_pair_clusters
-        )
-
-        return result_df
-    else:
-        # Return an empty DataFrame with the proper schema
-        schema = _get_enhanced_schema()
-        # Add conversation ID columns to the schema for the empty DataFrame
-        schema["common_conversation_ids"] = pl.List(pl.Utf8)
-        schema["user1_conversation_ids"] = pl.List(pl.Utf8)
-        schema["user2_conversation_ids"] = pl.List(pl.Utf8)
-        # Ensure new text fields are also present
-        schema["user1_unique_branches"] = pl.Utf8
-        schema["user2_unique_branches"] = pl.Utf8
-        schema["user1_call_to_action"] = pl.Utf8
-        schema["user2_call_to_action"] = pl.Utf8
-        return pl.DataFrame(schema=schema)
+    return result_df

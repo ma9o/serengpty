@@ -27,7 +27,7 @@ class ConversationPairClustersConfig(RowLimitConfig):
     # Number of top similar users to consider
     top_k_users: int = 10
     # Maximum number of items allowed per cluster
-    max_items_per_cluster: Optional[int] = 500
+    max_items_per_cluster: Optional[int] = 300
 
     cosine_difference: Optional[float] = None
     # Maximum number of iterations to try to find a good number of clusters
@@ -113,7 +113,7 @@ def collect_user_data(user_ids, logger):
     user_data = {}
 
     for uid in user_ids:
-        df, emb_array = load_user_embeddings(uid, logger)
+        df, emb_array = load_user_embeddings(uid)
         if df is not None and emb_array is not None:
             user_embeddings[uid] = emb_array
             user_data[uid] = (df, emb_array)

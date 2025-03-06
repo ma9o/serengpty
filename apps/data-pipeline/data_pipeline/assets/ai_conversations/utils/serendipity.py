@@ -194,19 +194,3 @@ def prepare_conversation_summaries(df: pl.DataFrame) -> List[Dict]:
             summaries.append(summary)
 
     return summaries
-
-
-def get_empty_result_schema():
-    """Return the schema for an empty serendipity results DataFrame."""
-    return {
-        "path_id": pl.Utf8,
-        "user1_id": pl.Utf8,
-        "user2_id": pl.Utf8,
-        "common_conversation_ids": pl.List(pl.Utf8),
-        "user1_conversation_ids": pl.List(pl.Utf8),
-        "user2_conversation_ids": pl.List(pl.Utf8),
-        "path_description": pl.Utf8,
-        "iteration": pl.Int32,
-        "created_at": pl.Datetime,
-        "llm_output": pl.Utf8,
-    }

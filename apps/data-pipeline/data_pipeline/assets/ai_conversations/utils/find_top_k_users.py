@@ -108,7 +108,7 @@ def find_top_k_users(
 
     # Sort the heap results in descending order
     top_k_users = sorted(top_k_heap, key=lambda x: x[0], reverse=True)
-    return top_k_users
+    return [(user_id, similarity) for similarity, user_id in top_k_users]
 
 
 if __name__ == "__main__":

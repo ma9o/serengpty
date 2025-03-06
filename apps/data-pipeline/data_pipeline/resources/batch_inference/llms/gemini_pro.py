@@ -14,7 +14,7 @@ openrouter_config = RemoteLlmConfig(
         "model": "google/gemini-pro-1.5",  # nb: different from config above
     },
     context_length=1_000_000,
-    concurrency_limit=200,
+    concurrency_limit=1,
     timeout=300,
     input_cpm=1.25,
     output_cpm=5,
