@@ -1,4 +1,5 @@
 import datetime
+import math
 import uuid
 from typing import Dict, List, Set
 
@@ -7,7 +8,9 @@ from dagster import AssetExecutionContext, AssetIn, asset
 
 from data_pipeline.assets.ai_conversations.utils.serendipity import (
     generate_serendipity_prompt,
+    get_out_df_schema,
     parse_serendipity_result,
+    remap_indices_to_conversation_ids,
 )
 from data_pipeline.constants.custom_config import RowLimitConfig
 from data_pipeline.partitions import user_partitions_def
@@ -88,7 +91,6 @@ def _create_path_entry(
         "iteration": iteration,
         "created_at": datetime.datetime.now(),
         "llm_output": response_text,
-        "user_similarity_score": 0.0,
         "cluster_id": cluster_id,
         "match_group_id": match_group_id,
         "all_user_ids": all_users,
@@ -96,84 +98,10 @@ def _create_path_entry(
     }
 
 
-def _get_out_df_schema() -> Dict:
-    """Return the complete schema for the result DataFrame."""
-
-    return {
-        "path_id": pl.Utf8,
-        "user1_id": pl.Utf8,
-        "user2_id": pl.Utf8,
-        "common_conversation_ids": pl.List(pl.Utf8),
-        "user1_conversation_ids": pl.List(pl.Utf8),
-        "user2_conversation_ids": pl.List(pl.Utf8),
-        "path_description": pl.Utf8,
-        "iteration": pl.Int32,
-        "created_at": pl.Datetime,
-        "llm_output": pl.Utf8,
-        "user_similarity_score": pl.Float32,
-        "user1_path_length": pl.Int32,
-        "user2_path_length": pl.Int32,
-        "cluster_id": pl.UInt8,
-        "match_group_id": pl.UInt32,
-        "all_user_ids": pl.List(pl.Utf8),
-        "category": pl.Utf8,
-        "common_indices": pl.List(pl.Int64),
-        "user1_indices": pl.List(pl.Int64),
-        "user2_indices": pl.List(pl.Int64),
-        "user1_unique_branches": pl.Utf8,
-        "user2_unique_branches": pl.Utf8,
-        "user1_call_to_action": pl.Utf8,
-        "user2_call_to_action": pl.Utf8,
-    }
-
-
-def _remap_indices_to_conversation_ids(
-    paths_df: pl.DataFrame, clusters_df: pl.DataFrame
-) -> pl.DataFrame:
-    """Remap row indices to conversation IDs, ensuring that the number of new IDs
-    (conversation IDs) matches the number of original indices.
-
-    Raises:
-        ValueError: If any index cannot be mapped to a conversation ID or if the
-        resulting list length does not match the original list length.
-    """
-    idx_to_conv_id = dict(clusters_df.select(["row_idx", "conversation_id"]).rows())
-
-    def remap(indices: pl.Series):
-        # Convert indices to a list for processing
-        original_indices = indices.to_list() if not indices.is_empty() else []
-        # Map each index to a conversation id; if a conversation id is missing, raise an error.
-        mapped = []
-        for idx in original_indices:
-            conv_id = idx_to_conv_id.get(idx)
-            if conv_id is None:
-                raise ValueError(
-                    f"Mapping error: Conversation id for index {idx} is missing."
-                )
-            mapped.append(conv_id)
-        # Verify that the original and mapped lists have the same length.
-        if len(mapped) != len(original_indices):
-            raise ValueError(
-                f"Length mismatch: {len(original_indices)} original indices vs {len(mapped)} mapped conversation IDs."
-            )
-        return mapped
-
-    return paths_df.with_columns(
-        [
-            pl.col("common_indices")
-            .map_elements(remap)
-            .alias("common_conversation_ids"),
-            pl.col("user1_indices").map_elements(remap).alias("user1_conversation_ids"),
-            pl.col("user2_indices").map_elements(remap).alias("user2_conversation_ids"),
-        ]
-    )
-
-
 def _prepare_clusters(
     clusters_df: pl.DataFrame, current_user_id: str, logger
 ) -> Dict[int, Dict]:
     """Prepare cluster data from categorized conversations."""
-    clusters_df = clusters_df.drop("row_idx").with_row_count("row_idx")
     if clusters_df.height == 0:
         logger.info("No conversation pairs found.")
         return {}
@@ -204,45 +132,101 @@ def _prepare_clusters(
 def _generate_paths(
     cluster_data: Dict[int, Dict],
     current_user_id: str,
-    max_paths_per_cluster: int,
     gemini_flash: BaseLlmResource,
     logger,
+    config: SerendipityOptimizedConfig,
 ) -> List[Dict]:
-    """Generate serendipitous paths using LLM batch processing."""
+    """
+    Generate serendipitous paths using LLM sequentially, balancing by category ratios
+    and dynamically prioritizing clusters by the ratio of remaining conversations closest to 1.
+    """
     paths = []
     total_cost = 0
     exclusions: Set[int] = set()
 
-    while True:
-        prompts, cluster_ids = [], []
-        for cid, data in cluster_data.items():
-            if data["paths_found"] >= max_paths_per_cluster:
-                continue
-            if prompt := generate_serendipity_prompt(
-                data["current_summaries"], data["summaries"], exclusions
-            ):
-                prompts.append([prompt])
-                cluster_ids.append(cid)
+    # Group clusters by category and filter by positive category ratios
+    category_to_clusters = {}
+    for cid, data in cluster_data.items():
+        category = data["category"]
+        if config.category_ratios.get(category, 0.0) > 0:
+            if category not in category_to_clusters:
+                category_to_clusters[category] = []
+            category_to_clusters[category].append(cid)
 
-        if not prompts:
-            break
+    # Sort categories by their ratios in descending order
+    sorted_categories = sorted(
+        category_to_clusters.keys(),
+        key=lambda c: config.category_ratios[c],
+        reverse=True,
+    )
+    if not sorted_categories:
+        logger.info("No categories with positive ratios found.")
+        return paths
 
-        completions, cost = gemini_flash.get_prompt_sequences_completions_batch(prompts)
-        total_cost += cost
-        paths_found = False
+    def calculate_balance_score(data: Dict) -> float:
+        """Calculate balance score based on remaining conversations."""
+        remaining_current = [
+            s for s in data["current_summaries"] if s["row_idx"] not in exclusions
+        ]
+        remaining_other = [
+            s for s in data["summaries"] if s["row_idx"] not in exclusions
+        ]
+        len_current = len(remaining_current)
+        len_other = len(remaining_other)
+        if len_other == 0 or len_current == 0:
+            return float("inf")  # Deprioritize if either side has no conversations
+        ratio = len_current / len_other
+        return abs(math.log(ratio))
 
-        for i, completion in enumerate(completions):
-            cid = cluster_ids[i]
+    # Process each category sequentially
+    for category in sorted_categories:
+        initial_cluster_ids = category_to_clusters[category]
+        if not initial_cluster_ids:
+            continue
+
+        # Initialize active clusters with their current balance scores
+        active_clusters = [
+            (cid, calculate_balance_score(cluster_data[cid]))
+            for cid in initial_cluster_ids
+            if calculate_balance_score(cluster_data[cid]) != float("inf")
+        ]
+
+        # Process clusters dynamically within this category
+        while active_clusters and len(paths) < config.max_paths_per_user:
+            # Sort by balance score and select the top cluster
+            active_clusters.sort(
+                key=lambda x: x[1]
+            )  # Smallest score (closest to 1) first
+            cid, _ = active_clusters[0]  # Get the top cluster
             data = cluster_data[cid]
+
+            # Generate prompt with remaining conversations
+            prompt = generate_serendipity_prompt(
+                data["current_summaries"], data["summaries"], exclusions
+            )
+            if not prompt:
+                # Cluster can't generate more paths; remove it
+                active_clusters.pop(0)
+                continue
+
+            # Generate path (batch size of 1)
+            completions, cost = gemini_flash.get_prompt_sequences_completions_batch(
+                [[prompt]]
+            )
+            total_cost += cost
+            completion = completions[0]
+
             try:
-                response = completion[-1]
-                path_obj = parse_serendipity_result(response)
+                path_obj = parse_serendipity_result(completion[-1])
                 if not isinstance(path_obj, dict):
+                    active_clusters.pop(0)  # Remove if parsing fails consistently
                     continue
             except Exception as e:
                 logger.warning(f"Error parsing LLM response for cluster {cid}: {e}")
+                active_clusters.pop(0)  # Remove on error to avoid infinite loop
                 continue
 
+            # Validate path content
             if any(
                 path_obj.get(k)
                 for k in [
@@ -256,8 +240,7 @@ def _generate_paths(
                     "user_2_call_to_action",
                 ]
             ):
-                paths_found = True
-                data["paths_found"] += 1
+                # Create and store the path
                 path = _create_path_entry(
                     path_obj,
                     data["summaries"],
@@ -265,20 +248,34 @@ def _generate_paths(
                     cid,
                     data["match_group_id"],
                     data["all_users"],
-                    response,
+                    completion[-1],
                     data["category"],
                     data["iteration"],
                 )
                 paths.append(path)
+
+                # Update exclusions
                 exclusions.update(
                     path_obj.get("common_indices", [])
                     + path_obj.get("user1_unique_indices", [])
                     + path_obj.get("user2_unique_indices", [])
                 )
-            data["iteration"] += 1
+                data["iteration"] += 1
 
-        if not paths_found:
-            break
+                # Recalculate balance score for this cluster
+                new_balance_score = calculate_balance_score(data)
+                if new_balance_score == float("inf"):
+                    # No remaining conversations; remove cluster
+                    active_clusters.pop(0)
+                else:
+                    # Update the cluster's score in the list
+                    active_clusters[0] = (cid, new_balance_score)
+            else:
+                # No valid path content; remove cluster to avoid retrying
+                active_clusters.pop(0)
+
+        if not active_clusters:
+            logger.info(f"Category '{category}' exhausted.")
 
     logger.info(f"Total LLM cost: ${total_cost:.6f}")
     return paths
@@ -352,25 +349,21 @@ def serendipity_optimized(
     current_user_id = context.partition_key
     logger = context.log
 
-    # Prepare cluster data
-    cluster_data = _prepare_clusters(cluster_categorizations, current_user_id, logger)
-    if not cluster_data:
-        return pl.DataFrame(schema=_get_out_df_schema())
+    clusters_df = cluster_categorizations.drop("row_idx").with_row_count("row_idx")
 
-    # Set max paths per cluster
-    max_paths_per_cluster = max(1, config.max_paths_per_user // len(cluster_data))
-    logger.info(f"Processing with max {max_paths_per_cluster} paths per cluster")
+    # Prepare cluster data
+    cluster_data = _prepare_clusters(clusters_df, current_user_id, logger)
+    if not cluster_data:
+        return pl.DataFrame(schema=get_out_df_schema())
 
     # Generate paths
-    paths = _generate_paths(
-        cluster_data, current_user_id, max_paths_per_cluster, gemini_flash, logger
-    )
+    paths = _generate_paths(cluster_data, current_user_id, gemini_flash, logger, config)
     if not paths:
-        return pl.DataFrame(schema=_get_out_df_schema())
+        return pl.DataFrame(schema=get_out_df_schema())
 
     # Build and validate result DataFrame
-    result_df = pl.DataFrame(paths, schema_overrides=_get_out_df_schema())
+    result_df = pl.DataFrame(paths, schema_overrides=get_out_df_schema())
     result_df = _fix_duplicates(result_df, logger)
-    result_df = _remap_indices_to_conversation_ids(result_df, cluster_categorizations)
+    result_df = remap_indices_to_conversation_ids(result_df, clusters_df)
 
     return result_df

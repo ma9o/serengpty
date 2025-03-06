@@ -194,3 +194,75 @@ def prepare_conversation_summaries(df: pl.DataFrame) -> List[Dict]:
             summaries.append(summary)
 
     return summaries
+
+
+def get_out_df_schema() -> Dict:
+    """Return the complete schema for the result DataFrame."""
+
+    return {
+        "path_id": pl.Utf8,
+        "user1_id": pl.Utf8,
+        "user2_id": pl.Utf8,
+        "common_conversation_ids": pl.List(pl.Utf8),
+        "user1_conversation_ids": pl.List(pl.Utf8),
+        "user2_conversation_ids": pl.List(pl.Utf8),
+        "path_description": pl.Utf8,
+        "iteration": pl.Int32,
+        "created_at": pl.Datetime,
+        "llm_output": pl.Utf8,
+        "user1_path_length": pl.Int32,
+        "user2_path_length": pl.Int32,
+        "cluster_id": pl.UInt8,
+        "match_group_id": pl.UInt32,
+        "all_user_ids": pl.List(pl.Utf8),
+        "category": pl.Utf8,
+        "common_indices": pl.List(pl.Int64),
+        "user1_indices": pl.List(pl.Int64),
+        "user2_indices": pl.List(pl.Int64),
+        "user1_unique_branches": pl.Utf8,
+        "user2_unique_branches": pl.Utf8,
+        "user1_call_to_action": pl.Utf8,
+        "user2_call_to_action": pl.Utf8,
+    }
+
+
+def remap_indices_to_conversation_ids(
+    paths_df: pl.DataFrame, clusters_df: pl.DataFrame
+) -> pl.DataFrame:
+    """Remap row indices to conversation IDs, ensuring that the number of new IDs
+    (conversation IDs) matches the number of original indices.
+
+    Raises:
+        ValueError: If any index cannot be mapped to a conversation ID or if the
+        resulting list length does not match the original list length.
+    """
+    idx_to_conv_id = dict(clusters_df.select(["row_idx", "conversation_id"]).rows())
+
+    def remap(indices: pl.Series):
+        # Convert indices to a list for processing
+        original_indices = indices.to_list() if not indices.is_empty() else []
+        # Map each index to a conversation id; if a conversation id is missing, raise an error.
+        mapped = []
+        for idx in original_indices:
+            conv_id = idx_to_conv_id.get(idx)
+            if conv_id is None:
+                raise ValueError(
+                    f"Mapping error: Conversation id for index {idx} is missing."
+                )
+            mapped.append(conv_id)
+        # Verify that the original and mapped lists have the same length.
+        if len(mapped) != len(original_indices):
+            raise ValueError(
+                f"Length mismatch: {len(original_indices)} original indices vs {len(mapped)} mapped conversation IDs."
+            )
+        return mapped
+
+    return paths_df.with_columns(
+        [
+            pl.col("common_indices")
+            .map_elements(remap)
+            .alias("common_conversation_ids"),
+            pl.col("user1_indices").map_elements(remap).alias("user1_conversation_ids"),
+            pl.col("user2_indices").map_elements(remap).alias("user2_conversation_ids"),
+        ]
+    )

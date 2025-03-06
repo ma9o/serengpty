@@ -107,7 +107,7 @@ class RemoteLlmResource(BaseLlmResource):
 
         # Requests are attempted in seuqnence, meaning that the latter
         # will likely be blocked more often
-        max_attempts = conversation_id + 3
+        max_attempts = conversation_id + 8
         logger = get_dagster_logger()
 
         for _ in range(max_attempts):
