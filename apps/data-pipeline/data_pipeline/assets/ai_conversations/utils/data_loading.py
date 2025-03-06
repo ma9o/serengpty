@@ -1,15 +1,6 @@
 """Data loading utilities for conversation assets."""
-import polars as pl
+
 from dagster import AssetExecutionContext
-
-from data_pipeline.constants.environments import DAGSTER_STORAGE_DIRECTORY
-
-
-def load_user_dataframe(user_id: str) -> pl.DataFrame:
-    """Load a user's dataframe from Parquet."""
-    return pl.read_parquet(
-        DAGSTER_STORAGE_DIRECTORY / "conversations_embeddings" / f"{user_id}.snappy"
-    )
 
 
 def get_materialized_partitions(context: AssetExecutionContext, asset_name: str):

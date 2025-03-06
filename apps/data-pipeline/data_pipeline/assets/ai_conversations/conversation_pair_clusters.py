@@ -1,7 +1,6 @@
 from math import ceil
 from typing import Optional
 
-import faiss
 import numpy as np
 import polars as pl
 from dagster import (
@@ -15,7 +14,10 @@ from sklearn.preprocessing import normalize
 
 from data_pipeline.assets.ai_conversations.utils.data_loading import (
     get_materialized_partitions,
-    load_user_dataframe,
+)
+from data_pipeline.assets.ai_conversations.utils.find_top_k_users import (
+    find_top_k_users,
+    load_user_embeddings,
 )
 from data_pipeline.constants.custom_config import RowLimitConfig
 from data_pipeline.partitions import user_partitions_def
@@ -67,54 +69,6 @@ def get_conversation_data(df, row_idx):
     )
 
 
-def calculate_user_average_embedding(embeddings: list[np.ndarray]) -> np.ndarray:
-    """Calculate the average embedding vector for a user."""
-    if isinstance(embeddings, list) and len(embeddings) == 0:
-        return np.array([])
-    # Handle case where embeddings might be a numpy array already
-    if isinstance(embeddings, np.ndarray) and embeddings.size == 0:
-        return np.array([])
-
-    stacked = np.vstack(embeddings)
-    return np.mean(stacked, axis=0)
-
-
-def find_top_k_users(
-    current_user_embedding: np.ndarray,
-    user_embeddings: dict[str, np.ndarray],
-    top_k: int,
-) -> list[tuple[str, float]]:
-    """
-    Find the top K most similar users based on embedding similarity (dot product / cosine).
-
-    Returns:
-        List of (user_id, similarity_score) sorted by similarity desc.
-    """
-    if not user_embeddings:
-        return []
-
-    user_ids = list(user_embeddings.keys())
-    embedding_matrix = np.array(
-        [user_embeddings[uid] for uid in user_ids], dtype=np.float32
-    )
-    dim = embedding_matrix.shape[1]
-
-    # Build FAISS index for fast similarity search
-    index = faiss.IndexFlatIP(dim)  # inner product
-    index.add(embedding_matrix)
-
-    k = min(top_k, len(user_ids))
-    distances, indices = index.search(current_user_embedding.reshape(1, -1), k)
-
-    results = []
-    for sim, idx in zip(distances[0], indices[0]):
-        results.append((user_ids[idx], float(sim)))
-
-    # Sort descending
-    results.sort(key=lambda x: x[1], reverse=True)
-    return results
-
-
 def cluster_conversations(
     emb1_array: np.ndarray,
     emb2_array: np.ndarray,
@@ -153,39 +107,18 @@ def cluster_conversations(
     return labels
 
 
-def load_user_embeddings(user_id, logger):
-    """Load user data and embeddings, returning a tuple of (df, embeddings_array)."""
-    try:
-        df = load_user_dataframe(user_id)
-        if df.is_empty():
-            return None, None
-
-        df = df.with_row_count("row_idx")
-        emb_list = df["embedding"].to_list()
-
-        if not emb_list:
-            return None, None
-
-        emb_array = np.array(emb_list, dtype=np.float32)
-        return df, emb_array
-    except Exception as e:
-        logger.error(f"Error loading user {user_id}: {e}")
-        return None, None
-
-
 def collect_user_data(user_ids, logger):
     """Collect user data, average embeddings, and embeddings arrays."""
-    user_avg_embeddings = {}
+    user_embeddings = {}
     user_data = {}
 
     for uid in user_ids:
         df, emb_array = load_user_embeddings(uid, logger)
         if df is not None and emb_array is not None:
-            avg_emb = calculate_user_average_embedding(emb_array)
-            user_avg_embeddings[uid] = avg_emb
+            user_embeddings[uid] = emb_array
             user_data[uid] = (df, emb_array)
 
-    return user_avg_embeddings, user_data
+    return user_embeddings, user_data
 
 
 def create_conversation_pairs_for_clusters(
@@ -258,34 +191,6 @@ def conversation_pair_clusters(
     config: ConversationPairClustersConfig,
     conversations_embeddings: pl.DataFrame,
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
-    """
-    Create semantically related conversation pairs grouped by clusters using agglomerative clustering.
-
-    This asset identifies similar conversations between pairs of users by:
-    1. Finding the most similar users based on average conversation embeddings using FAISS
-    2. For each similar user pair, merging and clustering their conversation embeddings
-    3. Creating clusters of semantically related conversations across users
-    4. Assigning each conversation to a globally unique cluster ID
-
-    The resulting clusters provide a foundation for identifying serendipitous connections
-    between different users' conversations. By pre-grouping related conversations,
-    this asset significantly reduces the search space for downstream LLM-based processing.
-
-    Configuration options:
-    - top_k_users: Number of most similar users to analyze (default: 10)
-    - max_items_per_cluster: Maximum number of items allowed per cluster (default: 1000)
-    - linkage: Clustering criterion for agglomerative clustering (default: "ward")
-
-    Returns a tuple of two DataFrames:
-    1. Conversation pairs DataFrame with schema:
-       - user_id: The user ID
-       - match_group_id: ID for the user pair
-       - conversation: Struct with conversation details (ID, title, summary, dates)
-       - cluster_id: Global cluster ID grouping semantically related conversations
-    2. User similarities DataFrame with schema:
-       - user_id: The user ID
-       - similarity: Similarity score between the current user and this user
-    """
     current_user_id = context.partition_key
     logger = context.log
 
@@ -313,15 +218,9 @@ def conversation_pair_clusters(
         )
 
     emb1_array = np.array(emb1_list, dtype=np.float32)
-    current_user_avg_embedding = calculate_user_average_embedding(emb1_array)
 
-    # Gather data for other users
-    user_avg_embeddings, user_data = collect_user_data(other_user_ids, logger)
-
-    # Find top-K most similar users
-    top_users = find_top_k_users(
-        current_user_avg_embedding, user_avg_embeddings, config.top_k_users
-    )
+    # Find top-K most similar users using the updated function
+    top_users = find_top_k_users(emb1_array, other_user_ids, config.top_k_users)
 
     # Create user similarities DataFrame
     user_similarities_data = [
@@ -341,8 +240,14 @@ def conversation_pair_clusters(
         logger.info("No similar users found.")
         return create_empty_result(), user_similarities_df
 
+    # Load embeddings only for the top K users
+    user_data = {}
+    for user_id, _ in top_users:
+        df, embeddings = load_user_embeddings(user_id)
+        if df is not None and embeddings is not None:
+            user_data[user_id] = (df, embeddings)
+
     all_pairs = []
-    # Create a global counter for unique cluster IDs
     global_cluster_id_offset = 0
 
     for match_group_id, (other_uid, user_user_sim) in enumerate(top_users):
