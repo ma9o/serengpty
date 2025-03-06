@@ -7,7 +7,7 @@ import polars as pl
 from dagster import AssetExecutionContext, AssetIn, asset
 
 from data_pipeline.assets.ai_conversations.utils.serendipity import (
-    calculate_balance_score,
+    calculate_balance_scores,
     generate_serendipity_prompt,
     get_out_df_schema,
     parse_serendipity_result,
@@ -43,6 +43,7 @@ def _extract_conversation_summaries(
             "date": f"{row['start_date']} {row['start_time']}",
             "start_date": row["start_date"],
             "start_time": row["start_time"],
+            "embedding": row["embedding"],
             **({"user_id": row["user_id"]} if not is_current_user else {}),
         }
         for row in df.iter_rows(named=True)
@@ -59,6 +60,8 @@ def _create_path_entry(
     response_text: str,
     category: str,
     iteration: int = 0,
+    balance_score: float = 0.0,
+    balance_scores_detailed: Dict[str, float] = {},
 ) -> Dict:
     """Create a path entry from an LLM response."""
     common_indices = path_obj.get("common_indices", [])
@@ -95,6 +98,8 @@ def _create_path_entry(
         "cluster_id": cluster_id,
         "match_group_id": match_group_id,
         "category": category,
+        "balance_score": balance_score,
+        "balance_scores_detailed": balance_scores_detailed,
     }
 
 
@@ -120,7 +125,7 @@ def _prepare_clusters(
             ),
             "paths_found": 0,
             "iteration": 0,
-            "match_group_id": cluster_df["match_group_id"][0],
+            "match_group_id": cluster_df["match_group_id"][0],  # TODO: mmh?
             "category": cluster_df["category"][0],
         }
     logger.info(f"Prepared {len(cluster_data)} clusters.")
@@ -169,9 +174,8 @@ def _generate_paths(
 
         # Initialize active clusters with their current balance scores
         active_clusters = [
-            (cid, calculate_balance_score(cluster_data[cid], exclusions))
+            (cid, *calculate_balance_scores(cluster_data[cid], exclusions))
             for cid in initial_cluster_ids
-            if calculate_balance_score(cluster_data[cid], exclusions) != float("inf")
         ]
 
         # Process clusters dynamically within this category
@@ -180,7 +184,9 @@ def _generate_paths(
             active_clusters.sort(
                 key=lambda x: x[1]
             )  # Smallest score (closest to 1) first
-            cid, _ = active_clusters[0]  # Get the top cluster
+            cid, balance_score, balance_scores_detailed = active_clusters[
+                0
+            ]  # Get the top cluster
             data = cluster_data[cid]
 
             # Generate prompt with remaining conversations
@@ -233,6 +239,8 @@ def _generate_paths(
                     completion[-1],
                     data["category"],
                     data["iteration"],
+                    balance_score,
+                    balance_scores_detailed,
                 )
                 paths.append(path)
 
@@ -245,13 +253,15 @@ def _generate_paths(
                 data["iteration"] += 1
 
                 # Recalculate balance score for this cluster
-                new_balance_score = calculate_balance_score(data, exclusions)
+                new_balance_score, new_scores_detailed = calculate_balance_scores(
+                    data, exclusions
+                )
                 if new_balance_score == float("inf"):
                     # No remaining conversations; remove cluster
                     active_clusters.pop(0)
                 else:
                     # Update the cluster's score in the list
-                    active_clusters[0] = (cid, new_balance_score)
+                    active_clusters[0] = (cid, new_balance_score, new_scores_detailed)
             else:
                 # No valid path content; remove cluster to avoid retrying
                 active_clusters.pop(0)

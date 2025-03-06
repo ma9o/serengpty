@@ -364,7 +364,38 @@ def conversation_pair_clusters(
         global_cluster_id_offset += n_clusters
 
     if all_pairs:
-        result_df = pl.DataFrame(all_pairs, schema=CONVERSATION_PAIR_SCHEMA)
-        return result_df.sort(["cluster_id"], descending=[False]), user_similarities_df
+        result_df = pl.DataFrame(all_pairs, schema=CONVERSATION_PAIR_SCHEMA).sort(
+            ["cluster_id"], descending=[False]
+        )
     else:
-        return create_empty_result(), user_similarities_df
+        result_df = create_empty_result()
+
+    # TODO: messy
+    # Join back with conversation_embeddings to add the embedding column
+    if len(result_df) > 0:
+        # We need embeddings for all user_ids in the result
+        unique_user_ids = result_df["user_id"].unique().to_list()
+        all_embeddings = []
+
+        # First add current user's embeddings
+        all_embeddings.append(
+            conversations_embeddings.select("conversation_id", "embedding")
+        )
+
+        # Then load embeddings for other users in the result
+        for uid in unique_user_ids:
+            if uid != current_user_id:
+                user_df, _ = load_user_embeddings(uid)
+                if user_df is not None:
+                    all_embeddings.append(
+                        user_df.select("conversation_id", "embedding")
+                    )
+
+        # Combine all embeddings and join with result
+        if all_embeddings:
+            combined_embeddings = pl.concat(all_embeddings)
+            result_df = result_df.join(
+                combined_embeddings, on="conversation_id", how="left"
+            )
+
+    return result_df, user_similarities_df

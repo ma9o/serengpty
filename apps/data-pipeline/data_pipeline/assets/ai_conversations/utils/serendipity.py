@@ -8,6 +8,8 @@ import numpy as np
 import polars as pl
 from json_repair import repair_json
 
+from .find_top_k_users import get_approx_user_sim
+
 
 def generate_serendipity_prompt(
     user1_summaries: List[Dict],
@@ -63,7 +65,7 @@ def generate_serendipity_prompt(
 
           Output in this JSON format:
           {{
-            "path_title": "A concise, engaging title for this serendipitous path that captures the essence of the connection. Add an emoji at the beginning of the title.",
+            "path_title": "A concise, engaging title for this serendipitous path that captures the essence of the connection.",
             "common_indices": [list of integer IDs from both users' CONVERSATIONS whose themes are shared],
             "user1_unique_indices": [list of integer IDs from USER 1 CONVERSATIONS that explore topics unique to USER 1, not present in USER 2],
             "user2_unique_indices": [list of integer IDs from USER 2 CONVERSATIONS that explore topics unique to USER 2, not present in USER 1],
@@ -234,6 +236,8 @@ def get_out_df_schema() -> Dict:
         "user2_unique_branches": pl.Utf8,
         "user1_call_to_action": pl.Utf8,
         "user2_call_to_action": pl.Utf8,
+        "balance_score": pl.Float64,
+        "balance_scores_detailed": pl.Dict(pl.Utf8, pl.Float64),
     }
 
 
@@ -279,7 +283,9 @@ def remap_indices_to_conversation_ids(
     )
 
 
-def calculate_balance_score(data: Dict, exclusions: Set[int]) -> float:
+def calculate_balance_scores(
+    data: Dict, exclusions: Set[int]
+) -> tuple[float, Dict[str, float]]:
     """Calculate balance score based on remaining conversations.
 
     Returns a score that prioritizes:
@@ -287,14 +293,18 @@ def calculate_balance_score(data: Dict, exclusions: Set[int]) -> float:
     2. More balanced ratio between sides
     Lower scores are better.
     """
-    remaining_current = [
-        s for s in data["current_summaries"] if s["row_idx"] not in exclusions
+    embeddings_current = [
+        s["embedding"]
+        for s in data["current_summaries"]
+        if s["row_idx"] not in exclusions
     ]
-    remaining_other = [s for s in data["summaries"] if s["row_idx"] not in exclusions]
-    len_current = len(remaining_current)
-    len_other = len(remaining_other)
+    embeddings_other = [
+        s["embedding"] for s in data["summaries"] if s["row_idx"] not in exclusions
+    ]
+    len_current = len(embeddings_current)
+    len_other = len(embeddings_other)
     if len_other == 0 or len_current == 0:
-        return float("inf")  # Deprioritize if either side has no conversations
+        return float("inf"), {}  # Deprioritize if either side has no conversations
 
     # Calculate imbalance penalty (smaller is better)
     ratio = len_current / len_other
@@ -304,4 +314,12 @@ def calculate_balance_score(data: Dict, exclusions: Set[int]) -> float:
     total_conversations = len_current + len_other
     magnitude_factor = 1 / total_conversations  # Inverse so smaller is better
 
-    return imbalance * magnitude_factor
+    # Calculate cosine similarity between embeddings
+    sim = get_approx_user_sim(np.array(embeddings_current), np.array(embeddings_other))
+    dist = 1 - sim
+
+    return imbalance * magnitude_factor * dist, {
+        "imbalance": imbalance,
+        "magnitude_factor": magnitude_factor,
+        "dist": dist,
+    }
