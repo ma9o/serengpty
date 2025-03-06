@@ -222,7 +222,6 @@ def get_out_df_schema() -> Dict:
         "user2_path_length": pl.Int32,
         "cluster_id": pl.UInt8,
         "match_group_id": pl.UInt32,
-        "all_user_ids": pl.List(pl.Utf8),
         "category": pl.Utf8,
         "common_indices": pl.List(pl.Int64),
         "user1_indices": pl.List(pl.Int64),

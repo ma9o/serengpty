@@ -108,6 +108,8 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Tech Enthusiasts',
       commonSummary:
         'Connected through tech interests and programming languages',
+      category: 'practical',
+      order: 0,
       usersMatch: {
         connect: { id: gioAliceMatch.id },
       },
@@ -119,6 +121,8 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Global Explorers',
       commonSummary:
         'Connected through travel experiences in similar locations',
+      category: 'practical',
+      order: 0,
       usersMatch: {
         connect: { id: gioCharlieMatch.id },
       },
@@ -130,6 +134,8 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Culinary Connoisseurs',
       commonSummary:
         'Connected through culinary interests and favorite restaurants',
+      category: 'practical',
+      order: 0,
       usersMatch: {
         connect: { id: gioBobMatch.id },
       },
@@ -140,6 +146,8 @@ const seed = async (prisma: PrismaClient) => {
     data: {
       title: 'Melody Makers',
       commonSummary: 'Connected through music tastes and concert experiences',
+      category: 'practical',
+      order: 0,
       usersMatch: {
         connect: { id: gioDianaMatch.id },
       },
@@ -151,6 +159,8 @@ const seed = async (prisma: PrismaClient) => {
     data: {
       title: 'Gaming Guild',
       commonSummary: 'Connected through gaming interests and strategies',
+      category: 'practical',
+      order: 0,
       usersMatch: {
         connect: { id: gioBobMatch.id },
       },
@@ -161,6 +171,8 @@ const seed = async (prisma: PrismaClient) => {
     data: {
       title: 'Literary League',
       commonSummary: 'Connected through book recommendations and discussions',
+      category: 'practical',
+      order: 0,
       usersMatch: {
         connect: { id: gioAliceMatch.id },
       },
@@ -171,6 +183,8 @@ const seed = async (prisma: PrismaClient) => {
     data: {
       title: 'Active Athletes',
       commonSummary: 'Connected through sports interests and activities',
+      category: 'practical',
+      order: 0,
       usersMatch: {
         connect: { id: gioCharlieMatch.id },
       },

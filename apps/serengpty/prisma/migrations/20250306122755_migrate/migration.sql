@@ -36,6 +36,8 @@ CREATE TABLE "SerendipitousPath" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "title" TEXT NOT NULL,
     "commonSummary" TEXT NOT NULL,
+    "category" TEXT NOT NULL,
+    "order" INTEGER NOT NULL,
     "usersMatchId" TEXT,
 
     CONSTRAINT "SerendipitousPath_pkey" PRIMARY KEY ("id")

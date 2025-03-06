@@ -41,18 +41,14 @@ model Conversation {
   summary  String
   datetime DateTime
 
-  // If the conversation is part of the common conversations of a serendipitous path
-  serendipitousPath   SerendipitousPath? @relation(fields: [serendipitousPathId], references: [id])
-  serendipitousPathId String?
-
-  // If the conversation is part of the unique conversations of a serendipitous path
-  userPath   UserPath? @relation(fields: [userPathId], references: [id])
-  userPathId String?
+  serendipitousPaths SerendipitousPath[]
+  userPaths          UserPath[]
 
   user   User   @relation(fields: [userId], references: [id])
   userId String
 }
 
+// Each serendipitous path is intended for a pair of 2 users only
 model SerendipitousPath {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
@@ -62,6 +58,8 @@ model SerendipitousPath {
 
   title         String
   commonSummary String // Summary of the common conversations
+  category      String
+  order         Int // row_idx in the pipeline dataframe
 
   // Through this relation, we can get the unique conversations for each user of a serendipitous path
   userPaths UserPath[]

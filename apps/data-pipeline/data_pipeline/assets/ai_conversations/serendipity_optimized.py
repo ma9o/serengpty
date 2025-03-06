@@ -93,7 +93,6 @@ def _create_path_entry(
         "llm_output": response_text,
         "cluster_id": cluster_id,
         "match_group_id": match_group_id,
-        "all_user_ids": all_users,
         "category": category,
     }
 
@@ -366,4 +365,4 @@ def serendipity_optimized(
     result_df = _fix_duplicates(result_df, logger)
     result_df = remap_indices_to_conversation_ids(result_df, clusters_df)
 
-    return result_df
+    return result_df.with_row_count("row_idx")

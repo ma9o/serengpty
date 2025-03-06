@@ -8,6 +8,13 @@
   },
   "tags": [],
   "targets": {
+    "dev": {
+      "options": {
+        "env": {
+          "NODE_OPTIONS": "--inspect"
+        }
+      }
+    },
     "prisma-deploy": {
       "executor": "@nx-tools/nx-prisma:deploy"
     },
