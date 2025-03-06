@@ -1,5 +1,6 @@
 """Utilities for serendipity path generation."""
 
+import math
 from textwrap import dedent
 from typing import Dict, List, Set
 
@@ -62,7 +63,7 @@ def generate_serendipity_prompt(
 
           Output in this JSON format:
           {{
-            "path_title": "A concise, engaging title for this serendipitous path that captures the essence of the connection. Add an emoji at the end of the title.",
+            "path_title": "A concise, engaging title for this serendipitous path that captures the essence of the connection. Add an emoji at the beginning of the title.",
             "common_indices": [list of integer IDs from both users' CONVERSATIONS whose themes are shared],
             "user1_unique_indices": [list of integer IDs from USER 1 CONVERSATIONS that explore topics unique to USER 1, not present in USER 2],
             "user2_unique_indices": [list of integer IDs from USER 2 CONVERSATIONS that explore topics unique to USER 2, not present in USER 1],
@@ -276,3 +277,31 @@ def remap_indices_to_conversation_ids(
             pl.col("user2_indices").map_elements(remap).alias("user2_conversation_ids"),
         ]
     )
+
+
+def calculate_balance_score(data: Dict, exclusions: Set[int]) -> float:
+    """Calculate balance score based on remaining conversations.
+
+    Returns a score that prioritizes:
+    1. Larger total number of conversations
+    2. More balanced ratio between sides
+    Lower scores are better.
+    """
+    remaining_current = [
+        s for s in data["current_summaries"] if s["row_idx"] not in exclusions
+    ]
+    remaining_other = [s for s in data["summaries"] if s["row_idx"] not in exclusions]
+    len_current = len(remaining_current)
+    len_other = len(remaining_other)
+    if len_other == 0 or len_current == 0:
+        return float("inf")  # Deprioritize if either side has no conversations
+
+    # Calculate imbalance penalty (smaller is better)
+    ratio = len_current / len_other
+    imbalance = abs(math.log(ratio))
+
+    # Calculate magnitude bonus (larger total is better)
+    total_conversations = len_current + len_other
+    magnitude_factor = 1 / total_conversations  # Inverse so smaller is better
+
+    return imbalance * magnitude_factor

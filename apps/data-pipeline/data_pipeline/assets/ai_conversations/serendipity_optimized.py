@@ -1,5 +1,5 @@
+import concurrent.futures
 import datetime
-import math
 import uuid
 from typing import Dict, List, Set
 
@@ -7,6 +7,7 @@ import polars as pl
 from dagster import AssetExecutionContext, AssetIn, asset
 
 from data_pipeline.assets.ai_conversations.utils.serendipity import (
+    calculate_balance_score,
     generate_serendipity_prompt,
     get_out_df_schema,
     parse_serendipity_result,
@@ -20,9 +21,9 @@ from data_pipeline.resources.batch_inference.base_llm_resource import BaseLlmRes
 class SerendipityOptimizedConfig(RowLimitConfig):
     """Configuration for serendipity_optimized asset."""
 
-    max_paths_per_user: int = 10
+    max_paths_per_match_group: int = 10
 
-    category_ratios: Dict[str, float] = {
+    match_group_category_ratios: Dict[str, float] = {
         "coding": 0.0,
         "humanistic": 0.7,
         "practical": 0.3,
@@ -55,7 +56,6 @@ def _create_path_entry(
     current_user_id: str,
     cluster_id: int,
     match_group_id: int,
-    all_users: List[str],
     response_text: str,
     category: str,
     iteration: int = 0,
@@ -109,7 +109,6 @@ def _prepare_clusters(
     cluster_data = {}
     for cluster_id, cluster_df in clusters_df.group_by("cluster_id"):
         cluster_id = cluster_id[0]
-        all_users = cluster_df["user_id"].unique().to_list()
         user1_df = cluster_df.filter(pl.col("user_id") == current_user_id)
         if user1_df.height == 0:
             continue
@@ -119,7 +118,6 @@ def _prepare_clusters(
             "summaries": _extract_conversation_summaries(
                 cluster_df.filter(pl.col("user_id") != current_user_id)
             ),
-            "all_users": all_users,
             "paths_found": 0,
             "iteration": 0,
             "match_group_id": cluster_df["match_group_id"][0],
@@ -132,7 +130,7 @@ def _prepare_clusters(
 def _generate_paths(
     cluster_data: Dict[int, Dict],
     current_user_id: str,
-    gemini_flash: BaseLlmResource,
+    gpt4o_mini: BaseLlmResource,
     logger,
     config: SerendipityOptimizedConfig,
 ) -> List[Dict]:
@@ -148,7 +146,7 @@ def _generate_paths(
     category_to_clusters = {}
     for cid, data in cluster_data.items():
         category = data["category"]
-        if config.category_ratios.get(category, 0.0) > 0:
+        if config.match_group_category_ratios.get(category, 0.0) > 0:
             if category not in category_to_clusters:
                 category_to_clusters[category] = []
             category_to_clusters[category].append(cid)
@@ -156,41 +154,12 @@ def _generate_paths(
     # Sort categories by their ratios in descending order
     sorted_categories = sorted(
         category_to_clusters.keys(),
-        key=lambda c: config.category_ratios[c],
+        key=lambda c: config.match_group_category_ratios[c],
         reverse=True,
     )
     if not sorted_categories:
         logger.info("No categories with positive ratios found.")
         return paths
-
-    def calculate_balance_score(data: Dict) -> float:
-        """Calculate balance score based on remaining conversations.
-
-        Returns a score that prioritizes:
-        1. Larger total number of conversations
-        2. More balanced ratio between sides
-        Lower scores are better.
-        """
-        remaining_current = [
-            s for s in data["current_summaries"] if s["row_idx"] not in exclusions
-        ]
-        remaining_other = [
-            s for s in data["summaries"] if s["row_idx"] not in exclusions
-        ]
-        len_current = len(remaining_current)
-        len_other = len(remaining_other)
-        if len_other == 0 or len_current == 0:
-            return float("inf")  # Deprioritize if either side has no conversations
-
-        # Calculate imbalance penalty (smaller is better)
-        ratio = len_current / len_other
-        imbalance = abs(math.log(ratio))
-
-        # Calculate magnitude bonus (larger total is better)
-        total_conversations = len_current + len_other
-        magnitude_factor = 1 / total_conversations  # Inverse so smaller is better
-
-        return imbalance * magnitude_factor
 
     # Process each category sequentially
     for category in sorted_categories:
@@ -200,13 +169,13 @@ def _generate_paths(
 
         # Initialize active clusters with their current balance scores
         active_clusters = [
-            (cid, calculate_balance_score(cluster_data[cid]))
+            (cid, calculate_balance_score(cluster_data[cid], exclusions))
             for cid in initial_cluster_ids
-            if calculate_balance_score(cluster_data[cid]) != float("inf")
+            if calculate_balance_score(cluster_data[cid], exclusions) != float("inf")
         ]
 
         # Process clusters dynamically within this category
-        while active_clusters and len(paths) < config.max_paths_per_user:
+        while active_clusters and len(paths) < config.max_paths_per_match_group:
             # Sort by balance score and select the top cluster
             active_clusters.sort(
                 key=lambda x: x[1]
@@ -224,7 +193,7 @@ def _generate_paths(
                 continue
 
             # Generate path (batch size of 1)
-            completions, cost = gemini_flash.get_prompt_sequences_completions_batch(
+            completions, cost = gpt4o_mini.get_prompt_sequences_completions_batch(
                 [[prompt]]
             )
             total_cost += cost
@@ -261,7 +230,6 @@ def _generate_paths(
                     current_user_id,
                     cid,
                     data["match_group_id"],
-                    data["all_users"],
                     completion[-1],
                     data["category"],
                     data["iteration"],
@@ -277,7 +245,7 @@ def _generate_paths(
                 data["iteration"] += 1
 
                 # Recalculate balance score for this cluster
-                new_balance_score = calculate_balance_score(data)
+                new_balance_score = calculate_balance_score(data, exclusions)
                 if new_balance_score == float("inf"):
                     # No remaining conversations; remove cluster
                     active_clusters.pop(0)
@@ -345,7 +313,7 @@ def _fix_duplicates(df: pl.DataFrame, logger) -> pl.DataFrame:
 def serendipity_optimized(
     context: AssetExecutionContext,
     config: SerendipityOptimizedConfig,
-    gemini_flash: BaseLlmResource,
+    gpt4o_mini: BaseLlmResource,
     cluster_categorizations: pl.DataFrame,
 ) -> pl.DataFrame:
     """
@@ -353,8 +321,8 @@ def serendipity_optimized(
 
     Args:
         context: Dagster execution context.
-        config: Configuration with max_paths_per_user.
-        gemini_flash: LLM resource for path generation.
+        config: Configuration with max_paths_per_match_group.
+        gpt4o_mini: LLM resource for path generation.
         cluster_categorizations: DataFrame with categorized conversation clusters.
 
     Returns:
@@ -370,8 +338,32 @@ def serendipity_optimized(
     if not cluster_data:
         return pl.DataFrame(schema=get_out_df_schema())
 
-    # Generate paths
-    paths = _generate_paths(cluster_data, current_user_id, gemini_flash, logger, config)
+    # Group the cluster_data by their match_group_id
+    match_group_data: Dict[int, Dict] = {}
+    for cid, data in cluster_data.items():
+        mg_id = data["match_group_id"]
+        if mg_id not in match_group_data:
+            match_group_data[mg_id] = {}
+        match_group_data[mg_id][cid] = data
+
+    # Generate paths in parallel (one task per match_group_id)
+    paths: List[Dict] = []
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_group = {
+            executor.submit(
+                _generate_paths, group_data, current_user_id, gpt4o_mini, logger, config
+            ): mg_id
+            for mg_id, group_data in match_group_data.items()
+        }
+        for future in concurrent.futures.as_completed(future_to_group):
+            mg_id = future_to_group[future]
+            try:
+                group_paths = future.result()
+                if group_paths:
+                    paths.extend(group_paths)
+            except Exception as e:
+                logger.warning(f"Error processing match group {mg_id}: {e}")
+
     if not paths:
         return pl.DataFrame(schema=get_out_df_schema())
 
@@ -380,4 +372,6 @@ def serendipity_optimized(
     result_df = _fix_duplicates(result_df, logger)
     result_df = remap_indices_to_conversation_ids(result_df, clusters_df)
 
-    return result_df.with_row_count("row_idx")
+    return result_df.with_columns(
+        pl.col("match_group_id").cum_count().over("match_group_id").alias("path_order")
+    )
