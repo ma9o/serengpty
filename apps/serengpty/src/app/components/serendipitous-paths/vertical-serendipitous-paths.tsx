@@ -50,6 +50,7 @@ export function VerticalSerendipitousPaths({
   const [data, setData] = useState<UserPathsResponse>(initialData);
   const [selectedMatchIndex, setSelectedMatchIndex] = useState(0);
   const [selectedPathId, setSelectedPathId] = useState<string | null>(null);
+  const { decrementCount } = useUnviewedMatches();
 
   if (loading) {
     return <LoadingState />;
@@ -62,8 +63,6 @@ export function VerticalSerendipitousPaths({
   if (data.length === 0) {
     return <EmptyState />;
   }
-
-  const { decrementCount } = useUnviewedMatches();
 
   const handleUserSelect = async (index: number) => {
     const match = data[index];

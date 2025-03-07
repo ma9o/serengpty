@@ -61,9 +61,18 @@ export async function getSerendipitousPaths() {
 
     const currentUserId = session.user.id;
 
-    // This query fetches all user matches for the current user along with associated serendipitous paths
-    return await prisma.usersMatch.findMany({
-      // Find all UsersMatch records that include the current user
+    // Get the current user's sensitiveMatching preference
+    const currentUser = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { sensitiveMatching: true }
+    });
+
+    if (!currentUser) {
+      throw new Error('User not found');
+    }
+
+    // Get all user matches with associated users to check their sensitiveMatching settings
+    const userMatches = await prisma.usersMatch.findMany({
       orderBy: {
         score: 'desc',
       },
@@ -75,29 +84,23 @@ export async function getSerendipitousPaths() {
         },
       },
       select: {
-        id: true, // Include the match ID
-        score: true, // Similarity score between users
+        id: true,
+        score: true,
         viewed: true,
-        // Include other users in the match, but exclude the current user
         users: {
           select: {
             id: true,
             name: true,
             country: true,
-          },
-          where: {
-            id: {
-              not: currentUserId,
-            },
+            sensitiveMatching: true,
           },
         },
-        // Include all serendipitous paths associated with this user match
         serendipitousPaths: {
           select: {
             id: true,
             title: true,
-            commonSummary: true, // Summary of conversations common to both users
-            // Include common conversations for this serendipitous path
+            commonSummary: true,
+            isSensitive: true,
             commonConversations: {
               select: {
                 id: true,
@@ -111,10 +114,8 @@ export async function getSerendipitousPaths() {
                 },
               },
             },
-            // Include user-specific paths containing unique conversations
             userPaths: {
               select: {
-                // Include user information for each path
                 user: {
                   select: {
                     id: true,
@@ -122,7 +123,6 @@ export async function getSerendipitousPaths() {
                     country: true,
                   },
                 },
-                // Include conversations unique to this specific user path
                 uniqueConversations: {
                   select: {
                     id: true,
@@ -130,15 +130,43 @@ export async function getSerendipitousPaths() {
                     datetime: true,
                   },
                 },
-                // Include the call to action for this specific user path
                 uniqueCallToAction: true,
-                // Include the summary for this specific user path
                 uniqueSummary: true,
               },
             },
           },
         },
       },
+    });
+
+    // Process each match to filter sensitive paths based on both users' sensitiveMatching settings
+    return userMatches.map(match => {
+      // Split users into current user and matched user
+      const otherUsers = match.users.filter(user => user.id !== currentUserId);
+      
+      // Only include sensitive paths if both users have sensitiveMatching enabled
+      const filteredPaths = match.serendipitousPaths.filter(path => {
+        if (!path.isSensitive) {
+          // Always include non-sensitive paths
+          return true;
+        }
+        
+        // For sensitive paths, check if all users have sensitiveMatching enabled
+        const allUsersHaveSensitiveMatchingEnabled = match.users.every(user => user.sensitiveMatching);
+        return allUsersHaveSensitiveMatchingEnabled;
+      });
+
+      return {
+        id: match.id,
+        score: match.score,
+        viewed: match.viewed,
+        users: otherUsers.map(user => ({
+          id: user.id,
+          name: user.name,
+          country: user.country,
+        })),
+        serendipitousPaths: filteredPaths
+      };
     });
   } catch (error) {
     console.error('Error fetching serendipitous paths:', error);
