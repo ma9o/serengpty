@@ -73,7 +73,8 @@ def generate_serendipity_prompt(
             "user_1_unique_branches": "A summary of the unique path undertaken by USER 1",
             "user_2_unique_branches": "A summary of the unique path undertaken by USER 2",
             "user_1_call_to_action": "A short prompt describing what USER 1 should ask USER 2, given their differences and similarities",
-            "user_2_call_to_action": "A short prompt describing what USER 2 should ask USER 1, given their differences and similarities"
+            "user_2_call_to_action": "A short prompt describing what USER 2 should ask USER 1, given their differences and similarities",
+            "is_highly_sensitive": "Boolean value indicating whether the path contains highly sensitive content: physical and mental health problems, erotic content, etc."
           }}
 
           In the text, replace any references to the users with "<USER_1>" and "<USER_2>".
@@ -132,6 +133,7 @@ def parse_serendipity_result(content: str) -> Dict:
                 "user_2_unique_branches": result.get("user_2_unique_branches", ""),
                 "user_1_call_to_action": result.get("user_1_call_to_action", ""),
                 "user_2_call_to_action": result.get("user_2_call_to_action", ""),
+                "is_highly_sensitive": result.get("is_highly_sensitive", False),
             }
     except Exception:
         return {}
@@ -236,6 +238,7 @@ def get_out_df_schema() -> Dict:
         "user2_unique_branches": pl.Utf8,
         "user1_call_to_action": pl.Utf8,
         "user2_call_to_action": pl.Utf8,
+        "is_highly_sensitive": pl.Boolean,
         "balance_score": pl.Float64,
         "balance_scores_detailed": pl.Struct(
             {

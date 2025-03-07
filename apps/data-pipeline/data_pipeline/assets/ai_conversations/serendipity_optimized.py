@@ -100,6 +100,7 @@ def _create_path_entry(
         "cluster_id": cluster_id,
         "match_group_id": match_group_id,
         "category": category,
+        "is_highly_sensitive": path_obj.get("is_highly_sensitive", False),
         "balance_score": balance_score,
         "balance_scores_detailed": balance_scores_detailed,
     }
@@ -230,56 +231,39 @@ def _generate_paths(
                 active_clusters.pop(0)  # Remove on error to avoid infinite loop
                 continue
 
-            # Validate path content
-            if any(
-                path_obj.get(k)
-                for k in [
-                    "common_indices",
-                    "user1_unique_indices",
-                    "user2_unique_indices",
-                    "common_background",
-                    "user_1_unique_branches",
-                    "user_2_unique_branches",
-                    "user_1_call_to_action",
-                    "user_2_call_to_action",
-                ]
-            ):
-                # Create and store the path
-                path = _create_path_entry(
-                    path_obj,
-                    data["summaries"],
-                    current_user_id,
-                    cid,
-                    data["match_group_id"],
-                    completion[-1],
-                    data["category"],
-                    data["iteration"],
-                    balance_score,
-                    balance_scores_detailed,
-                )
-                paths_by_category[category].append(path)
+            # Create and store the path
+            path = _create_path_entry(
+                path_obj,
+                data["summaries"],
+                current_user_id,
+                cid,
+                data["match_group_id"],
+                completion[-1],
+                data["category"],
+                data["iteration"],
+                balance_score,
+                balance_scores_detailed,
+            )
+            paths_by_category[category].append(path)
 
-                # Update exclusions
-                exclusions.update(
-                    path_obj.get("common_indices", [])
-                    + path_obj.get("user1_unique_indices", [])
-                    + path_obj.get("user2_unique_indices", [])
-                )
-                data["iteration"] += 1
+            # Update exclusions
+            exclusions.update(
+                path_obj.get("common_indices", [])
+                + path_obj.get("user1_unique_indices", [])
+                + path_obj.get("user2_unique_indices", [])
+            )
+            data["iteration"] += 1
 
-                # Recalculate balance score for this cluster
-                new_balance_score, new_scores_detailed = calculate_balance_scores(
-                    data, exclusions
-                )
-                if new_balance_score == float("inf"):
-                    # No remaining conversations; remove cluster
-                    active_clusters.pop(0)
-                else:
-                    # Update the cluster's score in the list
-                    active_clusters[0] = (cid, new_balance_score, new_scores_detailed)
-            else:
-                # No valid path content; remove cluster to avoid retrying
+            # Recalculate balance score for this cluster
+            new_balance_score, new_scores_detailed = calculate_balance_scores(
+                data, exclusions
+            )
+            if new_balance_score == float("inf"):
+                # No remaining conversations; remove cluster
                 active_clusters.pop(0)
+            else:
+                # Update the cluster's score in the list
+                active_clusters[0] = (cid, new_balance_score, new_scores_detailed)
 
         if not active_clusters:
             logger.info(f"Category '{category}' exhausted.")
