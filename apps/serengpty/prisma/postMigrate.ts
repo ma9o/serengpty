@@ -7,8 +7,7 @@ const streamChatClient = StreamChat.getInstance(
   process.env.STREAM_CHAT_API_SECRET
 );
 
-// Seed the database with some test data
-const seed = async (prisma: PrismaClient) => {
+const seedDummyUsers = async (prisma: PrismaClient) => {
   // Create users
   const giovanni = await prisma.user.upsert({
     where: { id: 'ma9o' },
@@ -65,6 +64,12 @@ const seed = async (prisma: PrismaClient) => {
     },
   });
 
+  return [giovanni, alice, bob, charlie, diana];
+};
+
+// Seed the database with some test data
+const seedDummyPaths = async (prisma: PrismaClient, users: any) => {
+  const [giovanni, alice, bob, charlie, diana] = users;
   // Create user matches first
   const gioAliceMatch = await prisma.usersMatch.create({
     data: {
@@ -109,7 +114,8 @@ const seed = async (prisma: PrismaClient) => {
       commonSummary:
         'Connected through tech interests and programming languages',
       category: 'practical',
-      order: 0,
+      balanceScore: Math.random(),
+      isSensitive: false,
       usersMatch: {
         connect: { id: gioAliceMatch.id },
       },
@@ -122,7 +128,8 @@ const seed = async (prisma: PrismaClient) => {
       commonSummary:
         'Connected through travel experiences in similar locations',
       category: 'practical',
-      order: 0,
+      balanceScore: Math.random(),
+      isSensitive: false,
       usersMatch: {
         connect: { id: gioCharlieMatch.id },
       },
@@ -135,7 +142,8 @@ const seed = async (prisma: PrismaClient) => {
       commonSummary:
         'Connected through culinary interests and favorite restaurants',
       category: 'practical',
-      order: 0,
+      balanceScore: Math.random(),
+      isSensitive: false,
       usersMatch: {
         connect: { id: gioBobMatch.id },
       },
@@ -147,7 +155,8 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Melody Makers',
       commonSummary: 'Connected through music tastes and concert experiences',
       category: 'practical',
-      order: 0,
+      balanceScore: Math.random(),
+      isSensitive: false,
       usersMatch: {
         connect: { id: gioDianaMatch.id },
       },
@@ -160,7 +169,8 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Gaming Guild',
       commonSummary: 'Connected through gaming interests and strategies',
       category: 'practical',
-      order: 0,
+      balanceScore: Math.random(),
+      isSensitive: false,
       usersMatch: {
         connect: { id: gioBobMatch.id },
       },
@@ -172,7 +182,8 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Literary League',
       commonSummary: 'Connected through book recommendations and discussions',
       category: 'practical',
-      order: 0,
+      balanceScore: Math.random(),
+      isSensitive: false,
       usersMatch: {
         connect: { id: gioAliceMatch.id },
       },
@@ -184,7 +195,8 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Active Athletes',
       commonSummary: 'Connected through sports interests and activities',
       category: 'practical',
-      order: 0,
+      balanceScore: Math.random(),
+      isSensitive: false,
       usersMatch: {
         connect: { id: gioCharlieMatch.id },
       },
@@ -197,7 +209,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'TypeScript and React',
       summary: 'Discussion about TypeScript and React',
       datetime: new Date('2024-02-15T14:30:00Z'),
-      serendipitousPathId: techPath.id,
+      serendipitousPaths: {
+        connect: { id: techPath.id },
+      },
       userId: giovanni.id, // Adding user relationship
     },
   });
@@ -207,7 +221,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Backend Technologies',
       summary: 'Talking about backend technologies',
       datetime: new Date('2024-02-16T10:15:00Z'),
-      serendipitousPathId: techPath.id,
+      serendipitousPaths: {
+        connect: { id: techPath.id },
+      },
       userId: alice.id, // Adding user relationship
     },
   });
@@ -217,7 +233,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Southeast Asia Travel',
       summary: 'Experiences in Southeast Asia',
       datetime: new Date('2024-01-20T16:45:00Z'),
-      serendipitousPathId: travelPath.id,
+      serendipitousPaths: {
+        connect: { id: travelPath.id },
+      },
       userId: giovanni.id, // Adding user relationship
     },
   });
@@ -227,7 +245,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'European Cities',
       summary: 'European city recommendations',
       datetime: new Date('2024-01-25T09:30:00Z'),
-      serendipitousPathId: travelPath.id,
+      serendipitousPaths: {
+        connect: { id: travelPath.id },
+      },
       userId: charlie.id, // Adding user relationship
     },
   });
@@ -237,7 +257,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Italian Cuisine',
       summary: 'Favorite Italian dishes',
       datetime: new Date('2024-02-05T19:20:00Z'),
-      serendipitousPathId: foodPath.id,
+      serendipitousPaths: {
+        connect: { id: foodPath.id },
+      },
       userId: giovanni.id, // Adding user relationship
     },
   });
@@ -247,7 +269,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Music Preferences',
       summary: 'Jazz and classical music preferences',
       datetime: new Date('2024-02-10T20:45:00Z'),
-      serendipitousPathId: musicPath.id,
+      serendipitousPaths: {
+        connect: { id: musicPath.id },
+      },
       userId: diana.id, // Adding user relationship
     },
   });
@@ -403,7 +427,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Machine Learning Projects',
       summary: 'Machine learning projects',
       datetime: new Date('2024-02-12T11:30:00Z'),
-      userPathId: gioAliceTechPath.id,
+      userPaths: {
+        connect: { id: gioAliceTechPath.id },
+      },
       userId: giovanni.id, // Adding user relationship
     },
   });
@@ -413,7 +439,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Frontend Design Patterns',
       summary: 'Frontend design patterns',
       datetime: new Date('2024-02-13T14:20:00Z'),
-      userPathId: aliceTechPath.id,
+      userPaths: {
+        connect: { id: aliceTechPath.id },
+      },
       userId: alice.id, // Adding user relationship
     },
   });
@@ -423,7 +451,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Travel Algorithms and ML',
       summary: 'Travel algorithms and ML',
       datetime: new Date('2024-01-19T15:30:00Z'),
-      userPathId: gioTravelPath.id,
+      userPaths: {
+        connect: { id: gioTravelPath.id },
+      },
       userId: giovanni.id, // Adding user relationship
     },
   });
@@ -433,7 +463,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Backpacking in New Zealand',
       summary: 'Backpacking in New Zealand',
       datetime: new Date('2024-01-18T16:30:00Z'),
-      userPathId: charlieTravelPath.id,
+      userPaths: {
+        connect: { id: charlieTravelPath.id },
+      },
       userId: charlie.id, // Adding user relationship
     },
   });
@@ -443,7 +475,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Italian Cooking Techniques',
       summary: 'Italian cooking techniques',
       datetime: new Date('2024-02-04T18:10:00Z'),
-      userPathId: gioFoodPath.id,
+      userPaths: {
+        connect: { id: gioFoodPath.id },
+      },
       userId: giovanni.id, // Adding user relationship
     },
   });
@@ -453,7 +487,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'DevOps and CI/CD',
       summary: 'DevOps and CI/CD pipelines',
       datetime: new Date('2024-02-14T09:45:00Z'),
-      userPathId: bobFoodPath.id,
+      userPaths: {
+        connect: { id: bobFoodPath.id },
+      },
       userId: bob.id, // Adding user relationship
     },
   });
@@ -463,7 +499,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Classical Composers',
       summary: 'Classical composers analysis',
       datetime: new Date('2024-02-11T21:00:00Z'),
-      userPathId: gioMusicPath.id,
+      userPaths: {
+        connect: { id: gioMusicPath.id },
+      },
       userId: giovanni.id, // Adding user relationship
     },
   });
@@ -473,7 +511,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Wine Tasting',
       summary: 'Wine tasting experiences',
       datetime: new Date('2024-02-03T17:15:00Z'),
-      userPathId: dianaMusicPath.id,
+      userPaths: {
+        connect: { id: dianaMusicPath.id },
+      },
       userId: diana.id, // Adding user relationship
     },
   });
@@ -485,7 +525,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Science Fiction Novels',
       summary: 'Science fiction novel recommendations',
       datetime: new Date('2024-02-20T13:45:00Z'),
-      userPathId: gioAliceBookPath.id,
+      userPaths: {
+        connect: { id: gioAliceBookPath.id },
+      },
       userId: giovanni.id, // Adding user relationship
     },
   });
@@ -495,7 +537,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Book Club Organization',
       summary: 'Book club organizing skills',
       datetime: new Date('2024-02-21T16:30:00Z'),
-      userPathId: aliceBookPath.id,
+      userPaths: {
+        connect: { id: aliceBookPath.id },
+      },
       userId: alice.id, // Adding user relationship
     },
   });
@@ -506,7 +550,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Marathon Training',
       summary: 'Marathon training schedule',
       datetime: new Date('2024-01-28T08:15:00Z'),
-      userPathId: gioSportPath.id,
+      userPaths: {
+        connect: { id: gioSportPath.id },
+      },
       userId: giovanni.id, // Adding user relationship
     },
   });
@@ -516,7 +562,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Mountain Biking',
       summary: 'Mountain biking trails',
       datetime: new Date('2024-01-29T09:45:00Z'),
-      userPathId: charlieSportPath.id,
+      userPaths: {
+        connect: { id: charlieSportPath.id },
+      },
       userId: charlie.id, // Adding user relationship
     },
   });
@@ -527,7 +575,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Strategy Game Tournament',
       summary: 'Strategy game tournament',
       datetime: new Date('2024-02-07T20:30:00Z'),
-      userPathId: gioGamingPath.id,
+      userPaths: {
+        connect: { id: gioGamingPath.id },
+      },
       userId: giovanni.id, // Adding user relationship
     },
   });
@@ -537,7 +587,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Game Development',
       summary: 'Game development frameworks',
       datetime: new Date('2024-02-08T19:15:00Z'),
-      userPathId: bobGamingPath.id,
+      userPaths: {
+        connect: { id: bobGamingPath.id },
+      },
       userId: bob.id, // Adding user relationship
     },
   });
@@ -548,7 +600,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Literary Podcasts',
       summary: 'Literary podcasts and analysis',
       datetime: new Date('2024-02-19T14:30:00Z'),
-      serendipitousPathId: bookClubPath.id,
+      serendipitousPaths: {
+        connect: { id: bookClubPath.id },
+      },
       userId: giovanni.id, // Adding user relationship
     },
   });
@@ -558,7 +612,9 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Sports Analytics',
       summary: 'Sports analytics and statistics',
       datetime: new Date('2024-01-27T10:15:00Z'),
-      serendipitousPathId: sportPath.id,
+      serendipitousPaths: {
+        connect: { id: sportPath.id },
+      },
       userId: charlie.id, // Adding user relationship
     },
   });
@@ -568,13 +624,12 @@ const seed = async (prisma: PrismaClient) => {
       title: 'Multiplayer Gaming',
       summary: 'Multiplayer game coordination',
       datetime: new Date('2024-02-06T21:00:00Z'),
-      serendipitousPathId: gamingPath.id,
+      serendipitousPaths: {
+        connect: { id: gamingPath.id },
+      },
       userId: bob.id, // Adding user relationship
     },
   });
-
-  // Return all user IDs
-  return [giovanni, alice, bob, charlie, diana];
 };
 
 // Execute the script
@@ -589,7 +644,31 @@ const seed = async (prisma: PrismaClient) => {
 
   try {
     console.log('Seeding database...');
-    const users = await seed(prisma);
+
+    await prisma.user.upsert({
+      where: { id: 'cm0i27jdj0000aqpa73ghpcxf' },
+      update: {},
+      create: {
+        id: 'cm0i27jdj0000aqpa73ghpcxf',
+        name: 'testuser1',
+        country: 'IT',
+        passwordHash: await bcrypt.hash('securePassword1', 10),
+      },
+    });
+
+    await prisma.user.upsert({
+      where: { id: 'cm0i27jdj0000aqpa73ghpcxd' },
+      update: {},
+      create: {
+        id: 'cm0i27jdj0000aqpa73ghpcxd',
+        name: 'testuser2',
+        country: 'IT',
+        passwordHash: await bcrypt.hash('securePassword2', 10),
+      },
+    });
+
+    // const users = await seedDummyUsers(prisma);
+    //await seedDummyPaths(prisma, users);
 
     // console.log('Deleting Stream Chat users...');
     // const streamChatUsers = await streamChatClient.queryUsers({
