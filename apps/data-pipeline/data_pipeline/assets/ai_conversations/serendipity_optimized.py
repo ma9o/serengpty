@@ -3,10 +3,12 @@ import datetime
 import uuid
 from collections import defaultdict
 from math import ceil
-from typing import Dict, List, Set
+from typing import Dict, List, Set, cast
 
+import numpy as np
 import polars as pl
 from dagster import AssetExecutionContext, AssetIn, asset
+from sklearn.discriminant_analysis import StandardScaler
 
 from data_pipeline.assets.ai_conversations.utils.serendipity import (
     calculate_balance_scores,
@@ -175,10 +177,34 @@ def _generate_paths(
         if not initial_cluster_ids:
             continue
 
+        # Initialize scaler for current category
+        initial_scores = [
+            calculate_balance_scores(cluster_data[cid], exclusions)[1]
+            for cid in initial_cluster_ids
+        ]
+        scaler = StandardScaler()
+        standardized_metrics = scaler.fit_transform(
+            np.column_stack(
+                [
+                    [x["imbalance"] for x in initial_scores],
+                    [x["magnitude_factor"] for x in initial_scores],
+                    [x["dist"] for x in initial_scores],
+                ]
+            )
+        )
+
         # Initialize active clusters with their current balance scores
         active_clusters = [
-            (cid, *calculate_balance_scores(cluster_data[cid], exclusions))
-            for cid in initial_cluster_ids
+            (
+                cid,
+                sum(standardized_metrics[i]),
+                {
+                    "imbalance": standardized_metrics[i][0],
+                    "magnitude_factor": standardized_metrics[i][1],
+                    "dist": standardized_metrics[i][2],
+                },
+            )
+            for i, cid in enumerate(initial_cluster_ids)
         ]
 
         # Process clusters dynamically within this category
@@ -258,12 +284,34 @@ def _generate_paths(
             new_balance_score, new_scores_detailed = calculate_balance_scores(
                 data, exclusions
             )
+            # Scale with the same scaler
+            new_standardized_metrics = scaler.transform(
+                np.array(
+                    [
+                        [
+                            new_scores_detailed["imbalance"],
+                            new_scores_detailed["magnitude_factor"],
+                            new_scores_detailed["dist"],
+                        ]
+                    ]
+                )
+            )
+            new_standardized_metrics = cast(np.ndarray, new_standardized_metrics)
+            new_balance_score = sum(new_standardized_metrics[0])
             if new_balance_score == float("inf"):
                 # No remaining conversations; remove cluster
                 active_clusters.pop(0)
             else:
                 # Update the cluster's score in the list
-                active_clusters[0] = (cid, new_balance_score, new_scores_detailed)
+                active_clusters[0] = (
+                    cid,
+                    new_balance_score,
+                    {
+                        "imbalance": new_standardized_metrics[0][0],
+                        "magnitude_factor": new_standardized_metrics[0][1],
+                        "dist": new_standardized_metrics[0][2],
+                    },
+                )
 
         if not active_clusters:
             logger.info(f"Category '{category}' exhausted.")

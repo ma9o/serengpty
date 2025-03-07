@@ -293,7 +293,8 @@ def remap_indices_to_conversation_ids(
 
 
 def calculate_balance_scores(
-    data: Dict, exclusions: Set[int]
+    data: Dict,
+    exclusions: Set[int],
 ) -> tuple[float, Dict[str, float]]:
     """Calculate balance score based on remaining conversations.
 
