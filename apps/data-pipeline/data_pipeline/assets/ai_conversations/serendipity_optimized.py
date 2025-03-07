@@ -1,6 +1,8 @@
 import concurrent.futures
 import datetime
 import uuid
+from collections import defaultdict
+from math import ceil
 from typing import Dict, List, Set
 
 import polars as pl
@@ -143,7 +145,7 @@ def _generate_paths(
     Generate serendipitous paths using LLM sequentially, balancing by category ratios
     and dynamically prioritizing clusters by the ratio of remaining conversations closest to 1.
     """
-    paths = []
+    paths_by_category = defaultdict(list)
     total_cost = 0
     exclusions: Set[int] = set()
 
@@ -164,7 +166,7 @@ def _generate_paths(
     )
     if not sorted_categories:
         logger.info("No categories with positive ratios found.")
-        return paths
+        return []
 
     # Process each category sequentially
     for category in sorted_categories:
@@ -179,7 +181,20 @@ def _generate_paths(
         ]
 
         # Process clusters dynamically within this category
-        while active_clusters and len(paths) < config.max_paths_per_match_group:
+        while (
+            active_clusters  # There are still clusters to process
+            and (  # We haven't reached the max number of paths per match group
+                sum(len(paths) for paths in paths_by_category.values())
+                < config.max_paths_per_match_group
+            )
+            and (  # We haven't reached the max number of paths per category
+                len(paths_by_category[category])
+                < ceil(
+                    config.max_paths_per_match_group
+                    * config.match_group_category_ratios[category]
+                )
+            )
+        ):
             # Sort by balance score and select the top cluster
             active_clusters.sort(
                 key=lambda x: x[1]
@@ -242,7 +257,7 @@ def _generate_paths(
                     balance_score,
                     balance_scores_detailed,
                 )
-                paths.append(path)
+                paths_by_category[category].append(path)
 
                 # Update exclusions
                 exclusions.update(
@@ -270,7 +285,7 @@ def _generate_paths(
             logger.info(f"Category '{category}' exhausted.")
 
     logger.info(f"Total LLM cost: ${total_cost:.6f}")
-    return paths
+    return [path for paths in paths_by_category.values() for path in paths]
 
 
 def _fix_duplicates(df: pl.DataFrame, logger) -> pl.DataFrame:
