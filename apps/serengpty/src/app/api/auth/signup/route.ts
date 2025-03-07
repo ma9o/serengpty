@@ -5,7 +5,9 @@ import { azureContainerClient } from '../../../services/azure/storage';
 import path from 'path';
 import fs from 'fs';
 import { getUniqueUsername } from '../../../actions/getUniqueUsername';
-import { createStreamChatUser } from '../../../services/streamChat';
+import { validateUsername } from '../../../actions/validateUsername';
+import { StreamChat } from 'stream-chat';
+import { signIn } from '../../../services/auth';
 
 /**
  * Anonymous user signup API endpoint
@@ -16,6 +18,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const password = formData.get('password') as string;
     const conversationsJson = formData.get('conversations') as string;
+    const customUsername = formData.get('username') as string | null;
 
     if (!password || !conversationsJson) {
       return NextResponse.json(
@@ -27,8 +30,25 @@ export async function POST(request: NextRequest) {
     // Hash the password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Generate a unique name using the existing function
-    const name = await getUniqueUsername();
+    // Use custom username if provided and valid, otherwise generate one
+    let name: string;
+
+    if (customUsername) {
+      // Validate the custom username
+      const { isValid, message } = await validateUsername(customUsername);
+
+      if (!isValid) {
+        return NextResponse.json(
+          { error: message || 'Invalid username' },
+          { status: 400 }
+        );
+      }
+
+      name = customUsername;
+    } else {
+      // Generate a unique name using the existing function
+      name = await getUniqueUsername();
+    }
 
     // Create anonymous user with password hash and generated name
     const user = await prisma.user.create({
@@ -72,12 +92,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await createStreamChatUser(user.id);
+    // Create a StreamChat user
+    await StreamChat.getInstance(
+      process.env.NEXT_PUBLIC_STREAM_CHAT_API_KEY!,
+      process.env.STREAM_CHAT_API_SECRET!
+    ).upsertUser({
+      id: user.id,
+      role: 'user',
+      name: user.name,
+    });
+
+    // Authenticate the user
+    await signIn('credentials', {
+      username: user.name,
+      password: password,
+      redirect: false,
+    });
 
     return NextResponse.json({
       success: true,
       message: 'User created successfully',
       userId: user.id,
+      username: user.name, // Include username in the response
     });
   } catch (error) {
     console.error('Signup error:', error);

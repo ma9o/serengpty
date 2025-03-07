@@ -7,7 +7,7 @@ import { getCurrentUser } from './getCurrentUser';
 const usernameSchema = z
   .string()
   .min(3, { message: 'Username must be at least 3 characters.' })
-  .max(20, { message: 'Username cannot be longer than 20 characters.' })
+  .max(24, { message: 'Username cannot be longer than 24 characters.' })
   .regex(/^[a-zA-Z0-9_]+$/, {
     message: 'Username can only contain letters, numbers, and underscores.',
   });

@@ -46,38 +46,34 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   providers: [
     CredentialsProvider({
-      name: 'Password',
+      name: 'Credentials',
       credentials: {
+        username: { label: 'Username', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.password) return null;
+        if (!credentials?.username || !credentials?.password) return null;
 
-        // Find all users with password hash and check each one
-        const users = await prisma.user.findMany({
+        // Find the user by username
+        const user = await prisma.user.findUnique({
           where: {
-            passwordHash: {
-              not: null,
-            },
+            name: credentials.username,
           },
         });
 
-        // Try each user's password hash
-        for (const user of users) {
-          if (user.passwordHash) {
-            const isValid = await bcrypt.compare(
-              credentials.password as string,
-              user.passwordHash
-            );
+        // If user is found, verify password
+        if (user && user.passwordHash) {
+          const isValid = await bcrypt.compare(
+            credentials.password as string,
+            user.passwordHash
+          );
 
-            if (isValid) {
-              return {
-                id: user.id,
-                // Support anonymous users with no name or email
-                name: user.name || null,
-                email: user.email || null,
-              };
-            }
+          if (isValid) {
+            return {
+              id: user.id,
+              name: user.name,
+              email: user.email || null,
+            };
           }
         }
 

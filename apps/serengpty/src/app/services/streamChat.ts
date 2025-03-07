@@ -159,7 +159,7 @@ export function registerNotificationCallback(
   };
 }
 
-export const getTestToken = (userId: string) => {
+export function getTestToken(userId: string) {
   if (!chatClient) {
     chatClient = StreamChat.getInstance(API_KEY);
   }
@@ -167,19 +167,4 @@ export const getTestToken = (userId: string) => {
   // This is only for development
   // WARNING: Never use this in production!
   return chatClient.devToken(userId);
-};
-
-export const createStreamChatUser = async (
-  userId: string,
-  userName?: string
-) => {
-  if (!chatClient) {
-    chatClient = StreamChat.getInstance(API_KEY);
-  }
-
-  await chatClient.upsertUser({
-    id: userId,
-    role: 'user',
-    name: userName,
-  });
-};
+}

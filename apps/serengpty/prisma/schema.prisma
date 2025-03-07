@@ -15,7 +15,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   email        String? // TODO: remove?
-  passwordHash String  @unique
+  passwordHash String
 
   name              String  @unique
   country           String  @default("INTERNET")
