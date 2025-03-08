@@ -329,17 +329,14 @@ function UserCard({
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 overflow-hidden">
-        <div className="font-medium truncate flex items-center gap-2">
+        <div className="font-medium truncate flex items-center gap-1">
           {user.name}
+          <span className="mt-1">{getCountryFlag(user.country)}</span>
           {!viewed && (
             <span className="inline-flex h-2 w-2 rounded-full bg-primary"></span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <div className="text-xs text-muted-foreground">
-            <span className="mr-1">{getCountryFlag(user.country)}</span>
-            {user.country}
-          </div>
           <div className="flex items-center gap-1">
             <ScoreCircle percentage={score} size="xs" label="Match" />
             <div className="text-xs text-muted-foreground">Match</div>
@@ -438,19 +435,21 @@ function PathDetails({
       {/* Path Flow Container */}
       <div className="flex flex-row items-center justify-between gap-4">
         {/* Common Summary with View Conversations Button */}
-        <div className="p-4 bg-muted rounded-lg relative">
+        <div className="flex-1 p-4 bg-muted rounded-lg relative">
           <h3 className="text-lg font-medium mb-2">Common Interest</h3>
           <p>{processedCommonSummary}</p>
           <div className="mt-3">
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
-                  View Conversations
+                  View Conversations ({path.commonConversations.length})
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
                 <DialogHeader>
-                  <DialogTitle>Common Conversations</DialogTitle>
+                  <DialogTitle>
+                    Common Conversations ({path.commonConversations.length})
+                  </DialogTitle>
                   <DialogDescription>
                     Conversations shared between users in this path
                   </DialogDescription>
@@ -482,7 +481,7 @@ function PathDetails({
         </div>
 
         {/* Unique Summaries */}
-        <div className="flex flex-col space-y-4">
+        <div className="flex-1 flex flex-col space-y-4">
           {/* Your Path */}
           <div className="p-4 bg-muted rounded-lg">
             <h3 className="text-lg font-medium mb-2">Your Perspective</h3>
@@ -491,12 +490,16 @@ function PathDetails({
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
-                    View Conversations
+                    View Conversations (
+                    {currentUserPath.uniqueConversations.length})
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
                   <DialogHeader>
-                    <DialogTitle>Your Unique Conversations</DialogTitle>
+                    <DialogTitle>
+                      Your Unique Conversations (
+                      {currentUserPath.uniqueConversations.length})
+                    </DialogTitle>
                     <DialogDescription>
                       Conversations unique to your perspective
                     </DialogDescription>
@@ -528,13 +531,15 @@ function PathDetails({
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
-                    View Conversations
+                    View Conversations (
+                    {matchedUserPath.uniqueConversations.length})
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
                   <DialogHeader>
                     <DialogTitle>
-                      {matchedUser.name}&apos;s Unique Conversations
+                      {matchedUser.name}&apos;s Unique Conversations (
+                      {matchedUserPath.uniqueConversations.length})
                     </DialogTitle>
                     <DialogDescription>
                       Conversations unique to {matchedUser.name}&apos;s
