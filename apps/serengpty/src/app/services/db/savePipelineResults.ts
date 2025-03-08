@@ -78,7 +78,13 @@ export async function savePipelineResults(
       // **Step 2 & 3: Group and Create UsersMatch Records**
       try {
         // **Step 2: Group SerendipityOptimized by match_group_id**
-        for (const row of serendipityOptimized) {
+        for (const row of serendipityOptimized.filter(
+          (row) =>
+            // Filter out rows that have been badly processed by the LLM
+            row.common_conversation_ids.length > 0 &&
+            row.user1_conversation_ids.length > 0 &&
+            row.user2_conversation_ids.length > 0
+        )) {
           const groupId = row.match_group_id;
           if (!matchGroups[groupId]) matchGroups[groupId] = [];
           matchGroups[groupId].push(row);
