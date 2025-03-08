@@ -116,11 +116,7 @@ def parse_serendipity_result(content: str) -> Dict:
         )
 
         # If any of these lists are empty, the path doesnt make sense
-        if (
-            len(common_indices) == 0
-            or len(user1_unique_indices) == 0
-            or len(user2_unique_indices) == 0
-        ):
+        if len(common_indices) == 0:
             return {}
         else:
             return {

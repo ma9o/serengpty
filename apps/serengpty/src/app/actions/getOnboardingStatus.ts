@@ -4,7 +4,7 @@ import { prisma } from '../services/db/prisma';
 import { getCurrentUser } from './getCurrentUser';
 
 // Each user's parallel portion, in minutes
-const PARALLEL_PORTION_MINUTES = 6;
+const PARALLEL_PORTION_MINUTES = 8;
 
 // Each user's blocking portion, in minutes
 const BLOCKING_PORTION_MINUTES = 2;

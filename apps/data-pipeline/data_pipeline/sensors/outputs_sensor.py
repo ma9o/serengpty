@@ -11,7 +11,10 @@ from dagster import (
 )
 from upath import UPath
 
-from data_pipeline.constants.environments import STORAGE_BUCKET, get_environment
+from data_pipeline.constants.environments import (
+    DAGSTER_STORAGE_DIRECTORY,
+    get_environment,
+)
 
 
 @sensor(
@@ -24,7 +27,7 @@ def outputs_sensor(context: SensorEvaluationContext) -> SensorResult | SkipReaso
     """Notifies the API that a pipeline has finished."""
 
     current_state: set = ast.literal_eval(context.cursor) if context.cursor else set()  # type: ignore
-    asset_folder: UPath = STORAGE_BUCKET / "results_for_api"
+    asset_folder: UPath = DAGSTER_STORAGE_DIRECTORY / "serendipity_optimized"
 
     asset_folder.fs.invalidate_cache()
     all_partitions = {d.stem for d in asset_folder.iterdir() if d.is_file()}

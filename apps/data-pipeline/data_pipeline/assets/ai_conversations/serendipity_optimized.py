@@ -241,7 +241,10 @@ async def _generate_paths(
                 continue
 
             # Generate path (batch size of 1)
-            completions, cost = await gemini_flash.get_prompt_sequences_completions_batch_async(
+            (
+                completions,
+                cost,
+            ) = await gemini_flash.get_prompt_sequences_completions_batch_async(
                 [[prompt]]
             )
             total_cost += cost
@@ -417,7 +420,7 @@ async def serendipity_optimized(
             )
         )
         tasks.append((mg_id, task))
-    
+
     for mg_id, task in tasks:
         try:
             group_paths = await task
@@ -430,7 +433,11 @@ async def serendipity_optimized(
         return pl.DataFrame(schema=get_out_df_schema())
 
     # Build and validate result DataFrame
-    result_df = pl.DataFrame(paths, schema_overrides=get_out_df_schema())
+    result_df = pl.DataFrame(paths, schema_overrides=get_out_df_schema(), strict=False)
+
+    # Drop invalid paths
+    result_df = result_df.filter(pl.col("common_conversation_ids").list.len() > 0)
+
     result_df = _fix_duplicates(result_df, logger)
     result_df = remap_indices_to_conversation_ids(result_df, clusters_df)
 
