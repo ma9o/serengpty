@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     } else {
       // In development, save to local filesystem
       // Create local directory structure that matches the expected structure
-      const localDataDir = path.join(process.cwd(), 'apps/data-pipeline/data');
+      const localDataDir = path.join(process.cwd(), '../data-pipeline/data');
       const userDir = path.join(
         localDataDir,
         'api',

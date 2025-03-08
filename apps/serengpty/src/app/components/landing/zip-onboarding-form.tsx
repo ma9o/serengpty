@@ -40,6 +40,7 @@ export function ZipOnboardingForm() {
   const [password, setPassword] = useState<string | null>(null);
   const [customUsername, setCustomUsername] = useState('');
   const [ready, setReady] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [cleanedConversations, setCleanedConversations] = useState<
     Record<string, unknown>
   >({});
@@ -54,12 +55,18 @@ export function ZipOnboardingForm() {
     setProcessing(true);
     setReady(false);
     setPassword(null);
+    setProgress(0);
     setCustomUsername(await getUniqueUsername());
     setCleanedConversations({});
 
     try {
-      // Process the zip file on the client side
-      const result = await processZipFile(file);
+      // Reset progress before starting
+      setProgress(0);
+      
+      // Process the zip file on the client side with progress updates
+      const result = await processZipFile(file, (progressValue) => {
+        setProgress(progressValue);
+      });
 
       if (!result.success || !result.conversations) {
         setError('Failed to process the archive.');
@@ -129,6 +136,7 @@ export function ZipOnboardingForm() {
 
     try {
       setProcessing(true);
+      setProgress(0); // Reset progress for form submission
 
       // Create FormData with only the cleaned data
       const formData = new FormData();
@@ -223,16 +231,29 @@ export function ZipOnboardingForm() {
             {/* Processing indicator or Dropzone */}
             {processing ? (
               <div className="w-full mb-8 md:mb-0 border-2 border-dashed border-gray-300 p-6 rounded-lg flex flex-col items-center justify-center text-center">
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center w-full">
                   <Icon
                     icon="mage:robot-happy"
                     width="24"
                     height="24"
                     className="mb-2"
                   />
-                  <div className="flex items-center">
+                  <div className="flex items-center mb-2">
                     <Loader2 className="animate-spin mr-2" size={16} />
                     <span className="">We&apos;re anonymizing the data...</span>
+                  </div>
+                  
+                  {/* Progress bar */}
+                  <div className="w-full mt-2 max-w-md">
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div 
+                        className="bg-green-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" 
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Processing conversations.json: {progress}%
+                    </div>
                   </div>
                 </div>
               </div>

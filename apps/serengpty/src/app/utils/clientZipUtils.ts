@@ -3,6 +3,9 @@
 import { Unzip, UnzipInflate } from 'fflate';
 import clarinet from 'clarinet';
 
+const ENTROPY_THRESHOLD = 5;
+const MIN_LENGTH = 12;
+
 /**
  * Calculates the Shannon entropy of a string.
  * @param s the input string.
@@ -61,7 +64,10 @@ function cleanText(text: string): string {
 
   const processedWords = words.map((word) => {
     // Only check words longer than a minimal length
-    if (word.length > 5 && getShannonEntropy(word) > 4.5) {
+    if (
+      word.length >= MIN_LENGTH &&
+      getShannonEntropy(word) > ENTROPY_THRESHOLD
+    ) {
       hasHighEntropyWords = true;
       highEntropyWords.push(word);
       return '[redacted high entropy]';
@@ -76,7 +82,7 @@ function cleanText(text: string): string {
   }
 
   if (redactions.length > 0) {
-    console.log('Redaction:', redactions, 'Redacted content:', redactedContent);
+    console.log('Redacted content:', redactedContent, 'Redaction:', redactions);
   }
   return cleaned;
 }
@@ -86,9 +92,13 @@ function cleanText(text: string): string {
  * Stops reading early once conversations.json is fully processed.
  * Only logs found files and redactions.
  * @param file the uploaded ZIP file.
+ * @param onProgress callback function to report progress percentage
  * @returns Promise with cleaned conversations.
  */
-export async function processZipFile(file: File): Promise<{
+export async function processZipFile(
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<{
   success: boolean;
   conversations: Record<string, unknown>[] | null;
 }> {
@@ -119,12 +129,15 @@ export async function processZipFile(file: File): Promise<{
     unzipper.register(UnzipInflate);
     let foundConversations = false;
     let stopReading = false;
+    let totalSize = 0;
+    let processedSize = 0;
 
     // Handle files within the ZIP
     unzipper.onfile = (unzippedFile) => {
       console.log('Found file:', unzippedFile.name);
       if (unzippedFile.name === 'conversations.json') {
         foundConversations = true;
+        totalSize = unzippedFile.size;
 
         const parser = clarinet.parser();
         const stack: any[] = [];
@@ -137,11 +150,25 @@ export async function processZipFile(file: File): Promise<{
             doResolve({ success: false, conversations: null });
             return;
           }
+
+          processedSize += data.length;
+          const progressPercentage = Math.min(
+            Math.round((processedSize / totalSize) * 100),
+            100
+          );
+
+          if (onProgress) {
+            onProgress(progressPercentage);
+          }
+
           const text = new TextDecoder().decode(data);
           parser.write(text);
 
           if (final) {
             parser.close();
+            if (onProgress) {
+              onProgress(100); // Ensure we finish at 100%
+            }
             doResolve({
               success: true,
               conversations: records,
