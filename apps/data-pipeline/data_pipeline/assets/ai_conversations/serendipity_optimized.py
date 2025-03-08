@@ -435,9 +435,6 @@ async def serendipity_optimized(
     # Build and validate result DataFrame
     result_df = pl.DataFrame(paths, schema_overrides=get_out_df_schema(), strict=False)
 
-    # Drop invalid paths
-    result_df = result_df.filter(pl.col("common_conversation_ids").list.len() > 0)
-
     result_df = _fix_duplicates(result_df, logger)
     result_df = remap_indices_to_conversation_ids(result_df, clusters_df)
 

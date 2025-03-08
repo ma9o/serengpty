@@ -95,7 +95,7 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
   };
 
   return (
-    <div className="flex h-full overflow-hidden rounded-lg border shadow">
+    <div className="flex h-full overflow-hidden">
       <div className="flex h-full w-full">
         <div className="w-64 border-r dark:border-gray-800">
           <ChannelList

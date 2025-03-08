@@ -18,7 +18,10 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from '@enclaveid/ui/accordion';
-import { getSerendipitousPaths, markUserMatchAsViewed } from '../../actions/getSerendipitousPaths';
+import {
+  getSerendipitousPaths,
+  markUserMatchAsViewed,
+} from '../../actions/getSerendipitousPaths';
 import { useUnviewedMatches } from './UnviewedMatchesContext';
 import {
   Dialog,
@@ -66,7 +69,7 @@ export function VerticalSerendipitousPaths({
 
   const handleUserSelect = async (index: number) => {
     const match = data[index];
-    
+
     // If the match hasn't been viewed yet, mark it as viewed
     if (!match.viewed) {
       try {
@@ -75,14 +78,14 @@ export function VerticalSerendipitousPaths({
         const updatedData = [...data];
         updatedData[index] = { ...match, viewed: true };
         setData(updatedData);
-        
+
         // Update the unviewed count in context
         decrementCount();
       } catch (error) {
         console.error('Failed to mark match as viewed:', error);
       }
     }
-    
+
     setSelectedMatchIndex(index);
     setSelectedPathId(null);
   };
@@ -226,16 +229,16 @@ function UserCard({
             <span className="inline-flex h-2 w-2 rounded-full bg-primary"></span>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <div className="text-xs text-muted-foreground">
             <span className="mr-1">{getCountryFlag(user.country)}</span>
             {user.country}
           </div>
+          <div className="flex items-center gap-1">
+            <ScoreCircle percentage={score} size="xs" label="Match" />
+            <div className="text-xs text-muted-foreground">Match</div>
+          </div>
         </div>
-      </div>
-      <div className="flex flex-col items-center justify-center">
-        <ScoreCircle percentage={score} size="md" label="Match" />
-        <div className="text-xs text-muted-foreground mt-1">Match</div>
       </div>
     </div>
   );

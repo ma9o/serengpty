@@ -11,7 +11,7 @@ const ChatApp = () => {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"></div>
+        <div className="h-8 w-8 animate-spin border-gray-300 border-t-blue-600"></div>
         <p className="ml-2 text-gray-600">Loading user data...</p>
       </div>
     );

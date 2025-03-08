@@ -9,16 +9,14 @@ const sizeMap = {
 
 function getFontSize(sizeClass: keyof typeof sizeMap) {
   const widthClass = sizeMap[sizeClass];
-  return (
-    {
-      'w-5': 'text-[0.4rem]',
-      'w-6': 'text-[0.5rem]',
-      'w-8': 'text-xs',
-      'w-10': 'text-sm',
-      'w-12': 'text-base',
-      'w-16': 'text-lg',
-    }[widthClass] || 'text-base'
-  );
+  return {
+    'w-5': 'text-[0.4rem]',
+    'w-6': 'text-[0.5rem]',
+    'w-8': 'text-xs',
+    'w-10': 'text-sm',
+    'w-12': 'text-base',
+    'w-16': 'text-lg',
+  }[widthClass];
 }
 
 export function ScoreCircle({
@@ -75,9 +73,7 @@ export function ScoreCircle({
           />
         </svg>
         <div
-          className={`text-passiveLinkColor text-sm absolute inset-0 flex items-center justify-center text-center font-bold ${getFontSize(
-            sizeClass
-          )}`}
+          className={`text-passiveLinkColor absolute inset-0 flex items-center justify-center text-center font-bold text-[0.6rem]`}
         >
           {(percentage * 100).toFixed(0)}
         </div>

@@ -44,31 +44,48 @@ export async function savePipelineResults(
 ): Promise<void> {
   try {
     await prisma.$transaction(async (tx) => {
-      // **Step 1: Bulk Create Conversations**
-      const conversationData = conversationPairClusters.map((row) => ({
-        id: row.conversation_id,
-        title: row.title || 'No title',
-        summary: row.summary || 'No summary',
-        datetime: new Date(`${row.start_date} ${row.start_time}`),
-        userId: row.user_id,
-      }));
-
-      await tx.conversation.createMany({
-        data: conversationData,
-        skipDuplicates: true, // Skips if `id` already exists
-      });
-
-      // **Step 2: Group SerendipityOptimized by match_group_id**
+      // Declare variables at the transaction scope level
+      let conversationData: any[] = [];
       const matchGroups: { [key: number]: SerendipityOptimizedRow[] } = {};
-      for (const row of serendipityOptimized) {
-        const groupId = row.match_group_id;
-        if (!matchGroups[groupId]) matchGroups[groupId] = [];
-        matchGroups[groupId].push(row);
+      let usersMatchData: any[] = [];
+      let existingUsersMatches: any[] = [];
+      let createdUsersMatches: any[] = [];
+      const pathData: any[] = [];
+      const userPathData: any[] = [];
+
+      // **Step 1: Bulk Create Conversations**
+      try {
+        conversationData = conversationPairClusters.map((row) => ({
+          id: row.conversation_id,
+          title: row.title || 'No title',
+          summary: row.summary || 'No summary',
+          datetime: new Date(`${row.start_date} ${row.start_time}`),
+          userId: row.user_id,
+        }));
+
+        await tx.conversation.createMany({
+          data: conversationData,
+          skipDuplicates: true, // Skips if `id` already exists
+        });
+      } catch (error) {
+        throw new Error(
+          `Failed to create conversations: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
       }
 
-      // **Step 3: Prepare and Create UsersMatch Records**
-      const usersMatchData = Object.entries(matchGroups).map(
-        ([groupId, rows]) => {
+      // **Step 2 & 3: Group and Create UsersMatch Records**
+      try {
+        // **Step 2: Group SerendipityOptimized by match_group_id**
+        for (const row of serendipityOptimized) {
+          const groupId = row.match_group_id;
+          if (!matchGroups[groupId]) matchGroups[groupId] = [];
+          matchGroups[groupId].push(row);
+        }
+
+        // **Step 3: Prepare and Create UsersMatch Records**
+        usersMatchData = Object.entries(matchGroups).map(([groupId, rows]) => {
           const user1Id = rows[0].user1_id;
           const user2Id = rows[0].user2_id;
           let otherUserId: string;
@@ -89,125 +106,176 @@ export async function savePipelineResults(
             score: similarityRow.similarity,
             users: { connect: [{ id: user1Id }, { id: user2Id }] },
           };
-        }
-      );
+        });
 
-      const existingUsersMatches = await tx.usersMatch.findMany({
-        where: {
-          users: {
-            some: {
-              id: currentUserId,
+        existingUsersMatches = await tx.usersMatch.findMany({
+          where: {
+            users: {
+              some: {
+                id: currentUserId,
+              },
             },
           },
-        },
-        include: {
-          users: true,
-        },
-      });
+          include: {
+            users: true,
+          },
+        });
 
-      // Update existing users matches or create new ones
-      const createdUsersMatches = await Promise.all(
-        usersMatchData.map((data) => {
-          const existingUsersMatch = existingUsersMatches.find((match) =>
-            match.users.every((user) =>
-              data.users.connect.some((u) => u.id === user.id)
-            )
+        // Update existing users matches or create new ones
+        createdUsersMatches = await Promise.all(
+          usersMatchData.map((data) => {
+            const existingUsersMatch = existingUsersMatches.find((match) =>
+              match.users.every((user) =>
+                data.users.connect.some((u) => u.id === user.id)
+              )
+            );
+
+            if (existingUsersMatch) {
+              return tx.usersMatch.update({
+                where: { id: existingUsersMatch.id },
+                data: {
+                  score: data.score,
+                },
+                include: {
+                  users: true,
+                },
+              });
+            } else {
+              return tx.usersMatch.create({
+                data,
+                include: {
+                  users: true,
+                },
+              });
+            }
+          })
+        );
+      } catch (error) {
+        throw new Error(
+          `Failed to process user matches: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+
+      // **Step 4, 5 & 6: Prepare and Upsert Paths and UserPaths**
+      try {
+        // Create a map to match match_group_id to its corresponding usersMatch record
+        const matchGroupToUsersMatchMap = new Map();
+
+        // Fill the map based on the user IDs in each match group and created users match
+        Object.entries(matchGroups).forEach(([groupId, rows]) => {
+          const user1Id = rows[0].user1_id;
+          const user2Id = rows[0].user2_id;
+
+          const matchingUsersMatch = createdUsersMatches.find(
+            (match) =>
+              match.users?.some((u) => u.id === user1Id) &&
+              match.users?.some((u) => u.id === user2Id)
           );
 
-          if (existingUsersMatch) {
-            return tx.usersMatch.update({
-              where: { id: existingUsersMatch.id },
-              data: {
-                score: data.score,
+          if (matchingUsersMatch) {
+            matchGroupToUsersMatchMap.set(
+              Number(groupId),
+              matchingUsersMatch.id
+            );
+          }
+        });
+
+        // **Step 4: Prepare SerendipitousPath and UserPath Data**
+        for (const [groupId, rows] of Object.entries(matchGroups)) {
+          const usersMatchId = matchGroupToUsersMatchMap.get(Number(groupId));
+          if (!usersMatchId) {
+            throw new Error(
+              `Could not find usersMatchId for match_group_id ${groupId} in ${JSON.stringify(
+                matchGroupToUsersMatchMap
+              )}`
+            );
+          }
+
+          for (const row of rows) {
+            pathData.push({
+              id: row.path_id,
+              title: row.path_title,
+              commonSummary: row.path_description,
+              category: row.category,
+              balanceScore: row.balance_score,
+              isSensitive: row.is_highly_sensitive,
+              usersMatchId,
+              commonConversations: {
+                connect: row.common_conversation_ids.map((id) => ({ id })),
               },
-            });
-          } else {
-            return tx.usersMatch.create({
-              data,
             });
           }
-        })
-      );
-
-      // **Step 4: Prepare SerendipitousPath and UserPath Data**
-      const pathData = [];
-      for (const [idx, rows] of Object.entries(matchGroups)) {
-        const usersMatchId = createdUsersMatches[Number(idx)].id;
-        for (const row of rows) {
-          pathData.push({
-            id: row.path_id,
-            title: row.path_title,
-            commonSummary: row.path_description,
-            category: row.category,
-            balanceScore: row.balance_score,
-            isSensitive: row.is_highly_sensitive,
-            usersMatchId,
-            commonConversations: {
-              connect: row.common_conversation_ids.map((id) => ({ id })),
-            },
-          });
         }
-      }
 
-      const userPathData = [];
-      for (const rows of Object.values(matchGroups)) {
-        for (const row of rows) {
-          userPathData.push(
-            {
-              userId: row.user1_id,
-              pathId: row.path_id,
-              uniqueSummary: row.user1_unique_branches,
-              uniqueCallToAction: row.user1_call_to_action,
-              uniqueConversations: {
-                connect: row.user1_conversation_ids.map((id) => ({ id })),
+        for (const rows of Object.values(matchGroups)) {
+          for (const row of rows) {
+            userPathData.push(
+              {
+                userId: row.user1_id,
+                pathId: row.path_id,
+                uniqueSummary: row.user1_unique_branches,
+                uniqueCallToAction: row.user1_call_to_action,
+                uniqueConversations: {
+                  connect: row.user1_conversation_ids.map((id) => ({ id })),
+                },
               },
-            },
-            {
-              userId: row.user2_id,
-              pathId: row.path_id,
-              uniqueSummary: row.user2_unique_branches,
-              uniqueCallToAction: row.user2_call_to_action,
-              uniqueConversations: {
-                connect: row.user2_conversation_ids.map((id) => ({ id })),
-              },
-            }
-          );
+              {
+                userId: row.user2_id,
+                pathId: row.path_id,
+                uniqueSummary: row.user2_unique_branches,
+                uniqueCallToAction: row.user2_call_to_action,
+                uniqueConversations: {
+                  connect: row.user2_conversation_ids.map((id) => ({ id })),
+                },
+              }
+            );
+          }
         }
+
+        // **Step 5: Upsert SerendipitousPath Records**
+        await Promise.all(
+          pathData.map((path) =>
+            tx.serendipitousPath.upsert({
+              where: { id: path.id },
+              create: path,
+              update: {
+                title: path.title,
+                commonSummary: path.commonSummary,
+                category: path.category,
+                balanceScore: path.balanceScore,
+                isSensitive: path.isSensitive,
+                usersMatchId: path.usersMatchId,
+                commonConversations: { set: path.commonConversations.connect },
+              },
+            })
+          )
+        );
+
+        // **Step 6: Upsert UserPath Records**
+        await Promise.all(
+          userPathData.map((up) =>
+            tx.userPath.upsert({
+              where: {
+                userId_pathId: { userId: up.userId, pathId: up.pathId },
+              },
+              create: up,
+              update: {
+                uniqueSummary: up.uniqueSummary,
+                uniqueCallToAction: up.uniqueCallToAction,
+                uniqueConversations: { set: up.uniqueConversations.connect },
+              },
+            })
+          )
+        );
+      } catch (error) {
+        throw new Error(
+          `Failed to process paths and user paths: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
       }
-
-      // **Step 5: Upsert SerendipitousPath Records**
-      await Promise.all(
-        pathData.map((path) =>
-          tx.serendipitousPath.upsert({
-            where: { id: path.id },
-            create: path,
-            update: {
-              title: path.title,
-              commonSummary: path.commonSummary,
-              category: path.category,
-              balanceScore: path.balanceScore,
-              isSensitive: path.isSensitive,
-              usersMatchId: path.usersMatchId,
-              commonConversations: { set: path.commonConversations.connect },
-            },
-          })
-        )
-      );
-
-      // **Step 6: Upsert UserPath Records**
-      await Promise.all(
-        userPathData.map((up) =>
-          tx.userPath.upsert({
-            where: { userId_pathId: { userId: up.userId, pathId: up.pathId } },
-            create: up,
-            update: {
-              uniqueSummary: up.uniqueSummary,
-              uniqueCallToAction: up.uniqueCallToAction,
-              uniqueConversations: { set: up.uniqueConversations.connect },
-            },
-          })
-        )
-      );
     });
   } catch (error) {
     if (error instanceof Error) {

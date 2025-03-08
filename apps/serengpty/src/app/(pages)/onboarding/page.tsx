@@ -31,7 +31,7 @@ export default function OnboardingPage() {
         if (status.success) {
           setQueuePosition(status.queuePosition);
           setEstimatedTimeSeconds(status.estimatedTimeSeconds);
-          
+
           // If estimatedTimeSeconds is 0, redirect to dashboard
           if (status.estimatedTimeSeconds === 0) {
             router.push('/dashboard');
@@ -64,15 +64,18 @@ export default function OnboardingPage() {
         <div className="mb-12 flex flex-col items-center space-y-2">
           <p className="max-w-md text-center text-muted-foreground">
             {isLoading ? (
-              "Checking status..."
+              'Checking status...'
             ) : queuePosition > 0 ? (
               <>
-                Processing data: Queue position{' '}
-                <span className="font-medium">{queuePosition}</span> • Est. time:{' '}
-                <span className="font-medium">{formatTimeFromSeconds(estimatedTimeSeconds)}</span>
+                Queue position{' '}
+                <span className="font-medium">{queuePosition}</span> • Est. time
+                left:{' '}
+                <span className="font-medium">
+                  {formatTimeFromSeconds(estimatedTimeSeconds)}
+                </span>
               </>
             ) : (
-              "Your data is being processed..."
+              'Your data is being processed...'
             )}
           </p>
           <p className="max-w-md text-center text-sm text-muted-foreground">

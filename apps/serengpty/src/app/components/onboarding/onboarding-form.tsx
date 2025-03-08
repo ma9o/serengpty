@@ -4,10 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@enclaveid/ui/hooks/use-toast';
-import { Save, Shield } from 'lucide-react';
+import { Save, Shield, Search, ChevronDown, Check } from 'lucide-react';
 import countries from 'i18n-iso-countries';
 import enLocale from 'i18n-iso-countries/langs/en.json';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { saveUserProfile } from '../../actions/saveUserProfile';
 import { UsernameStatus } from './username-status';
 import { getUserProfile } from '../../actions/getUserProfile';
@@ -28,13 +28,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@enclaveid/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@enclaveid/ui/select';
 import { ConditionalWrapper } from '../conditional-wrapper';
 
 // Initialize the countries library
@@ -86,21 +79,140 @@ export interface OnboardingFormProps {
   isPreferences?: boolean;
 }
 
+// Create a completely redesigned CountrySelector component with custom dropdown
+function CountrySelector({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Find the selected country
+  const selectedCountry = ALL_COUNTRIES.find(
+    (country) => country.code === value
+  );
+
+  // Filter countries based on search term
+  const filteredCountries = useMemo(() => {
+    if (!searchTerm.trim()) return ALL_COUNTRIES;
+    const term = searchTerm.toLowerCase();
+    return ALL_COUNTRIES.filter((country) =>
+      country.name.toLowerCase().includes(term)
+    );
+  }, [searchTerm]);
+
+  // Handle clicking outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      // Focus the search input when dropdown opens
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    } else {
+      setSearchTerm('');
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Handle selecting a country
+  const handleSelectCountry = (country: (typeof ALL_COUNTRIES)[0]) => {
+    onChange(country.code);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative w-full" ref={dropdownRef}>
+      {/* Custom trigger button */}
+      <Button
+        type="button"
+        variant="outline"
+        role="combobox"
+        aria-expanded={isOpen}
+        className="w-full justify-between font-normal"
+        onClick={() => setIsOpen(!isOpen)}
+        disabled={disabled}
+      >
+        {selectedCountry ? (
+          <span className="flex items-center">
+            <span className="mr-2">{selectedCountry.flag}</span>
+            {selectedCountry.name}
+          </span>
+        ) : (
+          'Select your country'
+        )}
+        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+
+      {/* Custom dropdown */}
+      {isOpen && (
+        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-input bg-background p-1 shadow-md">
+          {/* Search box */}
+          <div className="flex items-center border-b px-3 py-2 sticky top-0 bg-background">
+            <Search className="mr-2 h-4 w-4 shrink-0 opacity-70" />
+            <Input
+              ref={searchInputRef}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search countries..."
+              className="border-0 bg-transparent p-1 text-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+          </div>
+
+          {/* Country list */}
+          <div className="pt-1 pb-1">
+            {filteredCountries.length === 0 ? (
+              <div className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none text-muted-foreground">
+                No countries found
+              </div>
+            ) : (
+              filteredCountries.map((country) => (
+                <div
+                  key={country.code}
+                  className={`relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 px-2 text-sm font-normal outline-none hover:bg-accent hover:text-accent-foreground ${
+                    value === country.code
+                      ? 'bg-accent text-accent-foreground'
+                      : ''
+                  }`}
+                  onClick={() => handleSelectCountry(country)}
+                >
+                  <span className="mr-2">{country.flag}</span>
+                  <span className="flex-1">{country.name}</span>
+                  {value === country.code && <Check className="h-4 w-4" />}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
   const { toast } = useToast();
-  const [countrySearch, setCountrySearch] = useState('');
   const [isUsernameValid, setIsUsernameValid] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
-
-  // Filter countries based on search
-  const filteredCountries = useMemo(() => {
-    if (!countrySearch.trim()) return ALL_COUNTRIES;
-    const searchTerm = countrySearch.toLowerCase();
-    return ALL_COUNTRIES.filter((country) =>
-      country.name.toLowerCase().includes(searchTerm)
-    );
-  }, [countrySearch]);
 
   // Form setup
   const form = useForm<z.infer<typeof formSchema>>({
@@ -265,35 +377,13 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Country</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={isFormLoading}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your country" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="max-h-[300px]">
-                      <div className="px-2 pb-2">
-                        <Input
-                          placeholder="Search countries..."
-                          value={countrySearch}
-                          onChange={(e) => setCountrySearch(e.target.value)}
-                          className="mb-2"
-                        />
-                      </div>
-                      {filteredCountries.map((country) => (
-                        <SelectItem key={country.code} value={country.code}>
-                          <span className="flex items-center">
-                            <span className="mr-2">{country.flag}</span>
-                            {country.name}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <CountrySelector
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={isFormLoading}
+                    />
+                  </FormControl>
                   <FormDescription>
                     Select the country you&apos;re based in.
                   </FormDescription>

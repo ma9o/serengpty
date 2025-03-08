@@ -12,8 +12,8 @@ from dagster import (
 
 from data_pipeline.constants.environments import (
     API_STORAGE_DIRECTORY,
+    DAGSTER_STORAGE_DIRECTORY,
     STORAGE_BUCKET,
-    get_environment,
 )
 from data_pipeline.partitions import user_partitions_def
 from data_pipeline.resources.postgres_resource import PostgresResource
@@ -22,11 +22,7 @@ from data_pipeline.resources.postgres_resource import PostgresResource
 @sensor(
     asset_selection=AssetSelection.all(),
     minimum_interval_seconds=30,
-    default_status=(
-        DefaultSensorStatus.STOPPED
-        if get_environment() == "LOCAL"
-        else DefaultSensorStatus.RUNNING
-    ),
+    default_status=DefaultSensorStatus.RUNNING,
 )
 def inputs_sensor(
     context: SensorEvaluationContext, postgres: PostgresResource
@@ -36,7 +32,18 @@ def inputs_sensor(
     Adds or removes user partitions based on the presence of user folders. Note
     that this will also remove partitions if a user's folder has been deleted."""
 
-    current_state: set = ast.literal_eval(context.cursor) if context.cursor else set()  # type: ignore
+    if context.cursor:
+        current_state: set = ast.literal_eval(context.cursor)  # type: ignore
+    else:
+        # Get user_ids that have been processed already
+        asset_folder = DAGSTER_STORAGE_DIRECTORY / "serendipity_optimized"
+        asset_folder.fs.invalidate_cache()
+        current_state = {d.stem for d in asset_folder.iterdir() if d.is_file()}
+
+    context.log.info("Current state: %s", current_state)
+
+    if not API_STORAGE_DIRECTORY.exists():
+        return SkipReason("No API storage directory found.")
 
     API_STORAGE_DIRECTORY.fs.invalidate_cache()
     all_partitions = {d.name for d in API_STORAGE_DIRECTORY.iterdir() if d.is_dir()}

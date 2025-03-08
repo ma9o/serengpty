@@ -25,7 +25,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
           <Separator orientation="vertical" className="mr-2 h-4" />
           <DashboardBreadcrumb />
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-8">{children}</div>
+        <div className="flex flex-1 flex-col">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );
