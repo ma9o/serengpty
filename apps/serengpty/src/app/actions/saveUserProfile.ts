@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache';
 
 // Form validation schema
 const userProfileSchema = z.object({
-  name: z
+  username: z
     .string()
     .min(3, { message: 'name must be at least 3 characters.' })
     .max(20, { message: 'name cannot be longer than 20 characters.' })
@@ -49,7 +49,7 @@ export async function saveUserProfile(
 
     // Check if name is already taken by another user
     const existingUser = await prisma.user.findUnique({
-      where: { name: data.name },
+      where: { name: data.username },
       select: { id: true },
     });
 
@@ -64,7 +64,7 @@ export async function saveUserProfile(
     await prisma.user.update({
       where: { id: userId },
       data: {
-        name: data.name,
+        name: data.username,
         country: data.country,
         sensitiveMatching: data.sensitiveMatching,
       },

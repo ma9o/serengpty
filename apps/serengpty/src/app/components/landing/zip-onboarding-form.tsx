@@ -40,8 +40,9 @@ export function ZipOnboardingForm() {
   const [password, setPassword] = useState<string | null>(null);
   const [customUsername, setCustomUsername] = useState('');
   const [ready, setReady] = useState(false);
-  const [cleanedConversations, setCleanedConversations] =
-    useState<Record<string, unknown>>(null);
+  const [cleanedConversations, setCleanedConversations] = useState<
+    Record<string, unknown>
+  >({});
 
   async function handleFileDrop(files: File[]) {
     const file = files[0];
@@ -54,7 +55,7 @@ export function ZipOnboardingForm() {
     setReady(false);
     setPassword(null);
     setCustomUsername(await getUniqueUsername());
-    setCleanedConversations(null);
+    setCleanedConversations({});
 
     try {
       // Process the zip file on the client side
@@ -67,8 +68,6 @@ export function ZipOnboardingForm() {
       }
 
       setCleanedConversations(result.conversations);
-
-      // Give some time for UI effects
 
       // Generate a strong password on the client.
       const newPassword = generatePassword();
@@ -193,19 +192,33 @@ export function ZipOnboardingForm() {
         {!ready ? (
           <div>
             {/* Robot icon message */}
-            {!processing && (
-              <div className="mb-2 flex items-center justify-center">
-                <Icon
-                  icon="mage:robot-happy"
-                  width="24"
-                  height="24"
-                  className="text-gray-500 mr-2"
-                />
-                <p className="text-sm text-gray-500 font-medium">
-                  Your data will be anonymized before uploading
-                </p>
-              </div>
-            )}
+            <div className="mb-2 flex items-center justify-center">
+              {error ? (
+                <>
+                  <Icon
+                    icon="mage:robot-sad"
+                    width="24"
+                    height="24"
+                    className="text-red-500 mr-2"
+                  />
+                  <span className="text-red-500">{error}</span>
+                </>
+              ) : (
+                !processing && (
+                  <>
+                    <Icon
+                      icon="mage:robot-happy"
+                      width="24"
+                      height="24"
+                      className="text-gray-500 mr-2"
+                    />
+                    <p className="text-sm text-gray-500 font-medium">
+                      Your data will be anonymized before uploading
+                    </p>
+                  </>
+                )
+              )}
+            </div>
 
             {/* Processing indicator or Dropzone */}
             {processing ? (
@@ -251,20 +264,6 @@ export function ZipOnboardingForm() {
                 </p>
               </div>
             )}
-
-            {/* Error feedback with robot */}
-            {error && (
-              <div className="mt-4 text-red-600 flex items-center">
-                <Icon
-                  icon="mage:robot-sad"
-                  width="24"
-                  height="24"
-                  className="text-red-500 mr-2"
-                />
-                <XCircle className="mr-2" size={16} />
-                <span>{error}</span>
-              </div>
-            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center">
@@ -281,7 +280,7 @@ export function ZipOnboardingForm() {
               You will need both your username and password to login.{' '}
               <span className="font-bold">Do not lose these!</span>
             </p> */}
-            {password && customUsername && (
+            {password && (
               <div className="flex flex-col items-center gap-4 w-[470px]">
                 <div className="w-full">
                   <label
@@ -300,6 +299,7 @@ export function ZipOnboardingForm() {
                       placeholder="Enter your desired username"
                       className="w-full mb-1"
                       autoComplete="username"
+                      required
                     />
                     {customUsername &&
                       (!usernameError ? (
@@ -314,12 +314,9 @@ export function ZipOnboardingForm() {
                         />
                       ))}
                   </div>
-                  {/* {usernameError && (
+                  {usernameError && (
                     <p className="text-sm text-red-500">{usernameError}</p>
-                  )} */}
-                  {/* <p className="text-xs text-gray-500 mt-1">
-                    Username must be 3-20 characters and can only contain letters, numbers, and underscores.
-                  </p> */}
+                  )}
                 </div>
 
                 <div className="w-full">
@@ -359,7 +356,7 @@ export function ZipOnboardingForm() {
                 <Button
                   type="submit"
                   className="w-full mt-2"
-                  disabled={usernameError || !customUsername}
+                  disabled={!!usernameError || customUsername === ''}
                 >
                   Create Account
                 </Button>

@@ -22,12 +22,6 @@ export function UsernameStatus({
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
   const debouncedValidation = useDebouncedCallback(async (value: string) => {
-    if (!value || value.length < 3) {
-      setValidationState('idle');
-      setIsValid(false);
-      return;
-    }
-
     setValidationState('loading');
 
     try {

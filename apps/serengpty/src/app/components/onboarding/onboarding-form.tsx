@@ -10,6 +10,8 @@ import enLocale from 'i18n-iso-countries/langs/en.json';
 import { useState, useMemo, useEffect } from 'react';
 import { saveUserProfile } from '../../actions/saveUserProfile';
 import { UsernameStatus } from './username-status';
+import { getUserProfile } from '../../actions/getUserProfile';
+import { getIdenticon } from '../../utils/getIdenticon';
 
 // UI Components
 import { Button } from '@enclaveid/ui/button';
@@ -33,7 +35,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@enclaveid/ui/select';
-import { getIdenticon } from '../../utils/getIdenticon';
 import { ConditionalWrapper } from '../conditional-wrapper';
 
 // Initialize the countries library
@@ -90,6 +91,7 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
   const [countrySearch, setCountrySearch] = useState('');
   const [isUsernameValid, setIsUsernameValid] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
 
   // Filter countries based on search
   const filteredCountries = useMemo(() => {
@@ -110,23 +112,44 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
     },
   });
 
-  // Get a unique username from the server
+  // Fetch user profile data from database
   useEffect(() => {
-    async function fetchUniqueUsername() {
+    async function fetchUserProfile() {
       try {
-        const username = await getUniqueUsername();
-        form.setValue('username', username);
-        setIsUsernameValid(true);
+        setIsLoading(true);
+        setIsProfileLoading(true);
+        const userData = await getUserProfile();
+
+        if (userData) {
+          // Set the username
+          if (userData.name) {
+            form.setValue('username', userData.name);
+            setIsUsernameValid(true);
+          }
+
+          // Set the country if it exists in the database
+          if (userData.country) {
+            form.setValue('country', userData.country);
+          }
+
+          // Set the sensitiveMatching value from the database
+          form.setValue('sensitiveMatching', userData.sensitiveMatching);
+        }
       } catch (error) {
-        console.error('Error generating username:', error);
+        console.error('Error fetching user profile:', error);
+        // Generate a fallback username in case of error
         form.setValue('username', `user_${Date.now().toString(36)}`);
       } finally {
         setIsLoading(false);
+        setIsProfileLoading(false);
       }
     }
 
-    fetchUniqueUsername();
+    fetchUserProfile();
   }, [form]);
+
+  // Combined loading state for both username and profile data
+  const isFormLoading = isLoading || isProfileLoading;
 
   const watchUsername = form.watch('username');
 
@@ -216,13 +239,13 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled={isLoading} />
+                    <Input {...field} disabled={isFormLoading} />
                   </FormControl>
                   <div className="flex flex-col space-y-1">
                     <FormDescription>
                       This will be your display name in the system.
                     </FormDescription>
-                    {!isLoading && (
+                    {!isFormLoading && (
                       <UsernameStatus
                         username={field.value}
                         isValid={isUsernameValid}
@@ -244,7 +267,8 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
                   <FormLabel>Country</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
+                    disabled={isFormLoading}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -304,6 +328,7 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
                       <Switch
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                        disabled={isFormLoading}
                       />
                     </div>
                   </FormControl>
@@ -312,7 +337,11 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
             />
 
             {/* Save button */}
-            <Button type="submit" className="w-full">
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={!isUsernameValid || isFormLoading}
+            >
               <Save className="mr-2 h-4 w-4" />
               {isPreferences ? 'Save Preferences' : 'Save Profile'}
             </Button>
