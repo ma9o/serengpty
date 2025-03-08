@@ -1,0 +1,22 @@
+diff --git a/clarinet.js b/clarinet.js
+index 7e234e4e9a852281f6c3b64f9f75a577ce09eeb7..c3a320d5dd3e7b30e7f68043337c3cfbac0f6db5 100644
+--- a/clarinet.js
++++ b/clarinet.js
+@@ -10,7 +10,7 @@
+   clarinet.CParser           = CParser;
+   clarinet.CStream           = CStream;
+   clarinet.createStream      = createStream;
+-  clarinet.MAX_BUFFER_LENGTH = 64 * 1024;
++  clarinet.MAX_BUFFER_LENGTH = 10 * 1024 * 1024;
+   clarinet.DEBUG             = (env.CDEBUG==='debug');
+   clarinet.INFO              = (env.CDEBUG==='debug' || env.CDEBUG==='info');
+   clarinet.EVENTS            =
+@@ -94,7 +94,7 @@
+ 
+     a                   : 0x61,     // a
+     b                   : 0x62,     // b
+-    e                   : 0x65,     // e 
++    e                   : 0x65,     // e
+     f                   : 0x66,     // f
+     l                   : 0x6C,     // l
+     n                   : 0x6E,     // n

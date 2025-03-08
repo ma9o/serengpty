@@ -1,7 +1,8 @@
 'use client';
 
-import { Unzip } from 'fflate';
+import { Unzip, UnzipInflate } from 'fflate';
 import clarinet from 'clarinet';
+
 
 /**
  * Calculates the Shannon entropy of a string.
@@ -9,6 +10,7 @@ import clarinet from 'clarinet';
  * @returns the entropy in bits.
  */
 function getShannonEntropy(s: string): number {
+  console.log(`Calculating entropy for string of length: ${s.length}`);
   const len = s.length;
   const frequencies: { [char: string]: number } = {};
   for (const char of s) {
@@ -19,6 +21,7 @@ function getShannonEntropy(s: string): number {
     const p = frequencies[char] / len;
     entropy -= p * Math.log2(p);
   }
+  console.log(`Entropy calculated: ${entropy}`);
   return entropy;
 }
 
@@ -32,10 +35,12 @@ const phoneRegex = /\b(?:\+?\d{1,3}[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?){2}\d{4}\b/g;
  * @returns the cleaned text.
  */
 function cleanText(text: string): string {
+  console.log(`Cleaning text of length: ${text.length}`);
   const cleaned = text
     .replace(emailRegex, '[redacted email]')
     .replace(phoneRegex, '[redacted phone]');
   if (cleaned.length > 20 && getShannonEntropy(cleaned) > 4.5) {
+    console.log('High entropy detected, redacting');
     return '[redacted high entropy]';
   }
   return cleaned;
@@ -47,7 +52,7 @@ function cleanText(text: string): string {
  */
 function processChunk(records: Record<string, unknown>[]): void {
   console.log('Processing chunk of', records.length, 'records:', records);
-  // Optionally, implement custom logic here (e.g., API call)
+  // Optionally, implement custom logic here (e.g., an API call)
 }
 
 /**
@@ -65,21 +70,51 @@ export async function processZipFile(
   success: boolean;
   conversations: Record<string, unknown>[] | null;
 }> {
+  console.log(
+    `Starting to process ZIP file: ${file.name}, size: ${file.size}, chunkSize: ${chunkSize}, processAll: ${processAll}`
+  );
+  let resolvePromise: (value: {
+    success: boolean;
+    conversations: Record<string, unknown>[] | null;
+  }) => void;
+  let resolved = false;
+  const doResolve = (value: {
+    success: boolean;
+    conversations: Record<string, unknown>[] | null;
+  }) => {
+    console.log(
+      `Resolving promise with success: ${value.success}, records: ${
+        value.conversations ? value.conversations.length : 'null'
+      }`
+    );
+    if (!resolved) {
+      resolved = true;
+      resolvePromise(value);
+    }
+  };
+
+  const promise = new Promise<{
+    success: boolean;
+    conversations: Record<string, unknown>[] | null;
+  }>((resolve) => {
+    resolvePromise = resolve;
+  });
+
   try {
     const unzipper = new Unzip();
-    let resolvePromise;
-    const promise = new Promise<{
-      success: boolean;
-      conversations: Record<string, unknown>[] | null;
-    }>((resolve) => {
-      resolvePromise = resolve;
-    });
+    unzipper.register(UnzipInflate);
     let foundConversations = false;
 
-    // Configure unzipper to handle files
-    unzipper.onfile = (file) => {
-      if (file.name === 'conversations.json') {
+    // Configure unzipper to handle files within the ZIP
+    unzipper.onfile = (unzippedFile) => {
+      console.log(
+        `Found file in ZIP: ${unzippedFile.name}, size: ${unzippedFile.size}`
+      );
+      // We only care about 'conversations.json'
+      if (unzippedFile.name === 'conversations.json') {
+        console.log('Found conversations.json, processing...');
         foundConversations = true;
+
         const parser = clarinet.parser();
         const stack: any[] = [];
         let records: Record<string, unknown>[] = [];
@@ -87,41 +122,58 @@ export async function processZipFile(
         let inPartsArray = false;
 
         // Set up streaming decompression
-        file.ondata = (err, data, final) => {
+        unzippedFile.ondata = (err, data, final) => {
           if (err) {
             console.error('Decompression error:', err);
-            resolvePromise({ success: false, conversations: null });
+            doResolve({ success: false, conversations: null });
             return;
           }
+
+          console.log(
+            `Received data chunk: ${data.length} bytes, final: ${final}`
+          );
+          // Convert chunk to text for clarinet
           const text = new TextDecoder().decode(data);
           parser.write(text);
+
           if (final) {
+            console.log('Final chunk received, closing parser');
+            // End of this file entry
             parser.close();
             if (!processAll && records.length > 0) {
+              console.log(
+                `Processing final chunk of ${records.length} records`
+              );
               processChunk(records);
             }
-            resolvePromise({
+            doResolve({
               success: true,
               conversations: processAll ? records : null,
             });
           }
         };
 
-        // Clarinet parser event handlers
+        // JSON parser event handlers
         parser.onopenarray = () => {
+          console.log('JSON parser: opening array');
           const parent = stack[stack.length - 1];
           const arr: any[] = [];
           if (Array.isArray(parent)) {
             parent.push(arr);
           } else if (currentKey) {
-            if (currentKey === 'parts') inPartsArray = true;
+            // Check if the array is in the 'parts' key
+            if (currentKey === 'parts') {
+              inPartsArray = true;
+            }
             parent[currentKey] = arr;
           }
           stack.push(arr);
         };
 
         parser.onclosearray = () => {
+          console.log('JSON parser: closing array');
           const closedArray = stack.pop();
+          // If we're popping the array that was in 'parts', no longer in parts array
           if (
             stack.length > 0 &&
             !Array.isArray(stack[stack.length - 1]) &&
@@ -132,8 +184,12 @@ export async function processZipFile(
         };
 
         parser.onopenobject = (key) => {
-          const obj = {};
+          console.log(
+            `JSON parser: opening object${key ? ' with key: ' + key : ''}`
+          );
+          const obj: Record<string, unknown> = {};
           if (stack.length === 0) {
+            // This is the root object (if JSON is an object at the root)
             stack.push(obj);
           } else {
             const parent = stack[stack.length - 1];
@@ -148,10 +204,17 @@ export async function processZipFile(
         };
 
         parser.onkey = (key) => {
+          console.log(`JSON parser: found key: ${key}`);
           currentKey = key;
         };
 
         parser.onvalue = (value) => {
+          console.log(
+            `JSON parser: found value${
+              typeof value === 'string' ? ' (string)' : ''
+            } for key: ${currentKey}, in parts: ${inPartsArray}`
+          );
+          // If this value is inside the 'parts' array and is a string, clean it
           if (inPartsArray && typeof value === 'string') {
             value = cleanText(value);
           }
@@ -164,10 +227,18 @@ export async function processZipFile(
         };
 
         parser.oncloseobject = () => {
+          console.log('JSON parser: closing object');
           const obj = stack.pop();
+          // If the parent is an array at one level up, assume we finished parsing one record
           if (stack.length > 0 && Array.isArray(stack[stack.length - 1])) {
             records.push(obj);
+            console.log(
+              `Added record to batch, current batch size: ${records.length}`
+            );
             if (records.length >= chunkSize && !processAll) {
+              console.log(
+                `Reached chunk size limit (${chunkSize}), processing chunk`
+              );
               processChunk(records);
               records = [];
             }
@@ -176,32 +247,41 @@ export async function processZipFile(
 
         parser.onerror = (e) => {
           console.error('JSON parsing error:', e);
-          resolvePromise({ success: false, conversations: null });
+          doResolve({ success: false, conversations: null });
         };
 
-        // Start decompression
-        file.start();
+        // Start reading this file entry
+        console.log('Starting to read conversations.json');
+        unzippedFile.start();
       }
-      // Implicitly skip other files by not setting ondata
     };
 
-    // Stream the ZIP file
+    // Now stream the ZIP file itself from the File object
+    console.log('Starting to stream ZIP file');
     const reader = file.stream().getReader();
     while (true) {
       const { done, value } = await reader.read();
       if (done) {
-        unzipper.push(new Uint8Array(0), true); // Signal end
+        console.log('Finished reading file stream');
+        // Signal the unzipper that the stream is finished
+        unzipper.push(new Uint8Array(0), true);
+
+        // If we never found 'conversations.json', resolve with failure
         if (!foundConversations) {
-          resolvePromise({ success: false, conversations: null });
+          console.log('Error: conversations.json not found in ZIP');
+          doResolve({ success: false, conversations: null });
         }
         break;
       }
-      unzipper.push(value, false);
+      if (value) {
+        console.log(`Pushing ${value.length} bytes to unzipper`);
+        unzipper.push(value, false);
+      }
     }
-
-    return promise;
   } catch (error) {
     console.error('Error processing ZIP file:', error);
-    return { success: false, conversations: null };
+    doResolve({ success: false, conversations: null });
   }
+
+  return promise;
 }
