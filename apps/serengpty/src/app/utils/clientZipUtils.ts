@@ -3,7 +3,7 @@
 import { Unzip, UnzipInflate } from 'fflate';
 import clarinet from 'clarinet';
 
-const ENTROPY_THRESHOLD = 5;
+const ENTROPY_THRESHOLD = 4.5;
 const MIN_LENGTH = 12;
 
 /**
@@ -33,9 +33,10 @@ const phoneRegex = /\b(?:\+?\d{1,3}[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?){2}\d{4}\b/g;
  * Cleans a single string by redacting sensitive information.
  * Only logs if redactions occur.
  * @param text the input text.
+ * @param conversationTitle the title of the conversation being processed.
  * @returns the cleaned text.
  */
-function cleanText(text: string): string {
+function cleanText(text: string, conversationTitle?: string): string {
   const redactions: string[] = [];
   const redactedContent: string[] = [];
 
@@ -82,7 +83,13 @@ function cleanText(text: string): string {
   }
 
   if (redactions.length > 0) {
-    console.log('Redacted content:', redactedContent, 'Redaction:', redactions);
+    console.log(
+      'Redaction in conversation: "',
+      conversationTitle,
+      '"',
+      redactedContent,
+      redactions
+    );
   }
   return cleaned;
 }
@@ -144,6 +151,14 @@ export async function processZipFile(
         const records: Record<string, unknown>[] = [];
         let currentKey: string | null = null;
         let inPartsArray = false;
+        let topLevelArray = false;
+
+        // Add this variable to track the current conversation index
+        let currentConversationIndex = -1;
+
+        // Add these state variables to track the current conversation
+        let currentConversation: Record<string, unknown> | null = null;
+        let currentConversationTitle = 'Unknown Conversation';
 
         unzippedFile.ondata = (err, data, final) => {
           if (err) {
@@ -179,8 +194,15 @@ export async function processZipFile(
 
         // JSON parser event handlers without extra logging
         parser.onopenarray = () => {
-          const parent = stack[stack.length - 1];
           const arr: any[] = [];
+          if (stack.length === 0) {
+            // This is the top-level array of conversations
+            topLevelArray = true;
+            stack.push(arr);
+            return;
+          }
+
+          const parent = stack[stack.length - 1];
           if (Array.isArray(parent)) {
             parent.push(arr);
           } else if (currentKey) {
@@ -194,6 +216,11 @@ export async function processZipFile(
 
         parser.onclosearray = () => {
           const closedArray = stack.pop();
+          if (topLevelArray && stack.length === 0) {
+            // We're closing the top-level array, all conversations should be in records
+            return;
+          }
+
           if (
             stack.length > 0 &&
             !Array.isArray(stack[stack.length - 1]) &&
@@ -211,6 +238,11 @@ export async function processZipFile(
             const parent = stack[stack.length - 1];
             if (Array.isArray(parent)) {
               parent.push(obj);
+              // If we're in the top-level array, this is a new conversation
+              if (topLevelArray && stack.length === 1) {
+                currentConversation = obj;
+                currentConversationTitle = 'Unknown Conversation';
+              }
             } else if (currentKey) {
               parent[currentKey] = obj;
             }
@@ -224,8 +256,18 @@ export async function processZipFile(
         };
 
         parser.onvalue = (value) => {
+          // Update the conversation title when we encounter it
+          if (
+            currentKey === 'title' &&
+            stack.length > 0 &&
+            stack[stack.length - 1] === currentConversation
+          ) {
+            currentConversationTitle = value as string;
+          }
+
           if (inPartsArray && typeof value === 'string') {
-            value = cleanText(value);
+            // Use the tracked conversation title
+            value = cleanText(value, currentConversationTitle);
           }
           const parent = stack[stack.length - 1];
           if (Array.isArray(parent)) {
@@ -238,7 +280,13 @@ export async function processZipFile(
         parser.oncloseobject = () => {
           const obj = stack.pop();
           if (stack.length > 0 && Array.isArray(stack[stack.length - 1])) {
-            records.push(obj);
+            if (topLevelArray && stack.length === 1) {
+              // This is a conversation object in the top-level array
+              records.push(obj);
+              currentConversationIndex = records.length - 1;
+              // Reset current conversation when we're done with it
+              currentConversation = null;
+            }
           }
         };
 
