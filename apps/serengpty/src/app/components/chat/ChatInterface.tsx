@@ -59,10 +59,17 @@ const CustomAvatar = (props: {
 };
 
 export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
-  const { userId, activeChannelId: contextActiveChannelId } =
-    useStreamChatUser();
+  const {
+    userId,
+    activeChannelId: contextActiveChannelId,
+    initialChatText,
+    setInitialChatText,
+  } = useStreamChatUser();
   const [activeChannel, setActiveChannel] = useState<string | undefined>(
     activeChannelId || contextActiveChannelId
+  );
+  const [localInitialText, setLocalInitialText] = useState<string | null>(
+    initialChatText
   );
 
   // Check for channel ID in URL on client side
@@ -82,6 +89,15 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
       setActiveChannel(contextActiveChannelId);
     }
   }, [contextActiveChannelId]);
+
+  // Store initialChatText in local state and clear the context
+  useEffect(() => {
+    if (initialChatText) {
+      setLocalInitialText(initialChatText);
+      // Clear the context value after capturing it locally
+      setInitialChatText('');
+    }
+  }, [initialChatText, setInitialChatText]);
 
   // If userId is not available, don't render the chat interface
   if (!userId) {
@@ -116,7 +132,12 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
           >
             <Window>
               <MessageList />
-              <MessageInput focus noFiles />
+              <MessageInput
+                focus
+                noFiles
+                getDefaultValue={() => localInitialText || ''}
+                grow={true}
+              />
             </Window>
             <Thread />
           </Channel>

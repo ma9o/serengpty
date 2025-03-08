@@ -13,6 +13,7 @@ interface ChatButtonProps {
   variant?: 'default' | 'outline' | 'ghost';
   size?: 'default' | 'sm' | 'lg' | 'icon';
   className?: string;
+  initialText?: string;
 }
 
 export function ChatButton({
@@ -21,6 +22,7 @@ export function ChatButton({
   variant = 'default',
   size = 'sm',
   className,
+  initialText,
 }: ChatButtonProps) {
   const { userId, userToken, userName } = useStreamChatUser();
   const { client } = useChatClient(userId, userToken, userName);
@@ -50,7 +52,8 @@ export function ChatButton({
         userId,
         otherUserId,
         client,
-        otherUserName
+        otherUserName,
+        initialText
       );
 
       if (!result) {

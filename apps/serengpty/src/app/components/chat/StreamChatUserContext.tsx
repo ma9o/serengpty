@@ -24,6 +24,8 @@ interface StreamChatUserContextType {
   setUnreadCount: (count: number) => void;
   activeChannelId: string | null;
   setActiveChannelId: (channelId: string) => void;
+  initialChatText: string | null;
+  setInitialChatText: (text: string) => void;
 }
 
 const StreamChatUserContext = createContext<StreamChatUserContextType>({
@@ -36,6 +38,8 @@ const StreamChatUserContext = createContext<StreamChatUserContextType>({
   setUnreadCount: (count: number) => { /* Implementation to be added */ },
   activeChannelId: null,
   setActiveChannelId: (channelId: string) => { /* Implementation to be added */ },
+  initialChatText: null,
+  setInitialChatText: (text: string) => { /* Implementation to be added */ },
 });
 
 export const useStreamChatUser = () => useContext(StreamChatUserContext);
@@ -54,6 +58,7 @@ export const StreamChatUserProvider = ({
   const [unreadCount, setUnreadCount] = useState(0);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [initialChatText, setInitialChatText] = useState<string | null>(null);
 
   // Register for notification updates
   useEffect(() => {
@@ -126,6 +131,8 @@ export const StreamChatUserProvider = ({
         setUnreadCount,
         activeChannelId,
         setActiveChannelId,
+        initialChatText,
+        setInitialChatText,
       }}
     >
       {children}

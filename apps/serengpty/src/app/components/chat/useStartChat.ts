@@ -7,7 +7,7 @@ import { useStreamChatUser } from './StreamChatUserContext';
 
 export const useStartChat = () => {
   const router = useRouter();
-  const { setActiveChannelId } = useStreamChatUser();
+  const { setActiveChannelId, setInitialChatText } = useStreamChatUser();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -15,7 +15,8 @@ export const useStartChat = () => {
     currentUserId: string,
     otherUserId: string,
     chatClient: StreamChat | undefined,
-    otherUserName: string
+    otherUserName: string,
+    initialText?: string
   ) => {
     if (!chatClient) {
       setError(new Error('Chat client not initialized'));
@@ -37,6 +38,11 @@ export const useStartChat = () => {
       // Set active channel in context immediately
       if (channel.id) {
         setActiveChannelId(channel.id);
+        
+        // Store the initial text if provided
+        if (initialText) {
+          setInitialChatText(initialText);
+        }
       }
 
       // Navigate to the chat page with the specific channel ID

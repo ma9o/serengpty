@@ -582,6 +582,7 @@ function PathDetails({
             otherUserName={matchedUser.name}
             variant="default"
             size="default"
+            initialText={processedCallToAction}
           />
         </div>
       </div>
