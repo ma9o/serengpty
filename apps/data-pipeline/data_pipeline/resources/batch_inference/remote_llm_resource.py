@@ -225,15 +225,16 @@ class RemoteLlmResource(BaseLlmResource):
 
         return conversation, total_cost
 
-    async def _get_prompt_sequences_completions_batch_async(
+    async def get_prompt_sequences_completions_batch_async(
         self, prompt_sequences: list[PromptSequence]
     ) -> tuple[list[list[str]], float]:
-        self._remaining_reqs = len(prompt_sequences) * len(prompt_sequences[0])
-        self._status_printer_task = asyncio.create_task(self._periodic_status_printer())
         """
         This method is used to get completions for multiple prompt sequences in parallel.
         Prompt sequence items (other than the first in the list) can be callables that take
-        the previous assistant response as input and return the next user prompt based on custom logic"""
+        the previous assistant response as input and return the next user prompt based on custom logic
+        """
+        self._remaining_reqs = len(prompt_sequences) * len(prompt_sequences[0])
+        self._status_printer_task = asyncio.create_task(self._periodic_status_printer())
 
         results = await asyncio.gather(
             *(
@@ -260,29 +261,6 @@ class RemoteLlmResource(BaseLlmResource):
             )
         ), sum(costs)
 
-    def get_prompt_sequences_completions_batch(
-        self, prompt_sequences: list[PromptSequence]
-    ) -> tuple[list[PromptSequence], float]:
-        """
-        Synchronous wrapper for the async get_prompt_sequences_completions_batch function.
-        Uses a thread to run the async function in a new event loop.
-        """
-        # Check if client is closed and recreate if necessary
-        if self._client.is_closed:
-            self._client = self._create_client()
-
-        def run_async_in_thread(async_func: Callable, *args) -> Any:
-            # Use the existing event loop instead of creating a new one
-            return self._loop.run_until_complete(async_func(*args))
-
-        # Create a thread to run the async function
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(
-                run_async_in_thread,
-                self._get_prompt_sequences_completions_batch_async,
-                prompt_sequences,
-            )
-            return future.result()
 
     async def teardown_after_execution(self, context: InitResourceContext) -> None:
         await self._client.aclose()

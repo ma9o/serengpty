@@ -8,7 +8,7 @@ from data_pipeline.resources.batch_inference.base_llm_resource import LlmConfig
 from data_pipeline.resources.batch_inference.llm_factory import create_llm_resource
 
 
-def test_remote_llm_call(config: LlmConfig, api_key_var_name: str):
+async def test_remote_llm_call(config: LlmConfig, api_key_var_name: str):
     dotenv.load_dotenv()
 
     # Need to manaully read the api key from the env
@@ -23,5 +23,5 @@ def test_remote_llm_call(config: LlmConfig, api_key_var_name: str):
     context = build_init_resource_context()
     resource.setup_for_execution(context)  # type: ignore
     t0 = time.time()
-    print(resource.get_prompt_sequences_completions_batch([["Hi"]]))  # type: ignore
+    print(await resource.get_prompt_sequences_completions_batch_async([["Hi"]]))  # type: ignore
     print(time.time() - t0)

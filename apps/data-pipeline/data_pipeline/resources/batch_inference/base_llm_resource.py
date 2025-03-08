@@ -26,7 +26,7 @@ class BaseLlmResource(ConfigurableResource, ABC):
         pass
 
     @abstractmethod
-    def get_prompt_sequences_completions_batch(
+    async def get_prompt_sequences_completions_batch_async(
         self, prompt_sequences: Sequence[PromptSequence]
     ) -> tuple[list[list[str]], float]:
         """

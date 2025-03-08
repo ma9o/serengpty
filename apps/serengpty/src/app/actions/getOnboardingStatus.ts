@@ -3,8 +3,11 @@
 import { prisma } from '../services/db/prisma';
 import { getCurrentUser } from './getCurrentUser';
 
-// Queue duration in minutes - estimated time for processing a single user
-const USER_PROCESSING_TIME_MINUTES = 10;
+// Each user's parallel portion, in minutes
+const PARALLEL_PORTION_MINUTES = 6;
+
+// Each user's blocking portion, in minutes
+const BLOCKING_PORTION_MINUTES = 2;
 
 /**
  * Gets the queue position and estimated completion time for the current user.
@@ -17,7 +20,7 @@ export async function getOnboardingStatus(): Promise<{
   message?: string;
 }> {
   try {
-    // Get current user from session
+    // 1. Get current user from session
     const user = await getCurrentUser();
     if (!user) {
       return {
@@ -30,7 +33,7 @@ export async function getOnboardingStatus(): Promise<{
 
     const userId = user.id;
 
-    // Check if user already has userPaths
+    // 2. Check if user already has userPaths
     const currentUser = await prisma.user.findUnique({
       where: { id: userId },
       include: { userPaths: true },
@@ -45,7 +48,7 @@ export async function getOnboardingStatus(): Promise<{
       };
     }
 
-    // If user already has paths, they're not in the queue
+    // 3. If user already has paths, they're not in the queue
     if (currentUser.userPaths.length > 0) {
       return {
         queuePosition: 0,
@@ -54,7 +57,7 @@ export async function getOnboardingStatus(): Promise<{
       };
     }
 
-    // Find all users without userPaths, sorted by creation date
+    // 4. Find all users without userPaths, sorted by creation date
     const usersInQueue = await prisma.user.findMany({
       where: {
         userPaths: {
@@ -70,34 +73,40 @@ export async function getOnboardingStatus(): Promise<{
       },
     });
 
-    // Find position of current user in the queue
-    const queuePosition =
-      usersInQueue.findIndex((user) => user.id === userId) + 1;
-
-    // Calculate estimated completion time
+    // 5. We'll loop to find:
+    //    - queuePosition (index + 1)
+    //    - how many minutes from "now" until the *current user* finishes
+    const now = new Date();
+    let blockEndTime = 0; // in minutes from now
+    let queuePosition = 0; // will increment as we iterate
     let estimatedTimeMinutes = 0;
 
-    if (queuePosition > 1) {
-      // There are users ahead in the queue
-      const precedingUsers = queuePosition - 1;
-      estimatedTimeMinutes =
-        precedingUsers * USER_PROCESSING_TIME_MINUTES +
-        USER_PROCESSING_TIME_MINUTES;
-    } else if (queuePosition === 1) {
-      // User is first in queue - calculate based on user creation time
-      const now = new Date();
-      const userCreatedAt = currentUser.createdAt;
-      
-      // Calculate how long the user has been in the queue (in minutes)
-      const queueTimeMinutes = (now.getTime() - userCreatedAt.getTime()) / (1000 * 60);
-      
-      // Estimate remaining time
-      const remainingMinutes = Math.max(0, USER_PROCESSING_TIME_MINUTES - queueTimeMinutes);
-      estimatedTimeMinutes = Math.ceil(remainingMinutes);
-      
-      // If timer would have expired, set to a minimum time
-      if (estimatedTimeMinutes <= 0) {
-        estimatedTimeMinutes = 1;
+    for (const queueUser of usersInQueue) {
+      queuePosition++;
+
+      // (A) How long the queueUser has already been waiting (in minutes)
+      const timeInQueue =
+        (now.getTime() - queueUser.createdAt.getTime()) / (1000 * 60);
+
+      // (B) Parallel portion left for this user
+      let parallelTimeRemaining = PARALLEL_PORTION_MINUTES - timeInQueue;
+      if (parallelTimeRemaining < 0) {
+        parallelTimeRemaining = 0;
+      }
+
+      // (C) They can't start blocking until:
+      //     - Their parallel portion is done
+      //     - The previous user's blocking portion has finished
+      const startBlocking = Math.max(blockEndTime, parallelTimeRemaining);
+
+      // (D) Blocking finishes 2 minutes later
+      const finishBlocking = startBlocking + BLOCKING_PORTION_MINUTES;
+      blockEndTime = finishBlocking;
+
+      // (E) If this is our user, we know how long from now it takes to finish
+      if (queueUser.id === userId) {
+        estimatedTimeMinutes = blockEndTime;
+        break;
       }
     }
 

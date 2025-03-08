@@ -150,7 +150,7 @@ async def conversation_summaries(
     (
         summaries_completions,
         cost,
-    ) = llm.get_prompt_sequences_completions_batch(
+    ) = await llm.get_prompt_sequences_completions_batch_async(
         prompt_sequences,
     )
 

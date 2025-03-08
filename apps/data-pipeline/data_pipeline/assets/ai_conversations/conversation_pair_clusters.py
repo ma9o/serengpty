@@ -25,7 +25,7 @@ from data_pipeline.partitions import user_partitions_def
 
 class ConversationPairClustersConfig(RowLimitConfig):
     # Number of top similar users to consider
-    top_k_users: int = 10
+    top_k_users: int = 5
     # Maximum number of items allowed per cluster
     max_items_per_cluster: Optional[int] = (
         100  # Depends on the strenght of the LLM downstream

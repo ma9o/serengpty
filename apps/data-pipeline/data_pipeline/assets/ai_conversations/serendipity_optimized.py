@@ -1,4 +1,4 @@
-import concurrent.futures
+import asyncio
 import datetime
 import uuid
 from collections import defaultdict
@@ -137,7 +137,7 @@ def _prepare_clusters(
     return cluster_data
 
 
-def _generate_paths(
+async def _generate_paths(
     cluster_data: Dict[int, Dict],
     current_user_id: str,
     gemini_flash: BaseLlmResource,
@@ -241,7 +241,7 @@ def _generate_paths(
                 continue
 
             # Generate path (batch size of 1)
-            completions, cost = gemini_flash.get_prompt_sequences_completions_batch(
+            completions, cost = await gemini_flash.get_prompt_sequences_completions_batch_async(
                 [[prompt]]
             )
             total_cost += cost
@@ -367,7 +367,7 @@ def _fix_duplicates(df: pl.DataFrame, logger) -> pl.DataFrame:
     ins={"cluster_categorizations": AssetIn(key="cluster_categorizations")},
     io_manager_key="parquet_io_manager",
 )
-def serendipity_optimized(
+async def serendipity_optimized(
     context: AssetExecutionContext,
     config: SerendipityOptimizedConfig,
     gemini_flash: BaseLlmResource,
@@ -403,28 +403,28 @@ def serendipity_optimized(
             match_group_data[mg_id] = {}
         match_group_data[mg_id][cid] = data
 
-    # Generate paths in parallel (one task per match_group_id)
+    # Generate paths in parallel using asyncio (one task per match_group_id)
     paths: List[Dict] = []
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_to_group = {
-            executor.submit(
-                _generate_paths,
+    tasks = []
+    for mg_id, group_data in match_group_data.items():
+        task = asyncio.create_task(
+            _generate_paths(
                 group_data,
                 current_user_id,
                 gemini_flash,
                 logger,
                 config,
-            ): mg_id
-            for mg_id, group_data in match_group_data.items()
-        }
-        for future in concurrent.futures.as_completed(future_to_group):
-            mg_id = future_to_group[future]
-            try:
-                group_paths = future.result()
-                if group_paths:
-                    paths.extend(group_paths)
-            except Exception as e:
-                logger.warning(f"Error processing match group {mg_id}: {e}")
+            )
+        )
+        tasks.append((mg_id, task))
+    
+    for mg_id, task in tasks:
+        try:
+            group_paths = await task
+            if group_paths:
+                paths.extend(group_paths)
+        except Exception as e:
+            logger.warning(f"Error processing match group {mg_id}: {e}")
 
     if not paths:
         return pl.DataFrame(schema=get_out_df_schema())

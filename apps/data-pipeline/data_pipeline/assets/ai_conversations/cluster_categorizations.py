@@ -93,7 +93,7 @@ def parse_cluster_categorization(completion: str) -> dict:
     io_manager_key="parquet_io_manager",
     # pool="gpt4o_mini",
 )
-def cluster_categorizations(
+async def cluster_categorizations(
     context: AssetExecutionContext,
     config: ClusterCategorizationsConfig,
     gpt4o_mini: BaseLlmResource,
@@ -177,7 +177,7 @@ def cluster_categorizations(
     # Only make LLM call if we have prompts to process
     if all_prompt_sequences:
         # Get LLM completions for all clusters in a single batch call
-        completions, total_cost = gpt4o_mini.get_prompt_sequences_completions_batch(
+        completions, total_cost = await gpt4o_mini.get_prompt_sequences_completions_batch_async(
             all_prompt_sequences
         )
 
