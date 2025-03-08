@@ -145,10 +145,8 @@ export function ZipOnboardingForm() {
       formData.append('conversations', JSON.stringify(cleanedConversations));
       formData.append('password', password);
 
-      // Add custom username if provided
-      if (customUsername) {
-        formData.append('username', customUsername);
-      }
+      // Add username 
+      formData.append('username', customUsername);
 
       // Send the data to our signup API
       // Simulated upload progress
@@ -322,15 +320,15 @@ export function ZipOnboardingForm() {
               <div className="flex flex-col items-center gap-4 w-[470px]">
                 <div className="w-full">
                   <label
-                    htmlFor="custom-username"
+                    htmlFor="username"
                     className="block text-sm font-medium mb-1"
                   >
                     Choose a username
                   </label>
                   <div className="relative">
                     <Input
-                      id="custom-username"
-                      name="custom-username"
+                      id="username" 
+                      name="username"
                       type="text"
                       value={customUsername}
                       onChange={(e) => setCustomUsername(e.target.value)}
@@ -359,27 +357,36 @@ export function ZipOnboardingForm() {
 
                 <div className="w-full">
                   <label
-                    htmlFor="password"
+                    htmlFor="passwordDisplay"
                     className="block text-sm font-medium mb-1"
                   >
                     Your generated password
                   </label>
                   <div className="relative">
-                    <Input
+                    {/* Hidden password field for browser detection */}
+                    <input
                       id="password"
                       name="password"
+                      type="password"
+                      value={password || ''}
+                      readOnly
+                      style={{ display: 'none' }}
+                      autoComplete="new-password"
+                    />
+                    {/* Visible text field for user display */}
+                    <Input
+                      id="passwordDisplay"
                       type="text"
                       value={password}
                       readOnly
                       className="font-mono w-full"
-                      autoComplete="new-password"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       className="absolute right-2 top-1/2 -translate-y-1/2"
                       onClick={() => {
-                        navigator.clipboard.writeText(password);
+                        navigator.clipboard.writeText(password || '');
                         toast({
                           description: 'Password copied to clipboard',
                           duration: 2000,
