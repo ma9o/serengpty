@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { Avatar, AvatarImage, AvatarFallback } from '@enclaveid/ui/avatar';
 import { Skeleton } from '@enclaveid/ui/skeleton';
@@ -38,6 +38,72 @@ type User = Pick<
   UserPathsResponse[number]['users'][number],
   'id' | 'name' | 'country'
 >;
+
+/**
+ * Utility function to replace <USER_1>, <USER_2>, and <USER> placeholders with actual usernames
+ * @param text The text containing placeholders
+ * @param currentUserName Name of the current user
+ * @param otherUserName Name of the other user
+ * @param currentUserPath The path data for the current user
+ * @param matchedUserPath The path data for the matched user
+ * @param isCurrentUserContext Optional flag to indicate if we're in current user's context 
+ * @returns The text with placeholders replaced with proper usernames
+ */
+function replaceUserPlaceholders(
+  text: string,
+  currentUserName: string,
+  otherUserName: string,
+  currentUserPath: {
+    uniqueSummary: string;
+    user: { id: string; name: string };
+  },
+  matchedUserPath: {
+    uniqueSummary: string;
+    user: { id: string; name: string };
+  },
+  isCurrentUserContext?: boolean
+): string {
+  // Determine which user is USER_1 and which is USER_2 by checking the uniqueSummary field
+  let user1Name: string;
+  let user2Name: string;
+  
+  // If the current user's path contains <USER_1>, then the current user is USER_1
+  if (currentUserPath.uniqueSummary.includes('<USER_1>')) {
+    user1Name = currentUserName;
+    user2Name = otherUserName;
+  } else if (currentUserPath.uniqueSummary.includes('<USER_2>')) {
+    user1Name = otherUserName;
+    user2Name = currentUserName;
+  } else {
+    // If we can't determine from the current user's path, check the matched user's path
+    if (matchedUserPath.uniqueSummary.includes('<USER_1>')) {
+      user1Name = otherUserName;
+      user2Name = currentUserName;
+    } else {
+      // Default fallback if we can't determine from either path
+      user1Name = currentUserName;
+      user2Name = otherUserName;
+    }
+  }
+  
+  // Replace placeholders with actual names
+  let processed = text
+    .replace(/<USER_1>/g, user1Name)
+    .replace(/<USER_2>/g, user2Name);
+    
+  // Replace generic <USER> placeholder based on context
+  if (typeof isCurrentUserContext !== 'undefined') {
+    // If we know the context, replace with the appropriate name
+    processed = processed.replace(/<USER>/g, isCurrentUserContext ? currentUserName : otherUserName);
+  } else {
+    // If we don't know the context, replace based on the conversation context
+    // If it's in "Your Perspective" or "Your Unique Conversations", use current user
+    // Otherwise, use the conversation user if available
+    processed = processed.replace(/<USER>/g, currentUserName);
+  }
+  
+  return processed;
+}
 
 interface VerticalSerendipitousPathsProps {
   initialData?: UserPathsResponse;
@@ -156,33 +222,68 @@ export function VerticalSerendipitousPaths({
               }}
               className="space-y-2"
             >
-              {selectedMatch.serendipitousPaths.map((path) => (
-                <AccordionItem
-                  key={path.id}
-                  value={path.id}
-                  className="border rounded-lg overflow-hidden shadow-sm"
-                >
-                  <div
-                    className={cn(
-                      'bg-background rounded-lg hover:bg-muted/50 transition-colors',
-                      selectedPathId === path.id && 'bg-muted/50'
-                    )}
+              {selectedMatch.serendipitousPaths.map((path) => {
+                // Find current user and matched user paths for this serendipitous path
+                const pMatchedUserPath = path.userPaths.find(
+                  (p) => p.user.id === matchedUser.id
+                );
+                const pCurrentUserPath = path.userPaths.find(
+                  (p) => p.user.id !== matchedUser.id
+                );
+                
+                // Only proceed with replacement if we have both paths
+                let processedTitle = path.title;
+                let processedSummary = path.commonSummary;
+                
+                if (pCurrentUserPath && pMatchedUserPath) {
+                  const currentUserName = pCurrentUserPath.user.name;
+                  
+                  // Process title and summary
+                  processedTitle = replaceUserPlaceholders(
+                    path.title,
+                    currentUserName,
+                    matchedUser.name,
+                    pCurrentUserPath,
+                    pMatchedUserPath
+                  );
+                  
+                  processedSummary = replaceUserPlaceholders(
+                    path.commonSummary,
+                    currentUserName,
+                    matchedUser.name,
+                    pCurrentUserPath,
+                    pMatchedUserPath
+                  );
+                }
+                
+                return (
+                  <AccordionItem
+                    key={path.id}
+                    value={path.id}
+                    className="border rounded-lg overflow-hidden shadow-sm"
                   >
-                    <AccordionTrigger className="px-3 py-3 hover:no-underline rounded-lg focus:outline-none">
-                      <div className="w-full text-left">
-                        <div className="font-medium mb-1">{path.title}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {path.commonSummary}
+                    <div
+                      className={cn(
+                        'bg-background rounded-lg hover:bg-muted/50 transition-colors',
+                        selectedPathId === path.id && 'bg-muted/50'
+                      )}
+                    >
+                      <AccordionTrigger className="px-3 py-3 hover:no-underline rounded-lg focus:outline-none">
+                        <div className="w-full text-left">
+                          <div className="font-medium mb-1">{processedTitle}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {processedSummary}
+                          </div>
                         </div>
-                      </div>
-                    </AccordionTrigger>
-                  </div>
+                      </AccordionTrigger>
+                    </div>
 
-                  <AccordionContent className="px-4 pt-2 pb-4 border-t transition-all">
-                    <PathDetails path={path} matchedUser={matchedUser} />
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
+                    <AccordionContent className="px-4 pt-2 pb-4 border-t transition-all">
+                      <PathDetails path={path} matchedUser={matchedUser} />
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
             </Accordion>
           </div>
         </ScrollArea>
@@ -267,6 +368,54 @@ function PathDetails({
       </div>
     );
   }
+  
+  // Get current user's name from the path data
+  const currentUserName = currentUserPath.user.name;
+  
+  // Process all text fields to replace <USER_1> and <USER_2> with actual usernames
+  const processedCommonSummary = useMemo(() => 
+    replaceUserPlaceholders(
+      path.commonSummary,
+      currentUserName,
+      matchedUser.name,
+      currentUserPath,
+      matchedUserPath
+    ),
+    [path.commonSummary, currentUserName, matchedUser.name, currentUserPath, matchedUserPath]
+  );
+  
+  const processedCurrentUserSummary = useMemo(() => 
+    replaceUserPlaceholders(
+      currentUserPath.uniqueSummary,
+      currentUserName,
+      matchedUser.name,
+      currentUserPath,
+      matchedUserPath
+    ),
+    [currentUserPath.uniqueSummary, currentUserName, matchedUser.name, currentUserPath, matchedUserPath]
+  );
+  
+  const processedMatchedUserSummary = useMemo(() => 
+    replaceUserPlaceholders(
+      matchedUserPath.uniqueSummary,
+      currentUserName,
+      matchedUser.name,
+      currentUserPath,
+      matchedUserPath
+    ),
+    [matchedUserPath.uniqueSummary, currentUserName, matchedUser.name, currentUserPath, matchedUserPath]
+  );
+  
+  const processedCallToAction = useMemo(() => 
+    replaceUserPlaceholders(
+      currentUserPath.uniqueCallToAction,
+      currentUserName,
+      matchedUser.name,
+      currentUserPath,
+      matchedUserPath
+    ),
+    [currentUserPath.uniqueCallToAction, currentUserName, matchedUser.name, currentUserPath, matchedUserPath]
+  );
 
   return (
     <div className="space-y-6">
@@ -275,7 +424,7 @@ function PathDetails({
         {/* Common Summary with View Conversations Button */}
         <div className="p-4 bg-muted rounded-lg relative">
           <h3 className="text-lg font-medium mb-2">Common Interest</h3>
-          <p>{path.commonSummary}</p>
+          <p>{processedCommonSummary}</p>
           <div className="mt-3">
             <Dialog>
               <DialogTrigger asChild>
@@ -290,7 +439,14 @@ function PathDetails({
                     Conversations shared between users in this path
                   </DialogDescription>
                 </DialogHeader>
-                <ConversationsList conversations={path.commonConversations} />
+                <ConversationsList 
+                  conversations={path.commonConversations} 
+                  currentUserName={currentUserName}
+                  matchedUserName={matchedUser.name}
+                  currentUserPath={currentUserPath}
+                  matchedUserPath={matchedUserPath}
+                  // Common conversations don't belong to either user specifically
+                />
               </DialogContent>
             </Dialog>
           </div>
@@ -312,7 +468,7 @@ function PathDetails({
           {/* Your Path */}
           <div className="p-4 bg-muted rounded-lg">
             <h3 className="text-lg font-medium mb-2">Your Perspective</h3>
-            <p>{currentUserPath.uniqueSummary}</p>
+            <p>{processedCurrentUserSummary}</p>
             <div className="mt-3">
               <Dialog>
                 <DialogTrigger asChild>
@@ -329,6 +485,11 @@ function PathDetails({
                   </DialogHeader>
                   <ConversationsList
                     conversations={currentUserPath.uniqueConversations}
+                    currentUserName={currentUserName}
+                    matchedUserName={matchedUser.name}
+                    currentUserPath={currentUserPath}
+                    matchedUserPath={matchedUserPath}
+                    isCurrentUserContext={true} // These are current user's conversations
                   />
                 </DialogContent>
               </Dialog>
@@ -342,7 +503,7 @@ function PathDetails({
             <h3 className="text-lg font-medium mb-2">
               {matchedUser.name}&apos;s Perspective
             </h3>
-            <p>{matchedUserPath.uniqueSummary}</p>
+            <p>{processedMatchedUserSummary}</p>
             <div className="mt-3">
               <Dialog>
                 <DialogTrigger asChild>
@@ -362,6 +523,11 @@ function PathDetails({
                   </DialogHeader>
                   <ConversationsList
                     conversations={matchedUserPath.uniqueConversations}
+                    currentUserName={currentUserName}
+                    matchedUserName={matchedUser.name}
+                    currentUserPath={currentUserPath}
+                    matchedUserPath={matchedUserPath}
+                    isCurrentUserContext={false} // These are the other user's conversations
                   />
                 </DialogContent>
               </Dialog>
@@ -384,7 +550,7 @@ function PathDetails({
         <div className="flex-1 bg-muted p-4 rounded-lg text-center flex flex-col items-center justify-center">
           <h3 className="text-lg font-medium mb-2">Start a Conversation</h3>
           <p className="text-muted-foreground mb-3">
-            {currentUserPath.uniqueCallToAction}
+            {processedCallToAction}
           </p>
           <ChatButton
             otherUserId={matchedUser.id}
@@ -401,6 +567,11 @@ function PathDetails({
 // Conversations list component for modals
 function ConversationsList({
   conversations = [],
+  currentUserName,
+  matchedUserName,
+  currentUserPath,
+  matchedUserPath,
+  isCurrentUserContext,
 }: {
   conversations?: Array<{
     id: string;
@@ -411,6 +582,17 @@ function ConversationsList({
       name: string;
     };
   }>;
+  currentUserName?: string;
+  matchedUserName?: string;
+  currentUserPath?: {
+    uniqueSummary: string;
+    user: { id: string; name: string };
+  };
+  matchedUserPath?: {
+    uniqueSummary: string;
+    user: { id: string; name: string };
+  };
+  isCurrentUserContext?: boolean;
 }) {
   if (!conversations || conversations.length === 0) {
     return (
@@ -419,6 +601,31 @@ function ConversationsList({
       </div>
     );
   }
+
+  // Process each conversation summary if we have the user names and paths
+  const processConversationSummary = (summary: string, conversationUser?: { id: string, name: string }) => {
+    if (currentUserName && matchedUserName && currentUserPath && matchedUserPath) {
+      // Determine if this conversation is from the current user's context
+      // If isCurrentUserContext is provided, use that
+      // Otherwise, try to determine based on the conversation user
+      let contextIsCurrentUser = isCurrentUserContext;
+      
+      if (typeof contextIsCurrentUser === 'undefined' && conversationUser) {
+        // If conversation user matches current user's ID, it's the current user's context
+        contextIsCurrentUser = conversationUser.id === currentUserPath.user.id;
+      }
+      
+      return replaceUserPlaceholders(
+        summary,
+        currentUserName,
+        matchedUserName,
+        currentUserPath,
+        matchedUserPath,
+        contextIsCurrentUser
+      );
+    }
+    return summary;
+  };
 
   return (
     <div className="space-y-4 mt-4">
@@ -448,7 +655,7 @@ function ConversationsList({
               {new Date(conversation.datetime).toLocaleDateString()} at{' '}
               {new Date(conversation.datetime).toLocaleTimeString()}
             </p>
-            <p>{conversation.summary}</p>
+            <p>{processConversationSummary(conversation.summary, conversation.user)}</p>
           </div>
         ))}
       </ScrollArea>
