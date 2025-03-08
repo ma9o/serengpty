@@ -46,7 +46,7 @@ type User = Pick<
  * @param otherUserName Name of the other user
  * @param currentUserPath The path data for the current user
  * @param matchedUserPath The path data for the matched user
- * @param isCurrentUserContext Optional flag to indicate if we're in current user's context 
+ * @param isCurrentUserContext Optional flag to indicate if we're in current user's context
  * @returns The text with placeholders replaced with proper usernames
  */
 function replaceUserPlaceholders(
@@ -66,7 +66,7 @@ function replaceUserPlaceholders(
   // Determine which user is USER_1 and which is USER_2 by checking the uniqueSummary field
   let user1Name: string;
   let user2Name: string;
-  
+
   // If the current user's path contains <USER_1>, then the current user is USER_1
   if (currentUserPath.uniqueSummary.includes('<USER_1>')) {
     user1Name = currentUserName;
@@ -85,23 +85,26 @@ function replaceUserPlaceholders(
       user2Name = otherUserName;
     }
   }
-  
+
   // Replace placeholders with actual names
   let processed = text
     .replace(/<USER_1>/g, user1Name)
     .replace(/<USER_2>/g, user2Name);
-    
+
   // Replace generic <USER> placeholder based on context
   if (typeof isCurrentUserContext !== 'undefined') {
     // If we know the context, replace with the appropriate name
-    processed = processed.replace(/<USER>/g, isCurrentUserContext ? currentUserName : otherUserName);
+    processed = processed.replace(
+      /<USER>/g,
+      isCurrentUserContext ? currentUserName : otherUserName
+    );
   } else {
     // If we don't know the context, replace based on the conversation context
     // If it's in "Your Perspective" or "Your Unique Conversations", use current user
     // Otherwise, use the conversation user if available
     processed = processed.replace(/<USER>/g, currentUserName);
   }
-  
+
   return processed;
 }
 
@@ -230,14 +233,14 @@ export function VerticalSerendipitousPaths({
                 const pCurrentUserPath = path.userPaths.find(
                   (p) => p.user.id !== matchedUser.id
                 );
-                
+
                 // Only proceed with replacement if we have both paths
                 let processedTitle = path.title;
                 let processedSummary = path.commonSummary;
-                
+
                 if (pCurrentUserPath && pMatchedUserPath) {
                   const currentUserName = pCurrentUserPath.user.name;
-                  
+
                   // Process title and summary
                   processedTitle = replaceUserPlaceholders(
                     path.title,
@@ -246,7 +249,7 @@ export function VerticalSerendipitousPaths({
                     pCurrentUserPath,
                     pMatchedUserPath
                   );
-                  
+
                   processedSummary = replaceUserPlaceholders(
                     path.commonSummary,
                     currentUserName,
@@ -255,7 +258,7 @@ export function VerticalSerendipitousPaths({
                     pMatchedUserPath
                   );
                 }
-                
+
                 return (
                   <AccordionItem
                     key={path.id}
@@ -270,7 +273,9 @@ export function VerticalSerendipitousPaths({
                     >
                       <AccordionTrigger className="px-3 py-3 hover:no-underline rounded-lg focus:outline-none">
                         <div className="w-full text-left">
-                          <div className="font-medium mb-1">{processedTitle}</div>
+                          <div className="font-medium mb-1">
+                            {processedTitle}
+                          </div>
                           <div className="text-sm text-muted-foreground">
                             {processedSummary}
                           </div>
@@ -368,53 +373,81 @@ function PathDetails({
       </div>
     );
   }
-  
+
   // Get current user's name from the path data
   const currentUserName = currentUserPath.user.name;
-  
+
   // Process all text fields to replace <USER_1> and <USER_2> with actual usernames
-  const processedCommonSummary = useMemo(() => 
-    replaceUserPlaceholders(
+  const processedCommonSummary = useMemo(
+    () =>
+      replaceUserPlaceholders(
+        path.commonSummary,
+        currentUserName,
+        matchedUser.name,
+        currentUserPath,
+        matchedUserPath
+      ),
+    [
       path.commonSummary,
       currentUserName,
       matchedUser.name,
       currentUserPath,
-      matchedUserPath
-    ),
-    [path.commonSummary, currentUserName, matchedUser.name, currentUserPath, matchedUserPath]
+      matchedUserPath,
+    ]
   );
-  
-  const processedCurrentUserSummary = useMemo(() => 
-    replaceUserPlaceholders(
+
+  const processedCurrentUserSummary = useMemo(
+    () =>
+      replaceUserPlaceholders(
+        currentUserPath.uniqueSummary,
+        currentUserName,
+        matchedUser.name,
+        currentUserPath,
+        matchedUserPath
+      ),
+    [
       currentUserPath.uniqueSummary,
       currentUserName,
       matchedUser.name,
       currentUserPath,
-      matchedUserPath
-    ),
-    [currentUserPath.uniqueSummary, currentUserName, matchedUser.name, currentUserPath, matchedUserPath]
+      matchedUserPath,
+    ]
   );
-  
-  const processedMatchedUserSummary = useMemo(() => 
-    replaceUserPlaceholders(
+
+  const processedMatchedUserSummary = useMemo(
+    () =>
+      replaceUserPlaceholders(
+        matchedUserPath.uniqueSummary,
+        currentUserName,
+        matchedUser.name,
+        currentUserPath,
+        matchedUserPath
+      ),
+    [
       matchedUserPath.uniqueSummary,
       currentUserName,
       matchedUser.name,
       currentUserPath,
-      matchedUserPath
-    ),
-    [matchedUserPath.uniqueSummary, currentUserName, matchedUser.name, currentUserPath, matchedUserPath]
+      matchedUserPath,
+    ]
   );
-  
-  const processedCallToAction = useMemo(() => 
-    replaceUserPlaceholders(
+
+  const processedCallToAction = useMemo(
+    () =>
+      replaceUserPlaceholders(
+        currentUserPath.uniqueCallToAction,
+        currentUserName,
+        matchedUser.name,
+        currentUserPath,
+        matchedUserPath
+      ),
+    [
       currentUserPath.uniqueCallToAction,
       currentUserName,
       matchedUser.name,
       currentUserPath,
-      matchedUserPath
-    ),
-    [currentUserPath.uniqueCallToAction, currentUserName, matchedUser.name, currentUserPath, matchedUserPath]
+      matchedUserPath,
+    ]
   );
 
   return (
@@ -439,8 +472,8 @@ function PathDetails({
                     Conversations shared between users in this path
                   </DialogDescription>
                 </DialogHeader>
-                <ConversationsList 
-                  conversations={path.commonConversations} 
+                <ConversationsList
+                  conversations={path.commonConversations}
                   currentUserName={currentUserName}
                   matchedUserName={matchedUser.name}
                   currentUserPath={currentUserPath}
@@ -549,9 +582,7 @@ function PathDetails({
         {/* Call to Action */}
         <div className="flex-1 bg-muted p-4 rounded-lg text-center flex flex-col items-center justify-center">
           <h3 className="text-lg font-medium mb-2">Start a Conversation</h3>
-          <p className="text-muted-foreground mb-3">
-            {processedCallToAction}
-          </p>
+          <p className="text-muted-foreground mb-3">{processedCallToAction}</p>
           <ChatButton
             otherUserId={matchedUser.id}
             otherUserName={matchedUser.name}
@@ -575,6 +606,7 @@ function ConversationsList({
 }: {
   conversations?: Array<{
     id: string;
+    title?: string;
     summary: string;
     datetime: Date;
     user?: {
@@ -603,18 +635,26 @@ function ConversationsList({
   }
 
   // Process each conversation summary if we have the user names and paths
-  const processConversationSummary = (summary: string, conversationUser?: { id: string, name: string }) => {
-    if (currentUserName && matchedUserName && currentUserPath && matchedUserPath) {
+  const processConversationSummary = (
+    summary: string,
+    conversationUser?: { id: string; name: string }
+  ) => {
+    if (
+      currentUserName &&
+      matchedUserName &&
+      currentUserPath &&
+      matchedUserPath
+    ) {
       // Determine if this conversation is from the current user's context
       // If isCurrentUserContext is provided, use that
       // Otherwise, try to determine based on the conversation user
       let contextIsCurrentUser = isCurrentUserContext;
-      
+
       if (typeof contextIsCurrentUser === 'undefined' && conversationUser) {
         // If conversation user matches current user's ID, it's the current user's context
         contextIsCurrentUser = conversationUser.id === currentUserPath.user.id;
       }
-      
+
       return replaceUserPlaceholders(
         summary,
         currentUserName,
@@ -633,7 +673,9 @@ function ConversationsList({
         {conversations.map((conversation) => (
           <div key={conversation.id} className="mb-4 p-4 border rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium">Conversation</h4>
+              <h4 className="font-medium">
+                {conversation.title || 'Conversation'}
+              </h4>
               {conversation.user && (
                 <div className="flex items-center gap-2">
                   <Avatar className="h-6 w-6">
@@ -655,7 +697,12 @@ function ConversationsList({
               {new Date(conversation.datetime).toLocaleDateString()} at{' '}
               {new Date(conversation.datetime).toLocaleTimeString()}
             </p>
-            <p>{processConversationSummary(conversation.summary, conversation.user)}</p>
+            <p>
+              {processConversationSummary(
+                conversation.summary,
+                conversation.user
+              )}
+            </p>
           </div>
         ))}
       </ScrollArea>

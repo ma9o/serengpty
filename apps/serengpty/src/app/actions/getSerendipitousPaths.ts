@@ -104,6 +104,7 @@ export async function getSerendipitousPaths() {
             commonConversations: {
               select: {
                 id: true,
+                title: true,
                 summary: true,
                 datetime: true,
                 user: {
@@ -126,6 +127,7 @@ export async function getSerendipitousPaths() {
                 uniqueConversations: {
                   select: {
                     id: true,
+                    title: true,
                     summary: true,
                     datetime: true,
                   },
