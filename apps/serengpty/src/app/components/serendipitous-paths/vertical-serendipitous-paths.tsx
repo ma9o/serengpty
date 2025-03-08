@@ -366,6 +366,65 @@ function PathDetails({
     (p) => p.user.id !== matchedUser.id
   );
 
+  // Always declare hooks at the top level, before any early returns
+  // Use empty strings as fallbacks for the text fields if paths are not found
+  const currentUserName = currentUserPath?.user.name || '';
+
+  // Process all text fields to replace <USER_1> and <USER_2> with actual usernames
+  const processedCommonSummary = useMemo(() => {
+    if (!matchedUserPath || !currentUserPath) return '';
+
+    return replaceUserPlaceholders(
+      path.commonSummary,
+      currentUserName,
+      matchedUser.name,
+      currentUserPath,
+      matchedUserPath
+    );
+  }, [
+    path.commonSummary,
+    currentUserName,
+    matchedUser.name,
+    currentUserPath,
+    matchedUserPath,
+  ]);
+
+  const processedCurrentUserSummary = useMemo(() => {
+    if (!matchedUserPath || !currentUserPath) return '';
+
+    return replaceUserPlaceholders(
+      currentUserPath.uniqueSummary,
+      currentUserName,
+      matchedUser.name,
+      currentUserPath,
+      matchedUserPath
+    );
+  }, [currentUserName, matchedUser.name, currentUserPath, matchedUserPath]);
+
+  const processedMatchedUserSummary = useMemo(() => {
+    if (!matchedUserPath || !currentUserPath) return '';
+
+    return replaceUserPlaceholders(
+      matchedUserPath.uniqueSummary,
+      currentUserName,
+      matchedUser.name,
+      currentUserPath,
+      matchedUserPath
+    );
+  }, [currentUserName, matchedUser.name, currentUserPath, matchedUserPath]);
+
+  const processedCallToAction = useMemo(() => {
+    if (!matchedUserPath || !currentUserPath) return '';
+
+    return replaceUserPlaceholders(
+      currentUserPath.uniqueCallToAction,
+      currentUserName,
+      matchedUser.name,
+      currentUserPath,
+      matchedUserPath
+    );
+  }, [currentUserName, matchedUser.name, currentUserPath, matchedUserPath]);
+
   if (!matchedUserPath || !currentUserPath) {
     return (
       <div className="text-center p-4 text-muted-foreground">
@@ -373,82 +432,6 @@ function PathDetails({
       </div>
     );
   }
-
-  // Get current user's name from the path data
-  const currentUserName = currentUserPath.user.name;
-
-  // Process all text fields to replace <USER_1> and <USER_2> with actual usernames
-  const processedCommonSummary = useMemo(
-    () =>
-      replaceUserPlaceholders(
-        path.commonSummary,
-        currentUserName,
-        matchedUser.name,
-        currentUserPath,
-        matchedUserPath
-      ),
-    [
-      path.commonSummary,
-      currentUserName,
-      matchedUser.name,
-      currentUserPath,
-      matchedUserPath,
-    ]
-  );
-
-  const processedCurrentUserSummary = useMemo(
-    () =>
-      replaceUserPlaceholders(
-        currentUserPath.uniqueSummary,
-        currentUserName,
-        matchedUser.name,
-        currentUserPath,
-        matchedUserPath
-      ),
-    [
-      currentUserPath.uniqueSummary,
-      currentUserName,
-      matchedUser.name,
-      currentUserPath,
-      matchedUserPath,
-    ]
-  );
-
-  const processedMatchedUserSummary = useMemo(
-    () =>
-      replaceUserPlaceholders(
-        matchedUserPath.uniqueSummary,
-        currentUserName,
-        matchedUser.name,
-        currentUserPath,
-        matchedUserPath
-      ),
-    [
-      matchedUserPath.uniqueSummary,
-      currentUserName,
-      matchedUser.name,
-      currentUserPath,
-      matchedUserPath,
-    ]
-  );
-
-  const processedCallToAction = useMemo(
-    () =>
-      replaceUserPlaceholders(
-        currentUserPath.uniqueCallToAction,
-        currentUserName,
-        matchedUser.name,
-        currentUserPath,
-        matchedUserPath
-      ),
-    [
-      currentUserPath.uniqueCallToAction,
-      currentUserName,
-      matchedUser.name,
-      currentUserPath,
-      matchedUserPath,
-    ]
-  );
 
   return (
     <div className="space-y-6">
@@ -465,21 +448,23 @@ function PathDetails({
                   View Conversations
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-auto">
+              <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
                 <DialogHeader>
                   <DialogTitle>Common Conversations</DialogTitle>
                   <DialogDescription>
                     Conversations shared between users in this path
                   </DialogDescription>
                 </DialogHeader>
-                <ConversationsList
-                  conversations={path.commonConversations}
-                  currentUserName={currentUserName}
-                  matchedUserName={matchedUser.name}
-                  currentUserPath={currentUserPath}
-                  matchedUserPath={matchedUserPath}
-                  // Common conversations don't belong to either user specifically
-                />
+                <div className="overflow-hidden">
+                  <ConversationsList
+                    conversations={path.commonConversations}
+                    currentUserName={currentUserName}
+                    matchedUserName={matchedUser.name}
+                    currentUserPath={currentUserPath}
+                    matchedUserPath={matchedUserPath}
+                    // Common conversations don't belong to either user specifically
+                  />
+                </div>
               </DialogContent>
             </Dialog>
           </div>
@@ -509,21 +494,23 @@ function PathDetails({
                     View Conversations
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-auto">
+                <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
                   <DialogHeader>
                     <DialogTitle>Your Unique Conversations</DialogTitle>
                     <DialogDescription>
                       Conversations unique to your perspective
                     </DialogDescription>
                   </DialogHeader>
-                  <ConversationsList
-                    conversations={currentUserPath.uniqueConversations}
-                    currentUserName={currentUserName}
-                    matchedUserName={matchedUser.name}
-                    currentUserPath={currentUserPath}
-                    matchedUserPath={matchedUserPath}
-                    isCurrentUserContext={true} // These are current user's conversations
-                  />
+                  <div className="overflow-hidden">
+                    <ConversationsList
+                      conversations={currentUserPath.uniqueConversations}
+                      currentUserName={currentUserName}
+                      matchedUserName={matchedUser.name}
+                      currentUserPath={currentUserPath}
+                      matchedUserPath={matchedUserPath}
+                      isCurrentUserContext={true} // These are current user's conversations
+                    />
+                  </div>
                 </DialogContent>
               </Dialog>
             </div>
@@ -544,7 +531,7 @@ function PathDetails({
                     View Conversations
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-auto">
+                <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
                   <DialogHeader>
                     <DialogTitle>
                       {matchedUser.name}&apos;s Unique Conversations
@@ -554,14 +541,16 @@ function PathDetails({
                       perspective
                     </DialogDescription>
                   </DialogHeader>
-                  <ConversationsList
-                    conversations={matchedUserPath.uniqueConversations}
-                    currentUserName={currentUserName}
-                    matchedUserName={matchedUser.name}
-                    currentUserPath={currentUserPath}
-                    matchedUserPath={matchedUserPath}
-                    isCurrentUserContext={false} // These are the other user's conversations
-                  />
+                  <div className="overflow-hidden">
+                    <ConversationsList
+                      conversations={matchedUserPath.uniqueConversations}
+                      currentUserName={currentUserName}
+                      matchedUserName={matchedUser.name}
+                      currentUserPath={currentUserPath}
+                      matchedUserPath={matchedUserPath}
+                      isCurrentUserContext={false} // These are the other user's conversations
+                    />
+                  </div>
                 </DialogContent>
               </Dialog>
             </div>
@@ -668,43 +657,45 @@ function ConversationsList({
   };
 
   return (
-    <div className="space-y-4 mt-4">
-      <ScrollArea className="max-h-[500px] pr-3">
-        {conversations.map((conversation) => (
-          <div key={conversation.id} className="mb-4 p-4 border rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium">
-                {conversation.title || 'Conversation'}
-              </h4>
-              {conversation.user && (
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage
-                      src={getIdenticon(conversation.user.name)}
-                      alt={conversation.user.name}
-                    />
-                    <AvatarFallback>
-                      {conversation.user.name.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs text-muted-foreground">
-                    {conversation.user.name}
-                  </span>
-                </div>
-              )}
+    <div className="space-y-4 mt-4 h-[80vh] w-full">
+      <ScrollArea className="h-full w-full pb-24">
+        <div className="pr-3 w-full">
+          {conversations.map((conversation) => (
+            <div key={conversation.id} className="mb-4 p-4 border rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium">
+                  {conversation.title || 'Conversation'}
+                </h4>
+                {conversation.user && (
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage
+                        src={getIdenticon(conversation.user.name)}
+                        alt={conversation.user.name}
+                      />
+                      <AvatarFallback>
+                        {conversation.user.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs text-muted-foreground">
+                      {conversation.user.name}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground mb-2">
+                {new Date(conversation.datetime).toLocaleDateString()} at{' '}
+                {new Date(conversation.datetime).toLocaleTimeString()}
+              </p>
+              <p>
+                {processConversationSummary(
+                  conversation.summary,
+                  conversation.user
+                )}
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground mb-2">
-              {new Date(conversation.datetime).toLocaleDateString()} at{' '}
-              {new Date(conversation.datetime).toLocaleTimeString()}
-            </p>
-            <p>
-              {processConversationSummary(
-                conversation.summary,
-                conversation.user
-              )}
-            </p>
-          </div>
-        ))}
+          ))}
+        </div>
       </ScrollArea>
     </div>
   );
