@@ -91,6 +91,7 @@ def parse_cluster_categorization(completion: str) -> dict:
     partitions_def=user_partitions_def,
     ins={"conversation_pair_clusters": AssetIn(key="conversation_pair_clusters")},
     io_manager_key="parquet_io_manager",
+    # pool="gpt4o_mini",
 )
 def cluster_categorizations(
     context: AssetExecutionContext,

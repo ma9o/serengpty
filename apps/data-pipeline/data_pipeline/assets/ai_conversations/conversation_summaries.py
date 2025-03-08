@@ -75,6 +75,7 @@ class ConversationSummariesConfig(RowLimitConfig):
         ),
     },
     io_manager_key="parquet_io_manager",
+    pool="gpt4o_mini",
     # op_tags=get_k8s_vllm_config(),
 )
 async def conversation_summaries(

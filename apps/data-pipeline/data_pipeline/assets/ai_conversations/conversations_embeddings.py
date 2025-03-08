@@ -19,6 +19,7 @@ class ConversationEmbeddingsConfig(RowLimitConfig):
         ),
     },
     io_manager_key="parquet_io_manager",
+    pool="bge_en_icl",
 )
 async def conversations_embeddings(
     context: AssetExecutionContext,

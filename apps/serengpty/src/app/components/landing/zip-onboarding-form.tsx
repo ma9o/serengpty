@@ -145,7 +145,7 @@ export function ZipOnboardingForm() {
       formData.append('conversations', JSON.stringify(cleanedConversations));
       formData.append('password', password);
 
-      // Add username 
+      // Add username
       formData.append('username', customUsername);
 
       // Send the data to our signup API
@@ -236,7 +236,7 @@ export function ZipOnboardingForm() {
                       className="text-gray-500 mr-2"
                     />
                     <p className="text-sm text-gray-500 font-medium">
-                      Your data will be anonymized before uploading
+                      Your data will be anonymized locally before uploading
                     </p>
                   </>
                 )
@@ -278,22 +278,9 @@ export function ZipOnboardingForm() {
                 className="relative w-full mb-8 md:mb-0 border-2 border-dashed border-gray-300 p-6 rounded-lg flex flex-col items-center justify-center text-center hover:border-green-800 transition-colors cursor-pointer"
               >
                 <input {...getInputProps()} />
-                <svg
-                  className="w-12 h-12 text-gray-400 mb-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 48 48"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M14 16l8-8m0 0l8 8m-8-8v24"
-                  />
-                </svg>
+                {/* <FileArchive className="mb-4 text-gray-500" size={32} /> */}
                 <p className="mt-2 text-base text-gray-500">
-                  Upload your conversations archive zip here
+                  Drop your data export zip here
                 </p>
                 <p className="text-sm text-gray-400 mt-1">
                   Only *.zip files are accepted
@@ -327,7 +314,7 @@ export function ZipOnboardingForm() {
                   </label>
                   <div className="relative">
                     <Input
-                      id="username" 
+                      id="username"
                       name="username"
                       type="text"
                       value={customUsername}
@@ -420,7 +407,7 @@ export function ZipOnboardingForm() {
                     className="w-full mt-2"
                     disabled={!!usernameError || customUsername === ''}
                   >
-                    Create Account
+                    Upload zip and Sign up
                   </Button>
                 )}
               </div>
