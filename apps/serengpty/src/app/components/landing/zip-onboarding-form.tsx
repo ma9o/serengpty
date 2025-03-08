@@ -62,7 +62,7 @@ export function ZipOnboardingForm() {
     try {
       // Reset progress before starting
       setProgress(0);
-      
+
       // Process the zip file on the client side with progress updates
       const result = await processZipFile(file, (progressValue) => {
         setProgress(progressValue);
@@ -136,7 +136,8 @@ export function ZipOnboardingForm() {
 
     try {
       setProcessing(true);
-      setProgress(0); // Reset progress for form submission
+      // Start with a small progress value to show activity
+      setProgress(5);
 
       // Create FormData with only the cleaned data
       const formData = new FormData();
@@ -150,10 +151,26 @@ export function ZipOnboardingForm() {
       }
 
       // Send the data to our signup API
+      // Simulated upload progress
+      const simulateProgress = () => {
+        setProgress((prev) => {
+          // Increment progress but don't reach 100% until complete
+          const nextProgress = prev + Math.random() * 15;
+          return Math.min(nextProgress, 90);
+        });
+      };
+
+      // Start progress simulation
+      const progressInterval = setInterval(simulateProgress, 500);
+
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         body: formData,
       });
+
+      // Clear the interval and set to 100% when complete
+      clearInterval(progressInterval);
+      setProgress(100);
 
       const data = await response.json();
 
@@ -242,12 +259,12 @@ export function ZipOnboardingForm() {
                     <Loader2 className="animate-spin mr-2" size={16} />
                     <span className="">We&apos;re anonymizing the data...</span>
                   </div>
-                  
+
                   {/* Progress bar */}
                   <div className="w-full mt-2 max-w-md">
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div 
-                        className="bg-green-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" 
+                      <div
+                        className="bg-green-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
                         style={{ width: `${progress}%` }}
                       ></div>
                     </div>
@@ -374,13 +391,31 @@ export function ZipOnboardingForm() {
                   </div>
                 </div>
 
-                <Button
-                  type="submit"
-                  className="w-full mt-2"
-                  disabled={!!usernameError || customUsername === ''}
-                >
-                  Create Account
-                </Button>
+                {processing ? (
+                  <div className="w-full mt-2">
+                    <div className="flex items-center justify-center mb-2">
+                      <Loader2 className="animate-spin mr-2" size={16} />
+                      <span>Uploading your data...</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div
+                        className="bg-green-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1 text-center">
+                      {progress.toFixed(2)}%
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    type="submit"
+                    className="w-full mt-2"
+                    disabled={!!usernameError || customUsername === ''}
+                  >
+                    Create Account
+                  </Button>
+                )}
               </div>
             )}
           </div>
