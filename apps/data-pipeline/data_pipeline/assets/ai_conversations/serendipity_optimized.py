@@ -10,14 +10,19 @@ import polars as pl
 from dagster import AssetExecutionContext, AssetIn, asset
 from sklearn.discriminant_analysis import StandardScaler
 
-from data_pipeline.assets.ai_conversations.utils.serendipity import (
+from data_pipeline.assets.ai_conversations.utils.balance_scores import (
     calculate_balance_scores,
+    sum_balance_scores,
+)
+from data_pipeline.assets.ai_conversations.utils.load_user_dataframe import (
+    load_user_dataframe,
+)
+from data_pipeline.assets.ai_conversations.utils.serendipity import (
     generate_serendipity_prompt,
     get_out_df_schema,
     parse_serendipity_result,
     remap_indices_to_conversation_ids,
 )
-from data_pipeline.assets.ai_conversations.utils.load_user_dataframe import load_user_dataframe
 from data_pipeline.constants.custom_config import RowLimitConfig
 from data_pipeline.partitions import user_partitions_def
 from data_pipeline.resources.batch_inference.base_llm_resource import BaseLlmResource
@@ -151,25 +156,29 @@ def _prepare_clusters(
 
         # Get other users' data
         other_users_df = cluster_df.filter(pl.col("user_id") != current_user_id)
-        
+
         # Get unique other user IDs
         other_user_ids = other_users_df.select("user_id").unique().to_series().to_list()
-        
+
         # Load parsed conversations for other users
         other_users_parsed_convs = []
         for user_id in other_user_ids:
             if user_id not in other_users_parsed_conv_cache:
                 try:
                     # Load this user's parsed conversations
-                    user_parsed_conv = load_user_dataframe(user_id, "parsed_conversations")
+                    user_parsed_conv = load_user_dataframe(
+                        user_id, "parsed_conversations"
+                    )
                     other_users_parsed_conv_cache[user_id] = user_parsed_conv
                 except Exception as e:
-                    logger.warning(f"Could not load parsed conversations for user {user_id}: {e}")
+                    logger.warning(
+                        f"Could not load parsed conversations for user {user_id}: {e}"
+                    )
                     other_users_parsed_conv_cache[user_id] = None
-            
+
             if other_users_parsed_conv_cache[user_id] is not None:
                 other_users_parsed_convs.append(other_users_parsed_conv_cache[user_id])
-        
+
         # Combine all other users' parsed conversations
         other_users_parsed_conv = (
             pl.concat(other_users_parsed_convs) if other_users_parsed_convs else None
@@ -180,8 +189,7 @@ def _prepare_clusters(
                 user1_df, parsed_conversations, True
             ),
             "summaries": _extract_conversation_summaries(
-                other_users_df,
-                other_users_parsed_conv
+                other_users_df, other_users_parsed_conv
             ),
             "paths_found": 0,
             "iteration": 0,
@@ -237,13 +245,27 @@ async def _generate_paths(
             calculate_balance_scores(cluster_data[cid], exclusions)[1]
             for cid in initial_cluster_ids
         ]
+
+        # Filter out inf scores
+        valid_entries = []
+        for i, score in enumerate(initial_scores):
+            if not any(v == float("inf") for v in score.values()):
+                valid_entries.append((i, score))
+
+        # Keep only valid cluster ids and their scores
+        valid_cluster_ids = [initial_cluster_ids[i] for i, _ in valid_entries]
+        valid_scores = [score for _, score in valid_entries]
+
+        if not valid_scores:
+            continue  # Skip this category if no valid scores
+
         scaler = StandardScaler()
         standardized_metrics = scaler.fit_transform(
             np.column_stack(
                 [
-                    [x["imbalance"] for x in initial_scores],
-                    [x["magnitude_factor"] for x in initial_scores],
-                    [x["dist"] for x in initial_scores],
+                    [x["imbalance"] for x in valid_scores],
+                    [x["magnitude_factor"] for x in valid_scores],
+                    [x["dist"] for x in valid_scores],
                 ]
             )
         )
@@ -252,14 +274,14 @@ async def _generate_paths(
         active_clusters = [
             (
                 cid,
-                sum(standardized_metrics[i]),
+                sum_balance_scores(*standardized_metrics[i]),
                 {
                     "imbalance": standardized_metrics[i][0],
                     "magnitude_factor": standardized_metrics[i][1],
                     "dist": standardized_metrics[i][2],
                 },
             )
-            for i, cid in enumerate(initial_cluster_ids)
+            for i, cid in enumerate(valid_cluster_ids)
         ]
 
         # Process clusters dynamically within this category
@@ -342,24 +364,24 @@ async def _generate_paths(
             new_balance_score, new_scores_detailed = calculate_balance_scores(
                 data, exclusions
             )
-            # Scale with the same scaler
-            new_standardized_metrics = scaler.transform(
-                np.array(
-                    [
-                        [
-                            new_scores_detailed["imbalance"],
-                            new_scores_detailed["magnitude_factor"],
-                            new_scores_detailed["dist"],
-                        ]
-                    ]
-                )
-            )
-            new_standardized_metrics = cast(np.ndarray, new_standardized_metrics)
-            new_balance_score = sum(new_standardized_metrics[0])
             if new_balance_score == float("inf"):
                 # No remaining conversations; remove cluster
                 active_clusters.pop(0)
             else:
+                # Scale with the same scaler
+                new_standardized_metrics = scaler.transform(
+                    np.array(
+                        [
+                            [
+                                new_scores_detailed["imbalance"],
+                                new_scores_detailed["magnitude_factor"],
+                                new_scores_detailed["dist"],
+                            ]
+                        ]
+                    )
+                )
+                new_standardized_metrics = cast(np.ndarray, new_standardized_metrics)
+                new_balance_score = sum_balance_scores(*new_standardized_metrics[0])
                 # Update the cluster's score in the list
                 active_clusters[0] = (
                     cid,

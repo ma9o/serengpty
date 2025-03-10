@@ -150,16 +150,16 @@ class DeepInfraEmbedderClient(BaseEmbedderClient):
                 responses = [await self._get_batch_embeddings(batches[0], 0)]
             else:
                 # If more than one batch, warm up with the first batch
-                first_batch_response = await self._get_batch_embeddings(batches[0], 0)
+                # first_batch_response = await self._get_batch_embeddings(batches[0], 0)
 
                 # Then run the remaining batches in parallel
                 other_responses = await asyncio.gather(
                     *(
                         self._get_batch_embeddings(batches[i], i)
-                        for i in range(1, len(batches))
+                        for i in range(0, len(batches))
                     )
                 )
-                responses = [first_batch_response] + list(other_responses)
+                responses = list(other_responses)
 
             # Combine all embeddings
             all_embeddings = []

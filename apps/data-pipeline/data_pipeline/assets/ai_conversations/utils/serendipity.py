@@ -49,7 +49,7 @@ def generate_serendipity_prompt(
             questions = s["human_questions"]
             questions_text = "\n  - ".join(questions)
             questions_section = f"\nQuestions Asked:\n  - {questions_text}"
-        
+
         user1_texts.append(
             f"ID: {row_idx}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}{questions_section}"
         )
@@ -63,7 +63,7 @@ def generate_serendipity_prompt(
             questions = s["human_questions"]
             questions_text = "\n  - ".join(questions)
             questions_section = f"\nQuestions Asked:\n  - {questions_text}"
-            
+
         user2_texts.append(
             f"ID: {row_idx}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}{questions_section}"
         )
@@ -189,7 +189,9 @@ def format_conversation_summary(row: Dict) -> Dict:
     }
 
 
-def prepare_conversation_summaries(df: pl.DataFrame, parsed_conversations: pl.DataFrame = None) -> List[Dict]:
+def prepare_conversation_summaries(
+    df: pl.DataFrame, parsed_conversations: pl.DataFrame = None
+) -> List[Dict]:
     """
     Prepare conversation summaries from a DataFrame.
 
@@ -210,12 +212,10 @@ def prepare_conversation_summaries(df: pl.DataFrame, parsed_conversations: pl.Da
     human_questions_by_conv = {}
     if parsed_conversations is not None:
         # Create a DataFrame with sorted questions for each conversation_id
-        questions_df = (
-            parsed_conversations
-            .select(["conversation_id", "date", "time", "question"])
-            .sort(["conversation_id", "date", "time"])
-        )
-        
+        questions_df = parsed_conversations.select(
+            ["conversation_id", "date", "time", "question"]
+        ).sort(["conversation_id", "date", "time"])
+
         # Group by conversation_id and collect questions
         for group in questions_df.group_by("conversation_id"):
             conv_id = group[0]
@@ -226,7 +226,7 @@ def prepare_conversation_summaries(df: pl.DataFrame, parsed_conversations: pl.Da
     for row in sorted_df.select(
         [
             "row_idx",
-            "conversation_id", 
+            "conversation_id",
             "title",
             "summary",
             "start_date",
@@ -237,8 +237,10 @@ def prepare_conversation_summaries(df: pl.DataFrame, parsed_conversations: pl.Da
     ).iter_rows(named=True):
         # Add human questions to the row data
         row_data = dict(row)
-        row_data["human_questions"] = human_questions_by_conv.get(row["conversation_id"], [])
-        
+        row_data["human_questions"] = human_questions_by_conv.get(
+            row["conversation_id"], []
+        )
+
         summary = format_conversation_summary(row_data)
         if summary:
             # Include the row_idx in the summary
@@ -329,44 +331,3 @@ def remap_indices_to_conversation_ids(
     )
 
 
-def calculate_balance_scores(
-    data: Dict,
-    exclusions: Set[int],
-) -> tuple[float, Dict[str, float]]:
-    """Calculate balance score based on remaining conversations.
-
-    Returns a score that prioritizes:
-    1. Larger total number of conversations
-    2. More balanced ratio between sides
-    Lower scores are better.
-    """
-    embeddings_current = [
-        s["embedding"]
-        for s in data["current_summaries"]
-        if s["row_idx"] not in exclusions
-    ]
-    embeddings_other = [
-        s["embedding"] for s in data["summaries"] if s["row_idx"] not in exclusions
-    ]
-    len_current = len(embeddings_current)
-    len_other = len(embeddings_other)
-    if len_other == 0 or len_current == 0:
-        return float("inf"), {}  # Deprioritize if either side has no conversations
-
-    # Calculate imbalance penalty (smaller is better)
-    ratio = len_current / len_other
-    imbalance = abs(math.log(ratio))
-
-    # Calculate magnitude bonus (larger total is better)
-    total_conversations = len_current + len_other
-    magnitude_factor = 1 / total_conversations  # Inverse so smaller is better
-
-    # Calculate cosine similarity between embeddings
-    sim = get_approx_user_sim(np.array(embeddings_current), np.array(embeddings_other))
-    dist = 1 - sim
-
-    return imbalance + magnitude_factor + dist, {
-        "imbalance": imbalance,
-        "magnitude_factor": magnitude_factor,
-        "dist": dist,
-    }
