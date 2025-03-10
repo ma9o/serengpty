@@ -11,7 +11,10 @@ from dagster import (
     asset,
 )
 
-from data_pipeline.constants.environments import API_STORAGE_DIRECTORY, DataProvider
+from data_pipeline.constants.environments import (
+    API_STORAGE_DIRECTORY,
+    DATA_PROVIDERS,
+)
 from data_pipeline.partitions import user_partitions_def
 
 
@@ -230,22 +233,21 @@ def parsed_conversations(
     user_dir = API_STORAGE_DIRECTORY / context.partition_key
 
     # Try to determine provider from directory
-    provider_info = None
-    for provider_name, provider_data in DataProvider.__dict__.items():
-        if isinstance(provider_data, dict) and "path_prefix" in provider_data:
-            provider_path = user_dir / provider_data["path_prefix"]
-            json_file = provider_path / "latest.json"
-            if json_file.exists():
-                provider_info = provider_data
-                break
+    path_prefix = None
+    for provider_name in DATA_PROVIDERS:
+        provider_path = user_dir / provider_name
+        json_file = provider_path / "latest.json"
+        if json_file.exists():
+            path_prefix = provider_name
+            break
 
-    if not provider_info:
+    if not path_prefix:
         raise ValueError(
             f"Could not find conversation data for user {context.partition_key}"
         )
 
     # Get the JSON file for the current user
-    json_file = user_dir / provider_info["path_prefix"] / "latest.json"
+    json_file = user_dir / path_prefix / "latest.json"
 
     # Load the JSON file directly
     with open(json_file) as f:

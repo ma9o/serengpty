@@ -26,25 +26,7 @@ API_STORAGE_DIRECTORY = STORAGE_BUCKET / "api"
 
 DEPLOYMENT_ROW_LIMIT = {"LOCAL": 50, "BRANCH": None, "PROD": None}[DEPLOYMENT_TYPE]
 
-
-class DataProvider:
-    GOOGLE = {
-        "path_prefix": "google",
-        "expected_file": "Takeout/My Activity/Search/MyActivity.json",
-    }
-    OPENAI = {
-        "path_prefix": "openai",
-        "expected_file": "conversations.json",
-    }
-    WHATSAPP_DESKTOP = {
-        "path_prefix": "whatsapp_desktop",
-        "expected_file": "messages.json",
-    }
-    # WHATSAPP_MOBILE = {
-    #     "path_prefix": "whatsapp_mobile",
-    #     "expected_file": "TODO",
-    # }
-    # FACEBOOK = {
-    #     "path_prefix": "facebook",
-    #     "expected_file": "TODO",
-    # }
+DATA_PROVIDERS = [
+    "openai",
+    "anthropic",
+]

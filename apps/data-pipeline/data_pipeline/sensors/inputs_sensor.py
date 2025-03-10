@@ -37,8 +37,11 @@ def inputs_sensor(
     else:
         # Get user_ids that have been processed already
         asset_folder = DAGSTER_STORAGE_DIRECTORY / "serendipity_optimized"
-        asset_folder.fs.invalidate_cache()
-        current_state = {d.stem for d in asset_folder.iterdir() if d.is_file()}
+        if asset_folder.exists():
+            asset_folder.fs.invalidate_cache()
+            current_state = {d.stem for d in asset_folder.iterdir() if d.is_file()}
+        else:
+            current_state = set()
 
     context.log.info("Current state: %s", current_state)
 

@@ -7,13 +7,10 @@ from dagster import (
 )
 
 from data_pipeline.assets import ai_conversations
-from data_pipeline.pre_init import pre_init  # noqa: I001
 from data_pipeline.sensors.inputs_sensor import inputs_sensor
 from data_pipeline.sensors.outputs_sensor import outputs_sensor
 
 from .resources import resources
-
-pre_init()
 
 asset_modules: list[Any] = [ai_conversations]
 

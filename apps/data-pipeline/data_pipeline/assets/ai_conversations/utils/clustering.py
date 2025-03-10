@@ -135,7 +135,7 @@ def hdbscan_clustering(
         min_cluster_size=min_cluster_size,
         min_samples=min_samples,
         cluster_selection_epsilon=cluster_selection_epsilon,
-        metric="cosine",
+        metric="euclidean",
         prediction_data=True,  # Required for soft clustering
     ).fit(embeddings)
 
@@ -166,7 +166,7 @@ def cluster_embeddings(
     dimension_reduction_method: Literal["pca", "umap"] = "pca",
     dimension_reduction_n_components: int = 100,
     clustering_method: Literal["agglomerative", "hdbscan"] = "agglomerative",
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Cluster merged embeddings from two users using the specified clustering method.
 
@@ -191,7 +191,8 @@ def cluster_embeddings(
         ).fit_transform(merged_embeddings)
     elif dimension_reduction_method == "umap":
         merged_embeddings = umap.UMAP(
-            n_components=dimension_reduction_n_components
+            n_components=dimension_reduction_n_components,
+            verbose=True,
         ).fit_transform(merged_embeddings)
 
     log(f"Dimension reduction took {(time.time() - start_time):.2f} seconds")
@@ -214,4 +215,7 @@ def cluster_embeddings(
 
     log(f"Clustering took {(time.time() - start_time):.2f} seconds")
 
-    return labels
+    user1_labels = labels[: len(emb1_array)]
+    user2_labels = labels[len(emb1_array) :]
+
+    return user1_labels, user2_labels

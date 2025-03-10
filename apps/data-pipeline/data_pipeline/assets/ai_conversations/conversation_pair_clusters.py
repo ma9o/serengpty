@@ -211,12 +211,8 @@ def conversation_pair_clusters(
         df2, emb2_array = user_data[other_uid]
         logger.info(f"Clustering conversations with user {other_uid}")
 
-        # Start with minimum number of clusters
-        n1 = emb1_array.shape[0]
-        n2 = emb2_array.shape[0]
-
         # Perform clustering using the module with all configuration options
-        cluster_labels = cluster_embeddings(
+        user1_labels, user2_labels = cluster_embeddings(
             emb1_array,
             emb2_array,
             dimension_reduction_method=config.dimension_reduction_method,
@@ -225,13 +221,8 @@ def conversation_pair_clusters(
             log=logger.info,
         )
 
-        # Count how many clusters were formed for all methods
-        n_clusters = len(np.unique(cluster_labels))
+        n_clusters = len(np.unique(user1_labels)) + len(np.unique(user2_labels))
         logger.info(f"Created {n_clusters} clusters using {config.clustering_method}")
-
-        # Extract user1's and user2's cluster labels
-        user1_labels = cluster_labels[:n1]
-        user2_labels = cluster_labels[n1:]
 
         # Process each cluster
         for cluster_idx in range(n_clusters):
