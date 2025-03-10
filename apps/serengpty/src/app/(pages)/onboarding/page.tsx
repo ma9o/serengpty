@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { OnboardingForm } from '../../components/onboarding/onboarding-form';
+import { ProfileForm } from '../../components/onboarding/profile-form';
 import { Toaster } from '@enclaveid/ui/toaster';
 import { Loader2 } from 'lucide-react';
 import { getOnboardingStatus } from '../../actions/getOnboardingStatus';
@@ -83,7 +83,7 @@ export default function OnboardingPage() {
           </p>
         </div>
 
-        <OnboardingForm isPreferences={false} />
+        <ProfileForm isPreferences={false} />
 
         <Toaster />
       </div>

@@ -1,12 +1,12 @@
 'use client';
 
-import { OnboardingForm } from '../../../components/onboarding/onboarding-form';
+import { ProfileForm } from '../../../components/onboarding/profile-form';
 import { Toaster } from '@enclaveid/ui/toaster';
 
 export default function PreferencesPage() {
   return (
-    <div className="flex-1">
-      <OnboardingForm isPreferences={true} />
+    <div className="flex h-full items-center">
+      <ProfileForm isPreferences={true} />
       <Toaster />
     </div>
   );

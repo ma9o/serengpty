@@ -4,10 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@enclaveid/ui/hooks/use-toast';
-import { Save, Shield, Search, ChevronDown, Check } from 'lucide-react';
+import { Shield, Search, ChevronDown, Check } from 'lucide-react';
 import countries from 'i18n-iso-countries';
 import enLocale from 'i18n-iso-countries/langs/en.json';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { saveUserProfile } from '../../actions/saveUserProfile';
 import { UsernameStatus } from './username-status';
 import { getUserProfile } from '../../actions/getUserProfile';
@@ -75,7 +75,7 @@ const formSchema = z.object({
   sensitiveMatching: z.boolean().default(false),
 });
 
-export interface OnboardingFormProps {
+export interface ProfileFormProps {
   isPreferences?: boolean;
 }
 
@@ -84,10 +84,12 @@ function CountrySelector({
   value,
   onChange,
   disabled,
+  onBlur,
 }: {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  onBlur?: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -116,6 +118,7 @@ function CountrySelector({
         !dropdownRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
+        onBlur?.(); // Trigger onBlur when clicking outside
       }
     }
 
@@ -132,12 +135,13 @@ function CountrySelector({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, onBlur]);
 
   // Handle selecting a country
   const handleSelectCountry = (country: (typeof ALL_COUNTRIES)[0]) => {
     onChange(country.code);
     setIsOpen(false);
+    onBlur?.(); // Trigger onBlur when selecting a country
   };
 
   return (
@@ -208,11 +212,15 @@ function CountrySelector({
   );
 }
 
-export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
+export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
   const { toast } = useToast();
   const [isUsernameValid, setIsUsernameValid] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSavedValues, setLastSavedValues] = useState<z.infer<
+    typeof formSchema
+  > | null>(null);
 
   // Form setup
   const form = useForm<z.infer<typeof formSchema>>({
@@ -222,7 +230,87 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
       country: 'INTERNET',
       sensitiveMatching: false,
     },
+    mode: 'onChange',
   });
+
+  // Function to save profile data to database
+  const saveProfileData = useCallback(
+    async (values: z.infer<typeof formSchema>) => {
+      // Skip saving if values haven't changed
+      if (
+        lastSavedValues &&
+        lastSavedValues.username === values.username &&
+        lastSavedValues.country === values.country &&
+        lastSavedValues.sensitiveMatching === values.sensitiveMatching
+      ) {
+        return { success: true };
+      }
+
+      setIsSaving(true);
+      try {
+        // Call server action to save the profile
+        const result = await saveUserProfile(values);
+
+        if (result.success) {
+          setLastSavedValues(values);
+          toast({
+            title: 'Changes saved',
+            description: 'Your profile has been updated.',
+            duration: 2000,
+          });
+        } else {
+          toast({
+            title: 'Error',
+            description:
+              result.message ||
+              'Failed to save your changes. Please try again.',
+            variant: 'destructive',
+            duration: 3000,
+          });
+        }
+        return result;
+      } catch (error) {
+        console.error('Error saving profile data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to save your changes. Please try again.',
+          variant: 'destructive',
+          duration: 3000,
+        });
+        return { success: false, message: 'An error occurred while saving.' };
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [lastSavedValues, toast]
+  );
+
+  // Watch form values for changes
+  const watchedValues = form.watch();
+
+  // Save on value change with debounce
+  useEffect(() => {
+    // Skip during initial load
+    if (isLoading || isProfileLoading) return;
+
+    // Validation check
+    if (!isUsernameValid) return;
+
+    // Handle fields changing
+    const timer = setTimeout(() => {
+      saveProfileData(watchedValues);
+    }, 500); // Debounce for 500ms
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [
+    watchedValues,
+    isUsernameValid,
+    isLoading,
+    isProfileLoading,
+    saveProfileData,
+  ]);
 
   // Fetch user profile data from database
   useEffect(() => {
@@ -233,19 +321,16 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
         const userData = await getUserProfile();
 
         if (userData) {
-          // Set the username
-          if (userData.name) {
-            form.setValue('username', userData.name);
-            setIsUsernameValid(true);
-          }
+          const profileData = {
+            username: userData.name || '',
+            country: userData.country || 'INTERNET',
+            sensitiveMatching: userData.sensitiveMatching || false,
+          };
 
-          // Set the country if it exists in the database
-          if (userData.country) {
-            form.setValue('country', userData.country);
-          }
-
-          // Set the sensitiveMatching value from the database
-          form.setValue('sensitiveMatching', userData.sensitiveMatching);
+          // Set the form values
+          form.reset(profileData);
+          setLastSavedValues(profileData);
+          setIsUsernameValid(true);
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -260,63 +345,10 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
     fetchUserProfile();
   }, [form]);
 
-  // Combined loading state for both username and profile data
+  // Combined loading state
   const isFormLoading = isLoading || isProfileLoading;
 
   const watchUsername = form.watch('username');
-
-  // Form submission handler
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      // Prevent submission if username is invalid
-      if (!isUsernameValid) {
-        toast({
-          title: 'Invalid username',
-          description: 'Please choose a valid username before submitting.',
-          variant: 'destructive',
-          duration: 3000,
-        });
-        return;
-      }
-
-      // Call server action to save the profile
-      const result = await saveUserProfile(values);
-
-      if (result.success) {
-        toast({
-          title: isPreferences ? 'Preferences saved!' : 'Profile saved!',
-          description: isPreferences
-            ? 'Your preferences have been updated successfully.'
-            : 'Your profile has been created successfully.',
-          duration: 3000,
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description:
-            result.message ||
-            `Failed to save your ${
-              isPreferences ? 'preferences' : 'profile'
-            }. Please try again.`,
-          variant: 'destructive',
-          duration: 3000,
-        });
-      }
-    } catch (error) {
-      console.error(
-        `Error saving ${isPreferences ? 'preferences' : 'profile'}:`,
-        error
-      );
-      toast({
-        title: 'Error',
-        description: `Failed to save your ${
-          isPreferences ? 'preferences' : 'profile'
-        }. Please try again.`,
-        variant: 'destructive',
-        duration: 3000,
-      });
-    }
-  }
 
   return (
     <div className="w-full max-w-xl mx-auto">
@@ -326,7 +358,7 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
         wrapper={(children) => <Card className="p-6">{children}</Card>}
       >
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <div className="space-y-6">
             {/* Avatar/Identicon */}
             <div className="flex flex-col items-center mb-6">
               <Avatar className="h-24 w-24 mb-2">
@@ -351,7 +383,16 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled={isFormLoading} />
+                    <Input
+                      {...field}
+                      disabled={isFormLoading || isSaving}
+                      onBlur={() => {
+                        field.onBlur();
+                        if (isUsernameValid) {
+                          saveProfileData(form.getValues());
+                        }
+                      }}
+                    />
                   </FormControl>
                   <div className="flex flex-col space-y-1">
                     <FormDescription>
@@ -380,8 +421,14 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
                   <FormControl>
                     <CountrySelector
                       value={field.value}
-                      onChange={field.onChange}
-                      disabled={isFormLoading}
+                      onChange={(value) => {
+                        field.onChange(value);
+                      }}
+                      onBlur={() => {
+                        field.onBlur();
+                        saveProfileData(form.getValues());
+                      }}
+                      disabled={isFormLoading || isSaving}
                     />
                   </FormControl>
                   <FormDescription>
@@ -417,8 +464,17 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
                       />
                       <Switch
                         checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={isFormLoading}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked);
+                          // Save immediately on toggle
+                          setTimeout(() => {
+                            saveProfileData({
+                              ...form.getValues(),
+                              sensitiveMatching: checked,
+                            });
+                          }, 0);
+                        }}
+                        disabled={isFormLoading || isSaving}
                       />
                     </div>
                   </FormControl>
@@ -426,16 +482,13 @@ export function OnboardingForm({ isPreferences = false }: OnboardingFormProps) {
               )}
             />
 
-            {/* Save button */}
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={!isUsernameValid || isFormLoading}
-            >
-              <Save className="mr-2 h-4 w-4" />
-              {isPreferences ? 'Save Preferences' : 'Save Profile'}
-            </Button>
-          </form>
+            {/* Status indicator */}
+            {isSaving && (
+              <p className="text-sm text-muted-foreground text-center">
+                Saving changes...
+              </p>
+            )}
+          </div>
         </Form>
       </ConditionalWrapper>
     </div>
