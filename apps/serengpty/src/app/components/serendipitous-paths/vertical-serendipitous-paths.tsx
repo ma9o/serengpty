@@ -21,6 +21,7 @@ import {
 import {
   getSerendipitousPaths,
   markUserMatchAsViewed,
+  setPathFeedback,
 } from '../../actions/getSerendipitousPaths';
 import { useUnviewedMatches } from './UnviewedMatchesContext';
 import {
@@ -31,6 +32,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@enclaveid/ui/dialog';
+import { ThumbsDown, ThumbsUp } from 'lucide-react';
 
 type UserPathsResponse = Awaited<ReturnType<typeof getSerendipitousPaths>>;
 
@@ -272,12 +274,20 @@ export function VerticalSerendipitousPaths({
                       )}
                     >
                       <AccordionTrigger className="px-3 py-3 hover:no-underline rounded-lg focus:outline-none">
-                        <div className="w-full text-left">
-                          <div className="font-medium mb-1">
-                            {processedTitle}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {processedSummary}
+                        <div className="w-full text-left flex justify-between items-start gap-2">
+                          <div className="flex-row">
+                            <div className="flex justify-between items-center">
+                              <div className="font-medium mb-1">
+                                {processedTitle}
+                              </div>
+                              <PathFeedback
+                                pathId={path.id}
+                                existingFeedback={path.feedback?.[0]?.score}
+                              />
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {processedSummary}
+                            </div>
                           </div>
                         </div>
                       </AccordionTrigger>
@@ -782,6 +792,62 @@ function EmptyState() {
         </p>
         <Button variant="default">Explore Topics</Button>
       </div>
+    </div>
+  );
+}
+
+// Path Feedback Component
+function PathFeedback({
+  pathId,
+  existingFeedback,
+}: {
+  pathId: string;
+  existingFeedback?: number;
+}) {
+  const [score, setScore] = useState<number | undefined>(existingFeedback);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleFeedback = async (value: 1 | -1) => {
+    try {
+      setIsSubmitting(true);
+      // If clicking the same button again, remove the feedback
+      const newValue = score === value ? undefined : value;
+
+      if (newValue !== undefined) {
+        await setPathFeedback(pathId, newValue);
+        setScore(newValue);
+      } else {
+        // For now we don't provide an API to delete feedback, so we'll just toggle
+        await setPathFeedback(pathId, 0);
+        setScore(0);
+      }
+    } catch (error) {
+      console.error('Error setting feedback:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="flex items-center gap-2 px-2 ml-2"
+      onClick={(e) => e.stopPropagation()} // Prevent accordion from toggling
+    >
+      <ThumbsUp
+        className={cn('h-4 w-4', score === 1 && 'text-green-500')}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleFeedback(1);
+        }}
+      />
+
+      <ThumbsDown
+        className={cn('h-4 w-4', score === -1 && 'text-red-500')}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleFeedback(-1);
+        }}
+      />
     </div>
   );
 }

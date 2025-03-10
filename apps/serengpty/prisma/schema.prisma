@@ -24,6 +24,7 @@ model User {
   userPaths     UserPath[]
   usersMatches  UsersMatch[]
   conversations Conversation[]
+  pathFeedback  PathFeedback[]
 
   // Auth.js fields
   emailVerified DateTime?
@@ -64,6 +65,7 @@ model SerendipitousPath {
 
   // Through this relation, we can get the unique conversations for each user of a serendipitous path
   userPaths UserPath[]
+  feedback  PathFeedback[]
 
   usersMatchId String
   usersMatch   UsersMatch @relation(fields: [usersMatchId], references: [id])
@@ -139,4 +141,20 @@ model VerificationToken {
   expires    DateTime
 
   @@id([identifier, token])
+}
+
+model PathFeedback {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  score Int // -1 for thumbs down, +1 for thumbs up
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  path   SerendipitousPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  pathId String
+
+  @@unique([userId, pathId])
 }

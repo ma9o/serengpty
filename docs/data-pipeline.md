@@ -81,7 +81,6 @@
      - Provides more options for creating serendipitous paths
   - **Semantic distance**: 1 - cosine_similarity(user1_embeddings, user2_embeddings)
      - Measures how semantically different the users' conversations are
-     - Balances similarity (for common ground) with diversity (for unique perspectives)
 - Use StandardScaler to normalize these metrics for fair comparison across clusters
 - Map between different ID systems (indices and conversation IDs)
 - Format conversation data for optimal processing
