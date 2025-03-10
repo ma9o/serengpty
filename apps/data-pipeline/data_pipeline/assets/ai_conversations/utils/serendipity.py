@@ -1,14 +1,11 @@
 """Utilities for serendipity path generation."""
 
-import math
 from textwrap import dedent
 from typing import Dict, List, Set
 
 import numpy as np
 import polars as pl
 from json_repair import repair_json
-
-from .find_top_k_users import get_approx_user_sim
 
 
 def generate_serendipity_prompt(
@@ -183,7 +180,6 @@ def format_conversation_summary(row: Dict) -> Dict:
         "title": row["title"],
         "summary": row["summary"],
         "date": date_str,
-        "is_sensitive": row.get("is_sensitive", False),
         "category": row.get("category", "practical"),
         "human_questions": row.get("human_questions", []),  # Add human questions
     }
@@ -231,7 +227,6 @@ def prepare_conversation_summaries(
             "summary",
             "start_date",
             "start_time",
-            "is_sensitive",
             "category",
         ]
     ).iter_rows(named=True):
@@ -329,5 +324,3 @@ def remap_indices_to_conversation_ids(
             pl.col("user2_indices").map_elements(remap).alias("user2_conversation_ids"),
         ]
     )
-
-

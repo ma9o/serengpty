@@ -3,7 +3,9 @@ from typing import Dict, Set
 
 import numpy as np
 
-from data_pipeline.assets.ai_conversations.utils.serendipity import get_approx_user_sim
+from data_pipeline.assets.ai_conversations.utils.find_top_k_users import (
+    get_approx_user_sim,
+)
 
 WEIGHTS = {
     "imbalance": 1,
