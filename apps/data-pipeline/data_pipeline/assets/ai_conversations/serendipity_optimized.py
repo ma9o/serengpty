@@ -427,7 +427,7 @@ async def serendipity_optimized(
             if group_paths:
                 paths.extend(group_paths)
         except Exception as e:
-            logger.warning(f"Error processing match group {mg_id}: {e}")
+            logger.error(f"Error processing match group {mg_id}: {e}")
 
     if not paths:
         return pl.DataFrame(schema=get_out_df_schema())
@@ -438,6 +438,4 @@ async def serendipity_optimized(
     result_df = _fix_duplicates(result_df, logger)
     result_df = remap_indices_to_conversation_ids(result_df, clusters_df)
 
-    return result_df.with_columns(
-        pl.col("match_group_id").cum_count().over("match_group_id").alias("path_order")
-    )
+    return result_df
