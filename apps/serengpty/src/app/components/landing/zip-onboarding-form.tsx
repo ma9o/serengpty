@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@enclaveid/ui/button';
 import { Input } from '@enclaveid/ui/input';
-import { FileArchive, Loader2, XCircle, CheckCircle } from 'lucide-react';
+import { FileArchive, Loader2, XCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@enclaveid/ui/hooks/use-toast';
 import { Toaster } from '@enclaveid/ui/toaster';
 import { processZipFile } from '../../utils/clientZipUtils';
@@ -12,18 +12,7 @@ import { Icon } from '@iconify/react';
 import { validateUsername } from '../../actions/validateUsername';
 import { getUniqueUsername } from '../../actions/getUniqueUsername';
 
-/**
- * generatePassword function for client-side password generation.
- */
-function generatePassword(length = 24): string {
-  const charset =
-    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
-  let retVal = '';
-  for (let i = 0; i < length; i++) {
-    retVal += charset.charAt(Math.floor(Math.random() * charset.length));
-  }
-  return retVal;
-}
+import { validatePassword } from '../../actions/validatePassword';
 
 /**
  * ZipOnboardingForm component wraps the ZipDropzone.
@@ -37,7 +26,9 @@ export function ZipOnboardingForm() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [usernameError, setUsernameError] = useState('');
-  const [password, setPassword] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [customUsername, setCustomUsername] = useState('');
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -52,9 +43,10 @@ export function ZipOnboardingForm() {
     // Reset state for a new upload.
     setError('');
     setUsernameError('');
+    setPasswordError('');
     setProcessing(true);
     setReady(false);
-    setPassword(null);
+    setPassword('');
     setProgress(0);
     setCustomUsername(await getUniqueUsername());
     setCleanedConversations({});
@@ -75,10 +67,6 @@ export function ZipOnboardingForm() {
       }
 
       setCleanedConversations(result.conversations);
-
-      // Generate a strong password on the client.
-      const newPassword = generatePassword();
-      setPassword(newPassword);
       setReady(true);
     } catch (err) {
       console.error(err);
@@ -104,6 +92,22 @@ export function ZipOnboardingForm() {
     return () => clearTimeout(timer);
   }, [customUsername]);
 
+  // Add a debounced password validation
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (password) {
+        const result = await validatePassword(password);
+        if (!result.isValid) {
+          setPasswordError(result.message || 'Password is invalid');
+        } else {
+          setPasswordError('');
+        }
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [password]);
+
   const validateCustomUsername = async (username: string) => {
     if (!username.trim()) {
       setUsernameError('Username is required');
@@ -121,16 +125,37 @@ export function ZipOnboardingForm() {
     return true;
   };
 
+  const validateUserPassword = async () => {
+    if (!password.trim()) {
+      setPasswordError('Password is required');
+      return false;
+    }
+
+    const result = await validatePassword(password);
+
+    if (!result.isValid) {
+      setPasswordError(result.message || 'Password is invalid');
+      return false;
+    }
+
+    setPasswordError('');
+    return true;
+  };
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!cleanedConversations || !password) {
-      setError('Missing required data for submission.');
+    if (!cleanedConversations) {
+      setError('Missing conversation data for submission.');
       return;
     }
 
-    // Validate username if provided
-    if (customUsername && !(await validateCustomUsername(customUsername))) {
+    // Validate username and password
+    if (!(await validateCustomUsername(customUsername))) {
+      return;
+    }
+
+    if (!validateUserPassword()) {
       return;
     }
 
@@ -297,121 +322,124 @@ export function ZipOnboardingForm() {
               </p>
             </div>
 
-            {/* <p className="text-md text-gray-700 mb-4 w-[470px]">
-              Please create your account to continue.
-              <br />
-              You will need both your username and password to login.{' '}
-              <span className="font-bold">Do not lose these!</span>
-            </p> */}
-            {password && (
-              <div className="flex flex-col items-center gap-4 w-[470px]">
-                <div className="w-full">
-                  <label
-                    htmlFor="username"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Choose a username
-                  </label>
-                  <div className="relative">
-                    <Input
-                      id="username"
-                      name="username"
-                      type="text"
-                      value={customUsername}
-                      onChange={(e) => setCustomUsername(e.target.value)}
-                      placeholder="Enter your desired username"
-                      className="w-full mb-1"
-                      autoComplete="username"
-                      required
-                    />
-                    {customUsername &&
-                      (!usernameError ? (
-                        <CheckCircle
-                          className={`absolute right-2 top-1/2 -translate-y-1/2 ${'text-green-500'}`}
-                          size={16}
-                        />
-                      ) : (
-                        <XCircle
-                          className={`absolute right-2 top-1/2 -translate-y-1/2 ${'text-red-500'}`}
-                          size={16}
-                        />
-                      ))}
-                  </div>
-                  {usernameError && (
-                    <p className="text-sm text-red-500">{usernameError}</p>
-                  )}
+            <p className="text-md text-gray-700 mb-4 w-[470px]">
+              Please create your account to continue. Choose a secure password.
+            </p>
+            <div className="flex flex-col items-center gap-4 w-[470px]">
+              <div className="w-full">
+                <label
+                  htmlFor="username"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Choose a username
+                </label>
+                <div className="relative">
+                  <Input
+                    id="username"
+                    name="username"
+                    type="text"
+                    value={customUsername}
+                    onChange={(e) => setCustomUsername(e.target.value)}
+                    placeholder="Enter your desired username"
+                    className="w-full mb-1"
+                    autoComplete="username"
+                    required
+                  />
+                  {customUsername &&
+                    (!usernameError ? (
+                      <CheckCircle
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 ${'text-green-500'}`}
+                        size={16}
+                      />
+                    ) : (
+                      <XCircle
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 ${'text-red-500'}`}
+                        size={16}
+                      />
+                    ))}
                 </div>
-
-                <div className="w-full">
-                  <label
-                    htmlFor="passwordDisplay"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Your generated password
-                  </label>
-                  <div className="relative">
-                    {/* Hidden password field for browser detection */}
-                    <input
-                      id="password"
-                      name="password"
-                      type="password"
-                      value={password || ''}
-                      readOnly
-                      style={{ display: 'none' }}
-                      autoComplete="new-password"
-                    />
-                    {/* Visible text field for user display */}
-                    <Input
-                      id="passwordDisplay"
-                      type="text"
-                      value={password}
-                      readOnly
-                      className="font-mono w-full"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="absolute right-2 top-1/2 -translate-y-1/2"
-                      onClick={() => {
-                        navigator.clipboard.writeText(password || '');
-                        toast({
-                          description: 'Password copied to clipboard',
-                          duration: 2000,
-                        });
-                      }}
-                    >
-                      Copy
-                    </Button>
-                  </div>
-                </div>
-
-                {processing ? (
-                  <div className="w-full mt-2">
-                    <div className="flex items-center justify-center mb-2">
-                      <Loader2 className="animate-spin mr-2" size={16} />
-                      <span>Uploading your data...</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div
-                        className="bg-green-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
-                        style={{ width: `${progress}%` }}
-                      ></div>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1 text-center">
-                      {progress.toFixed(2)}%
-                    </div>
-                  </div>
-                ) : (
-                  <Button
-                    type="submit"
-                    className="w-full mt-2"
-                    disabled={!!usernameError || customUsername === ''}
-                  >
-                    Upload zip and Sign up
-                  </Button>
+                {usernameError && (
+                  <p className="text-sm text-red-500">{usernameError}</p>
                 )}
               </div>
-            )}
+
+              <div className="w-full">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Create a password
+                </label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter a secure password"
+                    className="w-full mb-1 pr-16"
+                    autoComplete="new-password"
+                    required
+                  />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="p-1 text-gray-500 hover:text-gray-700 focus:outline-none"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <EyeOff size={16} />
+                      ) : (
+                        <Eye size={16} />
+                      )}
+                    </button>
+                    {password && (
+                      !passwordError ? (
+                        <CheckCircle className="text-green-500" size={16} />
+                      ) : (
+                        <XCircle className="text-red-500" size={16} />
+                      )
+                    )}
+                  </div>
+                </div>
+                {passwordError && (
+                  <p className="text-sm text-red-500 mb-3">{passwordError}</p>
+                )}
+              </div>
+
+              {processing ? (
+                <div className="w-full mt-2">
+                  <div className="flex items-center justify-center mb-2">
+                    <Loader2 className="animate-spin mr-2" size={16} />
+                    <span>Uploading your data...</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div
+                      className="bg-green-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
+                      style={{ width: `${progress}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1 text-center">
+                    {progress.toFixed(2)}%
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  type="submit"
+                  className="w-full mt-2"
+                  disabled={
+                    !!usernameError ||
+                    customUsername === '' ||
+                    !!passwordError ||
+                    password === ''
+                  }
+                >
+                  Upload zip and Sign up
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </form>
