@@ -2,21 +2,15 @@ import heapq
 
 import faiss
 import numpy as np
-import polars as pl
 
-from data_pipeline.constants.environments import DAGSTER_STORAGE_DIRECTORY
-
-
-def load_user_dataframe(user_id: str) -> pl.DataFrame:
-    """Load a user's dataframe from Parquet."""
-    return pl.read_parquet(
-        DAGSTER_STORAGE_DIRECTORY / "conversations_embeddings" / f"{user_id}.snappy"
-    )
+from data_pipeline.assets.ai_conversations.utils.load_user_dataframe import (
+    load_user_dataframe,
+)
 
 
 def load_user_embeddings(user_id):
     """Load user data and embeddings, returning a tuple of (df, embeddings_array)."""
-    df = load_user_dataframe(user_id)
+    df = load_user_dataframe(user_id, "conversations_embeddings")
     if df.is_empty():
         return None, None
 

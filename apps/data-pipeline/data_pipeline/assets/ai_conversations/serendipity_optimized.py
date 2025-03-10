@@ -17,6 +17,7 @@ from data_pipeline.assets.ai_conversations.utils.serendipity import (
     parse_serendipity_result,
     remap_indices_to_conversation_ids,
 )
+from data_pipeline.assets.ai_conversations.utils.load_user_dataframe import load_user_dataframe
 from data_pipeline.constants.custom_config import RowLimitConfig
 from data_pipeline.partitions import user_partitions_def
 from data_pipeline.resources.batch_inference.base_llm_resource import BaseLlmResource
@@ -35,23 +36,42 @@ class SerendipityOptimizedConfig(RowLimitConfig):
 
 
 def _extract_conversation_summaries(
-    df: pl.DataFrame, is_current_user: bool = False
+    df: pl.DataFrame,
+    parsed_conversations: pl.DataFrame = None,
+    is_current_user: bool = False,
 ) -> List[Dict]:
     """Extract and sort conversation summaries from a DataFrame."""
-    summaries = [
-        {
+    # Extract human questions from parsed_conversations if provided
+    human_questions_by_conv = {}
+    if parsed_conversations is not None:
+        # Create a DataFrame with sorted questions for each conversation_id
+        questions_df = parsed_conversations.select(
+            ["conversation_id", "date", "time", "question"]
+        ).sort(["conversation_id", "date", "time"])
+
+        # Group by conversation_id and collect questions
+        for group in questions_df.group_by("conversation_id"):
+            conv_id = group[0]
+            questions = [row["question"] for row in group[1].iter_rows(named=True)]
+            human_questions_by_conv[conv_id] = questions
+
+    summaries = []
+    for row in df.iter_rows(named=True):
+        conv_id = row["conversation_id"]
+        summary_dict = {
             "row_idx": row["row_idx"],
-            "conversation_id": row["conversation_id"],
+            "conversation_id": conv_id,
             "title": row["title"],
             "summary": row["summary"],
             "date": f"{row['start_date']} {row['start_time']}",
             "start_date": row["start_date"],
             "start_time": row["start_time"],
             "embedding": row["embedding"],
+            "human_questions": human_questions_by_conv.get(conv_id, []),
             **({"user_id": row["user_id"]} if not is_current_user else {}),
         }
-        for row in df.iter_rows(named=True)
-    ]
+        summaries.append(summary_dict)
+
     return sorted(summaries, key=lambda x: (x["start_date"], x["start_time"]))
 
 
@@ -109,12 +129,18 @@ def _create_path_entry(
 
 
 def _prepare_clusters(
-    clusters_df: pl.DataFrame, current_user_id: str, logger
+    clusters_df: pl.DataFrame,
+    current_user_id: str,
+    parsed_conversations: pl.DataFrame,
+    logger,
 ) -> Dict[int, Dict]:
     """Prepare cluster data from categorized conversations."""
     if clusters_df.height == 0:
         logger.info("No conversation pairs found.")
         return {}
+
+    # Cache for other users' parsed conversations
+    other_users_parsed_conv_cache = {}
 
     cluster_data = {}
     for cluster_id, cluster_df in clusters_df.group_by("cluster_id"):
@@ -123,14 +149,43 @@ def _prepare_clusters(
         if user1_df.height == 0:
             continue
 
+        # Get other users' data
+        other_users_df = cluster_df.filter(pl.col("user_id") != current_user_id)
+        
+        # Get unique other user IDs
+        other_user_ids = other_users_df.select("user_id").unique().to_series().to_list()
+        
+        # Load parsed conversations for other users
+        other_users_parsed_convs = []
+        for user_id in other_user_ids:
+            if user_id not in other_users_parsed_conv_cache:
+                try:
+                    # Load this user's parsed conversations
+                    user_parsed_conv = load_user_dataframe(user_id, "parsed_conversations")
+                    other_users_parsed_conv_cache[user_id] = user_parsed_conv
+                except Exception as e:
+                    logger.warning(f"Could not load parsed conversations for user {user_id}: {e}")
+                    other_users_parsed_conv_cache[user_id] = None
+            
+            if other_users_parsed_conv_cache[user_id] is not None:
+                other_users_parsed_convs.append(other_users_parsed_conv_cache[user_id])
+        
+        # Combine all other users' parsed conversations
+        other_users_parsed_conv = (
+            pl.concat(other_users_parsed_convs) if other_users_parsed_convs else None
+        )
+
         cluster_data[cluster_id] = {
-            "current_summaries": _extract_conversation_summaries(user1_df, True),
+            "current_summaries": _extract_conversation_summaries(
+                user1_df, parsed_conversations, True
+            ),
             "summaries": _extract_conversation_summaries(
-                cluster_df.filter(pl.col("user_id") != current_user_id)
+                other_users_df,
+                other_users_parsed_conv
             ),
             "paths_found": 0,
             "iteration": 0,
-            "match_group_id": cluster_df["match_group_id"][0],  # TODO: mmh?
+            "match_group_id": cluster_df["match_group_id"][0],
             "category": cluster_df["category"][0],
         }
     logger.info(f"Prepared {len(cluster_data)} clusters.")
@@ -367,7 +422,10 @@ def _fix_duplicates(df: pl.DataFrame, logger) -> pl.DataFrame:
 
 @asset(
     partitions_def=user_partitions_def,
-    ins={"cluster_categorizations": AssetIn(key="cluster_categorizations")},
+    ins={
+        "cluster_categorizations": AssetIn(key="cluster_categorizations"),
+        "parsed_conversations": AssetIn(key="parsed_conversations"),
+    },
     io_manager_key="parquet_io_manager",
 )
 async def serendipity_optimized(
@@ -375,6 +433,7 @@ async def serendipity_optimized(
     config: SerendipityOptimizedConfig,
     gemini_flash: BaseLlmResource,
     cluster_categorizations: pl.DataFrame,
+    parsed_conversations: pl.DataFrame,
 ) -> pl.DataFrame:
     """
     Discover serendipitous paths between users' conversations using categorized clusters.
@@ -384,6 +443,7 @@ async def serendipity_optimized(
         config: Configuration with max_paths_per_match_group.
         gemini_flash: LLM resource for path generation.
         cluster_categorizations: DataFrame with categorized conversation clusters.
+        parsed_conversations: DataFrame with original conversation data including questions.
 
     Returns:
         DataFrame with serendipitous path details.
@@ -394,7 +454,9 @@ async def serendipity_optimized(
     clusters_df = cluster_categorizations.drop("row_idx").with_row_count("row_idx")
 
     # Prepare cluster data
-    cluster_data = _prepare_clusters(clusters_df, current_user_id, logger)
+    cluster_data = _prepare_clusters(
+        clusters_df, current_user_id, parsed_conversations, logger
+    )
     if not cluster_data:
         return pl.DataFrame(schema=get_out_df_schema())
 

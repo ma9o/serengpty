@@ -43,15 +43,29 @@ def generate_serendipity_prompt(
     user1_texts = []
     for s in filtered_user1:
         row_idx = s["row_idx"]
+        # Format human questions if they exist
+        questions_section = ""
+        if s.get("human_questions") and len(s["human_questions"]) > 0:
+            questions = s["human_questions"]
+            questions_text = "\n  - ".join(questions)
+            questions_section = f"\nQuestions Asked:\n  - {questions_text}"
+        
         user1_texts.append(
-            f"ID: {row_idx}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}"
+            f"ID: {row_idx}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}{questions_section}"
         )
 
     user2_texts = []
     for s in filtered_user2:
         row_idx = s["row_idx"]
+        # Format human questions if they exist
+        questions_section = ""
+        if s.get("human_questions") and len(s["human_questions"]) > 0:
+            questions = s["human_questions"]
+            questions_text = "\n  - ".join(questions)
+            questions_section = f"\nQuestions Asked:\n  - {questions_text}"
+            
         user2_texts.append(
-            f"ID: {row_idx}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}"
+            f"ID: {row_idx}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}{questions_section}"
         )
 
     # Rest of the function remains the same...
@@ -62,6 +76,7 @@ def generate_serendipity_prompt(
 
           The serendipitous path should have common nodes (the conversations) that establish a closely shared background, but it should branch out into unique nodes that are complementary to either user.
           Common nodes between the two users should be as closely matched as possible, and the divergent paths have to be at least tangentially related to the common background.
+          Pay close attention to the specific questions asked by each user to better understand their interests and intentions.
 
           Output in this JSON format:
           {{
@@ -170,15 +185,17 @@ def format_conversation_summary(row: Dict) -> Dict:
         "date": date_str,
         "is_sensitive": row.get("is_sensitive", False),
         "category": row.get("category", "practical"),
+        "human_questions": row.get("human_questions", []),  # Add human questions
     }
 
 
-def prepare_conversation_summaries(df: pl.DataFrame) -> List[Dict]:
+def prepare_conversation_summaries(df: pl.DataFrame, parsed_conversations: pl.DataFrame = None) -> List[Dict]:
     """
     Prepare conversation summaries from a DataFrame.
 
     Args:
         df: A polars DataFrame with conversation data
+        parsed_conversations: Optional DataFrame with parsed conversation data including questions
 
     Returns:
         A list of conversation summary dictionaries
@@ -189,11 +206,27 @@ def prepare_conversation_summaries(df: pl.DataFrame) -> List[Dict]:
     # Sort by date/time for a stable ordering
     sorted_df = df_with_idx.sort(["start_date", "start_time"])
 
+    # Extract human questions from parsed_conversations if provided
+    human_questions_by_conv = {}
+    if parsed_conversations is not None:
+        # Create a DataFrame with sorted questions for each conversation_id
+        questions_df = (
+            parsed_conversations
+            .select(["conversation_id", "date", "time", "question"])
+            .sort(["conversation_id", "date", "time"])
+        )
+        
+        # Group by conversation_id and collect questions
+        for group in questions_df.group_by("conversation_id"):
+            conv_id = group[0]
+            questions = [row["question"] for row in group[1].iter_rows(named=True)]
+            human_questions_by_conv[conv_id] = questions
+
     summaries = []
     for row in sorted_df.select(
         [
             "row_idx",
-            "conversation_id",
+            "conversation_id", 
             "title",
             "summary",
             "start_date",
@@ -202,7 +235,11 @@ def prepare_conversation_summaries(df: pl.DataFrame) -> List[Dict]:
             "category",
         ]
     ).iter_rows(named=True):
-        summary = format_conversation_summary(row)
+        # Add human questions to the row data
+        row_data = dict(row)
+        row_data["human_questions"] = human_questions_by_conv.get(row["conversation_id"], [])
+        
+        summary = format_conversation_summary(row_data)
         if summary:
             # Include the row_idx in the summary
             summary["row_idx"] = row["row_idx"]
