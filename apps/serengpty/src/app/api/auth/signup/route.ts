@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
     const password = formData.get('password') as string;
     const conversationsJson = formData.get('conversations') as string;
     const customUsername = formData.get('username') as string | null;
+    const providerName = formData.get('providerName') as string;
 
     if (!password || !conversationsJson) {
       return NextResponse.json(
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
       // Save to Azure Blob Storage
       // Create a blob name with user id and path that matches the expected structure
       // The path should match what's expected by the parsed_conversations asset
-      const blobName = `api/${user.id}/openai/latest.json`;
+      const blobName = `api/${user.id}/${providerName}/latest.json`;
 
       // Upload the conversations JSON as a blob
       const blockBlobClient = azureContainerClient.getBlockBlobClient(blobName);
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
         localDataDir,
         'api',
         user.id.toString(),
-        'openai'
+        providerName
       );
 
       // Create directory if it doesn't exist

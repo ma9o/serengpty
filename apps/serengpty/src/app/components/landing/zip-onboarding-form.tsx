@@ -4,7 +4,14 @@ import { useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@enclaveid/ui/button';
 import { Input } from '@enclaveid/ui/input';
-import { FileArchive, Loader2, XCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import {
+  FileArchive,
+  Loader2,
+  XCircle,
+  CheckCircle,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 import { useToast } from '@enclaveid/ui/hooks/use-toast';
 import { Toaster } from '@enclaveid/ui/toaster';
 import { processZipFile } from '../../utils/clientZipUtils';
@@ -33,8 +40,8 @@ export function ZipOnboardingForm() {
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState(0);
   const [cleanedConversations, setCleanedConversations] = useState<
-    Record<string, unknown>
-  >({});
+    Record<string, unknown>[]
+  >([]);
 
   async function handleFileDrop(files: File[]) {
     const file = files[0];
@@ -49,7 +56,7 @@ export function ZipOnboardingForm() {
     setPassword('');
     setProgress(0);
     setCustomUsername(await getUniqueUsername());
-    setCleanedConversations({});
+    setCleanedConversations([]);
 
     try {
       // Reset progress before starting
@@ -374,7 +381,7 @@ export function ZipOnboardingForm() {
                   <Input
                     id="password"
                     name="password"
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter a secure password"
@@ -387,21 +394,18 @@ export function ZipOnboardingForm() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="p-1 text-gray-500 hover:text-gray-700 focus:outline-none"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-label={
+                        showPassword ? 'Hide password' : 'Show password'
+                      }
                     >
-                      {showPassword ? (
-                        <EyeOff size={16} />
-                      ) : (
-                        <Eye size={16} />
-                      )}
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
-                    {password && (
-                      !passwordError ? (
+                    {password &&
+                      (!passwordError ? (
                         <CheckCircle className="text-green-500" size={16} />
                       ) : (
                         <XCircle className="text-red-500" size={16} />
-                      )
-                    )}
+                      ))}
                   </div>
                 </div>
                 {passwordError && (

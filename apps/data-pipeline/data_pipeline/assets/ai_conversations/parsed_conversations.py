@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 from io import StringIO
+from typing import Any, Dict, List
 
 import pandas as pd
 import polars as pl
@@ -14,21 +15,20 @@ from data_pipeline.constants.environments import API_STORAGE_DIRECTORY, DataProv
 from data_pipeline.partitions import user_partitions_def
 
 
-def _process_conversation_data(original_df: pd.DataFrame) -> pd.DataFrame:
+def _process_openai_conversation(data: List[Dict[str, Any]]) -> pd.DataFrame:
     """
-    Process conversation data into a structured DataFrame with conversation_id,
-    date, time, question and answer columns. Handles branched conversations.
+    Process conversation data from OpenAI format into a structured DataFrame.
 
     Args:
-        original_df (pd.DataFrame): DataFrame containing the mapping column
+        data (List[Dict[str, Any]]): List of conversation data in OpenAI format
     Returns:
         pd.DataFrame: Processed conversation data
     """
     # Initialize lists to store the processed data
     processed_data = []
 
-    # Iterate through each row in the original DataFrame
-    for _, row in original_df.iterrows():
+    # Iterate through each conversation in the data
+    for row in data:
         conversation_id = row["id"]
         title = row["title"]
         mapping = row["mapping"]
@@ -108,12 +108,97 @@ def _process_conversation_data(original_df: pd.DataFrame) -> pd.DataFrame:
     # Create DataFrame from processed data
     df_conversations = pd.DataFrame(processed_data)
 
-    # Sort by date and time
-    df_conversations = df_conversations.sort_values(
-        ["conversation_id", "date", "time"], ascending=[True, True, True]
-    )
+    if not df_conversations.empty:
+        # Sort by date and time
+        df_conversations = df_conversations.sort_values(
+            ["conversation_id", "date", "time"], ascending=[True, True, True]
+        )
 
     return df_conversations
+
+
+def _process_anthropic_conversation(data: List[Dict[str, Any]]) -> pd.DataFrame:
+    """
+    Process conversation data from Anthropic format into a structured DataFrame.
+
+    Args:
+        data (List[Dict[str, Any]]): List of conversation data in Anthropic format
+    Returns:
+        pd.DataFrame: Processed conversation data
+    """
+    # Initialize lists to store the processed data
+    processed_data = []
+
+    # Iterate through each conversation in the data
+    for conversation in data:
+        conversation_id = conversation["uuid"]
+        title = conversation["name"]
+        chat_messages = conversation["chat_messages"]
+
+        # Process messages in pairs (human -> assistant)
+        for i in range(len(chat_messages) - 1):
+            current_msg = chat_messages[i]
+            next_msg = chat_messages[i + 1]
+
+            # Skip if not human -> assistant sequence
+            if current_msg["sender"] != "human" or next_msg["sender"] != "assistant":
+                continue
+
+            # Extract timestamp and convert to datetime
+            timestamp_str = current_msg["created_at"]
+            dt = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+
+            # Extract question and answer
+            question = current_msg["text"]
+            answer = next_msg["text"]
+
+            processed_data.append(
+                {
+                    "conversation_id": conversation_id,
+                    "title": title,
+                    "date": dt.date(),
+                    "time": dt.time(),
+                    "question": question,
+                    "answer": answer,
+                }
+            )
+
+    # Create DataFrame from processed data
+    df_conversations = pd.DataFrame(processed_data)
+
+    if not df_conversations.empty:
+        # Sort by date and time
+        df_conversations = df_conversations.sort_values(
+            ["conversation_id", "date", "time"], ascending=[True, True, True]
+        )
+
+    return df_conversations
+
+
+def _detect_schema_type(data: List[Dict[str, Any]]) -> str:
+    """
+    Detect the schema type based on the structure of the data.
+
+    Args:
+        data (List[Dict[str, Any]]): The JSON data to analyze
+    Returns:
+        str: Either "openai" or "anthropic"
+    """
+    if not data:
+        raise ValueError("Empty data provided, cannot detect schema type")
+
+    # Check for key indicators of each schema
+    first_item = data[0]
+
+    # Check for Anthropic schema indicators
+    if "chat_messages" in first_item and "uuid" in first_item:
+        return "anthropic"
+
+    # Check for OpenAI schema indicators
+    if "mapping" in first_item and "conversation_id" in first_item:
+        return "openai"
+
+    raise ValueError("Unable to determine schema type from the provided data")
 
 
 @asset(
@@ -124,9 +209,11 @@ def parsed_conversations(
     context: AssetExecutionContext, config: Config
 ) -> pl.DataFrame:
     """
-    Extracts and structures raw conversation data from OpenAI JSON files.
+    Extracts and structures raw conversation data from JSON files.
+    Supports both OpenAI and Anthropic conversation formats.
 
     This asset:
+    - Identifies the schema type (OpenAI or Anthropic)
     - Transforms unstructured JSON into a clean dataframe with standard fields
     - Uses pandas and polars libraries for efficient data handling
     - Serves as the foundation layer for all subsequent processing steps
@@ -140,26 +227,45 @@ def parsed_conversations(
     - question: User's query text
     - answer: Assistant's response text
     """
-    user_dir = (
-        API_STORAGE_DIRECTORY
-        / context.partition_key
-        / DataProvider.OPENAI["path_prefix"]
-    )
+    user_dir = API_STORAGE_DIRECTORY / context.partition_key
+
+    # Try to determine provider from directory
+    provider_info = None
+    for provider_name, provider_data in DataProvider.__dict__.items():
+        if isinstance(provider_data, dict) and "path_prefix" in provider_data:
+            provider_path = user_dir / provider_data["path_prefix"]
+            json_file = provider_path / "latest.json"
+            if json_file.exists():
+                provider_info = provider_data
+                break
+
+    if not provider_info:
+        raise ValueError(
+            f"Could not find conversation data for user {context.partition_key}"
+        )
 
     # Get the JSON file for the current user
-    json_file = user_dir / "latest.json"
+    json_file = user_dir / provider_info["path_prefix"] / "latest.json"
 
     # Load the JSON file directly
     with open(json_file) as f:
         conversations_data = json.load(f)
 
-    # Convert to DataFrame
-    raw_df = pd.DataFrame(conversations_data)
+    if not conversations_data:
+        raise ValueError("Expected non-empty conversation data but got empty data.")
 
-    if raw_df.empty:
-        raise ValueError("Expected a non-empty DataFrame but got an empty one.")
+    # Detect schema type and process accordingly
+    schema_type = _detect_schema_type(conversations_data)
 
-    processed_df = _process_conversation_data(raw_df)
+    if schema_type == "openai":
+        processed_df = _process_openai_conversation(conversations_data)
+    elif schema_type == "anthropic":
+        processed_df = _process_anthropic_conversation(conversations_data)
+    else:
+        raise ValueError(f"Unsupported schema type: {schema_type}")
+
+    if processed_df.empty:
+        raise ValueError("Processing resulted in an empty DataFrame.")
 
     # First we read it into a StringIO object with pandas since polars is a bit stricter
     # with the types
