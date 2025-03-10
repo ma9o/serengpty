@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Avatar, AvatarImage, AvatarFallback } from '@enclaveid/ui/avatar';
 import { Skeleton } from '@enclaveid/ui/skeleton';
 import { Button } from '@enclaveid/ui/button';
+import { Badge } from '@enclaveid/ui/badge';
 import { cn } from '@enclaveid/ui-utils';
 import { ScrollArea } from '@enclaveid/ui/scroll-area';
 import { Separator } from '@enclaveid/ui/separator';
@@ -277,8 +278,11 @@ export function VerticalSerendipitousPaths({
                         <div className="w-full text-left flex justify-between items-start gap-2">
                           <div className="flex-row">
                             <div className="flex justify-between items-center">
-                              <div className="font-medium mb-1">
+                              <div className="font-medium mb-1 flex items-center gap-2">
                                 {processedTitle}
+                                {path.isSensitive && (
+                                  <Badge variant="destructive" className="ml-2 bg-orange-500/20 border-orange-700 text-orange-700">Sensitive</Badge>
+                                )}
                               </div>
                               <PathFeedback
                                 pathId={path.id}
@@ -446,7 +450,12 @@ function PathDetails({
       <div className="flex flex-row items-center justify-between gap-4">
         {/* Common Summary with View Conversations Button */}
         <div className="flex-1 p-4 bg-muted rounded-lg relative">
-          <h3 className="text-lg font-medium mb-2">Common Interest</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-medium mb-2">Common Interest</h3>
+            {path.isSensitive && (
+              <Badge variant="destructive" className="bg-orange-500/20 border-orange-700 text-orange-700">Sensitive</Badge>
+            )}
+          </div>
           <p>{processedCommonSummary}</p>
           <div className="mt-3">
             <Dialog>
@@ -457,8 +466,11 @@ function PathDetails({
               </DialogTrigger>
               <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
                 <DialogHeader>
-                  <DialogTitle>
+                  <DialogTitle className="flex items-center gap-2">
                     Common Conversations ({path.commonConversations.length})
+                    {path.isSensitive && (
+                      <Badge variant="destructive" className="ml-1 bg-orange-500/20 border-orange-700 text-orange-700">Sensitive</Badge>
+                    )}
                   </DialogTitle>
                   <DialogDescription>
                     Conversations shared between users in this path

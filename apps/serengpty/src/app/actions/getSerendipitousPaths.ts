@@ -168,6 +168,7 @@ export async function getSerendipitousPaths() {
         const allUsersHaveSensitiveMatchingEnabled = match.users.every(
           (user) => user.sensitiveMatching
         );
+
         return allUsersHaveSensitiveMatchingEnabled;
       });
 
