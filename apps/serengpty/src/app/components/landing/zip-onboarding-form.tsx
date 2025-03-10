@@ -39,6 +39,9 @@ export function ZipOnboardingForm() {
   const [customUsername, setCustomUsername] = useState('');
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [providerName, setProviderName] = useState<
+    'anthropic' | 'openai' | undefined
+  >(undefined);
   const [cleanedConversations, setCleanedConversations] = useState<
     Record<string, unknown>[]
   >([]);
@@ -57,6 +60,7 @@ export function ZipOnboardingForm() {
     setProgress(0);
     setCustomUsername(await getUniqueUsername());
     setCleanedConversations([]);
+    setProviderName(undefined);
 
     try {
       // Reset progress before starting
@@ -74,6 +78,7 @@ export function ZipOnboardingForm() {
       }
 
       setCleanedConversations(result.conversations);
+      setProviderName(result.providerName);
       setReady(true);
     } catch (err) {
       console.error(err);
@@ -180,6 +185,11 @@ export function ZipOnboardingForm() {
       // Add username
       formData.append('username', customUsername);
 
+      // Add provider name if available
+      if (providerName) {
+        formData.append('providerName', providerName);
+      }
+
       // Send the data to our signup API
       // Simulated upload progress
       const simulateProgress = () => {
@@ -229,7 +239,10 @@ export function ZipOnboardingForm() {
   // Set up the dropzone directly in this component
   const { getRootProps, getInputProps } = useDropzone({
     onDrop: handleFileDrop,
-    accept: { 'application/zip': ['.zip'] },
+    accept: {
+      'application/zip': ['.zip'],
+      'application/octet-stream': ['.dms'],
+    },
     multiple: false,
     disabled: processing,
     // This ensures the dropzone is always ready to accept new files
@@ -315,7 +328,7 @@ export function ZipOnboardingForm() {
                   Drop your data export zip here
                 </p>
                 <p className="text-sm text-gray-400 mt-1">
-                  Only *.zip files are accepted
+                  Only *.zip and *.dms files are accepted
                 </p>
               </div>
             )}
@@ -325,13 +338,14 @@ export function ZipOnboardingForm() {
             <div className="flex items-center justify-center gap-4">
               <FileArchive className="mb-4 text-gray-700" size={32} />
               <p className="text-md text-gray-700 mb-4 w-[400px]">
-                Your archive is ready to be uploaded!
+                Your
+                <span className="font-bold">
+                  {providerName === 'anthropic' ? ' Claude ' : ' ChatGPT '}
+                </span>
+                archive is ready to be uploaded!
               </p>
             </div>
 
-            <p className="text-md text-gray-700 mb-4 w-[470px]">
-              Please create your account to continue. Choose a secure password.
-            </p>
             <div className="flex flex-col items-center gap-4 w-[470px]">
               <div className="w-full">
                 <label

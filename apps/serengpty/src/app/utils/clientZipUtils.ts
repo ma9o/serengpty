@@ -108,15 +108,18 @@ export async function processZipFile(
 ): Promise<{
   success: boolean;
   conversations: Record<string, unknown>[] | null;
+  providerName?: 'anthropic' | 'openai';
 }> {
   let resolvePromise: (value: {
     success: boolean;
     conversations: Record<string, unknown>[] | null;
+    providerName?: 'anthropic' | 'openai';
   }) => void;
   let resolved = false;
   const doResolve = (value: {
     success: boolean;
     conversations: Record<string, unknown>[] | null;
+    providerName?: 'anthropic' | 'openai';
   }) => {
     if (!resolved) {
       resolved = true;
@@ -127,6 +130,7 @@ export async function processZipFile(
   const promise = new Promise<{
     success: boolean;
     conversations: Record<string, unknown>[] | null;
+    providerName?: 'anthropic' | 'openai';
   }>((resolve) => {
     resolvePromise = resolve;
   });
@@ -152,6 +156,7 @@ export async function processZipFile(
         let currentKey: string | null = null;
         let inPartsArray = false;
         let topLevelArray = false;
+        let providerName: 'anthropic' | 'openai' | undefined = undefined;
 
         // Add this variable to track the current conversation index
         let currentConversationIndex = -1;
@@ -160,9 +165,18 @@ export async function processZipFile(
         let currentConversation: Record<string, unknown> | null = null;
         let currentConversationTitle = 'Unknown Conversation';
 
+        // Add tracking variables for Anthropic format
+        let inChatMessagesArray = false;
+        let inContentArray = false;
+        let currentChatMessageObj: Record<string, unknown> | null = null;
+
         unzippedFile.ondata = (err, data, final) => {
           if (err) {
-            doResolve({ success: false, conversations: null });
+            doResolve({
+              success: false,
+              conversations: null,
+              providerName: undefined,
+            });
             return;
           }
 
@@ -187,6 +201,7 @@ export async function processZipFile(
             doResolve({
               success: true,
               conversations: records,
+              providerName,
             });
             stopReading = true;
           }
@@ -206,9 +221,21 @@ export async function processZipFile(
           if (Array.isArray(parent)) {
             parent.push(arr);
           } else if (currentKey) {
-            if (currentKey === 'parts') {
-              inPartsArray = true;
+            // Handle array flags based on provider type
+            if (providerName === 'openai') {
+              if (currentKey === 'parts') {
+                inPartsArray = true;
+              }
+            } 
+            else if (providerName === 'anthropic') {
+              if (currentKey === 'chat_messages') {
+                inChatMessagesArray = true;
+              } 
+              else if (currentKey === 'content' && currentChatMessageObj) {
+                inContentArray = true;
+              }
             }
+            // For all cases, set the array on the parent
             parent[currentKey] = arr;
           }
           stack.push(arr);
@@ -221,12 +248,23 @@ export async function processZipFile(
             return;
           }
 
-          if (
-            stack.length > 0 &&
-            !Array.isArray(stack[stack.length - 1]) &&
-            stack[stack.length - 1]['parts'] === closedArray
-          ) {
-            inPartsArray = false;
+          if (stack.length > 0 && !Array.isArray(stack[stack.length - 1])) {
+            const parent = stack[stack.length - 1];
+            
+            // Handle array flags based on provider type
+            if (providerName === 'openai') {
+              if (parent['parts'] === closedArray) {
+                inPartsArray = false;
+              }
+            }
+            else if (providerName === 'anthropic') {
+              if (parent['chat_messages'] === closedArray) {
+                inChatMessagesArray = false;
+              }
+              else if (parent['content'] === closedArray) {
+                inContentArray = false;
+              }
+            }
           }
         };
 
@@ -238,10 +276,18 @@ export async function processZipFile(
             const parent = stack[stack.length - 1];
             if (Array.isArray(parent)) {
               parent.push(obj);
-              // If we're in the top-level array, this is a new conversation
+              
+              // If we're in the top-level array, this is a new conversation (common for both providers)
               if (topLevelArray && stack.length === 1) {
                 currentConversation = obj;
                 currentConversationTitle = 'Unknown Conversation';
+              }
+              // Provider-specific handling
+              else if (providerName === 'anthropic') {
+                // If we're in the chat_messages array, this is a new chat message
+                if (inChatMessagesArray && parent === currentConversation?.['chat_messages']) {
+                  currentChatMessageObj = obj;
+                }
               }
             } else if (currentKey) {
               parent[currentKey] = obj;
@@ -253,10 +299,21 @@ export async function processZipFile(
 
         parser.onkey = (key) => {
           currentKey = key;
+
+          // Detect the provider format when specific keys are encountered
+          // If we see 'mapping', it's likely OpenAI/ChatGPT format
+          if (key === 'mapping' && !providerName) {
+            providerName = 'openai';
+          }
+
+          // If we see 'chat_messages', it's likely Anthropic/Claude format
+          if (key === 'chat_messages' && !providerName) {
+            providerName = 'anthropic';
+          }
         };
 
         parser.onvalue = (value) => {
-          // Update the conversation title when we encounter it
+          // Update the conversation title when we encounter it (common for both providers)
           if (
             currentKey === 'title' &&
             stack.length > 0 &&
@@ -265,10 +322,40 @@ export async function processZipFile(
             currentConversationTitle = value as string;
           }
 
-          if (inPartsArray && typeof value === 'string') {
-            // Use the tracked conversation title
-            value = cleanText(value, currentConversationTitle);
+          // Process values based on the provider type
+          if (providerName === 'openai') {
+            // Clean text in OpenAI parts array
+            if (inPartsArray && typeof value === 'string') {
+              value = cleanText(value, currentConversationTitle);
+            }
+          } 
+          else if (providerName === 'anthropic') {
+            // For Anthropic format, use the name field as conversation title if title is not set
+            if (
+              currentKey === 'name' &&
+              stack.length > 0 &&
+              stack[stack.length - 1] === currentConversation &&
+              currentConversationTitle === 'Unknown Conversation'
+            ) {
+              currentConversationTitle = value as string;
+            }
+
+            // Clean text in Anthropic text field
+            if (
+              currentKey === 'text' &&
+              typeof value === 'string' &&
+              stack.length > 0 &&
+              (
+                // Direct text field in message object
+                (stack[stack.length - 1] === currentChatMessageObj) ||
+                // Or text field inside content array item
+                (inContentArray && Array.isArray(stack[stack.length - 2]?.content))
+              )
+            ) {
+              value = cleanText(value, currentConversationTitle);
+            }
           }
+
           const parent = stack[stack.length - 1];
           if (Array.isArray(parent)) {
             parent.push(value);
@@ -280,6 +367,7 @@ export async function processZipFile(
         parser.oncloseobject = () => {
           const obj = stack.pop();
           if (stack.length > 0 && Array.isArray(stack[stack.length - 1])) {
+            // Common handling for both providers
             if (topLevelArray && stack.length === 1) {
               // This is a conversation object in the top-level array
               records.push(obj);
@@ -287,11 +375,22 @@ export async function processZipFile(
               // Reset current conversation when we're done with it
               currentConversation = null;
             }
+            // Provider-specific handling
+            else if (providerName === 'anthropic') {
+              // Reset currentChatMessageObj when done with a message
+              if (inChatMessagesArray && obj === currentChatMessageObj) {
+                currentChatMessageObj = null;
+              }
+            }
           }
         };
 
         parser.onerror = (e) => {
-          doResolve({ success: false, conversations: null });
+          doResolve({
+            success: false,
+            conversations: null,
+            providerName: undefined,
+          });
         };
 
         unzippedFile.start();
@@ -307,7 +406,11 @@ export async function processZipFile(
       const { done, value } = await reader.read();
       if (done) {
         if (!foundConversations) {
-          doResolve({ success: false, conversations: null });
+          doResolve({
+            success: false,
+            conversations: null,
+            providerName: undefined,
+          });
         }
         break;
       }
@@ -316,7 +419,7 @@ export async function processZipFile(
       }
     }
   } catch (error) {
-    doResolve({ success: false, conversations: null });
+    doResolve({ success: false, conversations: null, providerName: undefined });
   }
 
   return promise;
