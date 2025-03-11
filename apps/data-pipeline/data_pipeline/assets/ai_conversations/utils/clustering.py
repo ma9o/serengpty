@@ -153,7 +153,7 @@ AGGLOMERATIVE_CLUSTERING_CONFIG = {
 }
 
 HDBSCAN_CLUSTERING_CONFIG = {
-    "min_cluster_size": 7,
+    "min_cluster_size": 5,
     "min_samples": None,
     "cluster_selection_epsilon": 0,
 }

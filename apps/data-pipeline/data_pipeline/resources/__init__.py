@@ -33,9 +33,9 @@ resources = {
         api_key=EnvVar("DEEPINFRA_API_KEY"),
         # base_url=EnvVar("RAY_APP_ADDRESS"),
     ),
-    "claude": claude_resource(),
     "gemini_flash": gemini_flash_resource(),
     "gpt4o_mini": create_gpt4o_mini_resource(),
+    "deepseek_r1": create_deepseek_r1_resource(),
     "parquet_io_manager": PolarsParquetIOManager(
         extension=".snappy", base_dir=str(DAGSTER_STORAGE_DIRECTORY)
     ),

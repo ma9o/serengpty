@@ -85,6 +85,13 @@ def generate_serendipity_prompt(
     )
 
 
+def _join_if_list(value) -> str:
+    if isinstance(value, list):
+        return "\n".join(value)
+    else:
+        return value
+
+
 def parse_serendipity_result(content: str) -> Dict | None:
     """
     Parse the LLM response (in JSON) and return a Python dictionary.
@@ -122,10 +129,18 @@ def parse_serendipity_result(content: str) -> Dict | None:
                 "user1_unique_indices": user1_unique_indices,
                 "user2_unique_indices": user2_unique_indices,
                 "common_background": result["common_background"],
-                "user_1_unique_branches": result.get("user_1_unique_branches", ""),
-                "user_2_unique_branches": result.get("user_2_unique_branches", ""),
-                "user_1_call_to_action": result.get("user_1_call_to_action", ""),
-                "user_2_call_to_action": result.get("user_2_call_to_action", ""),
+                "user_1_unique_branches": _join_if_list(
+                    result.get("user_1_unique_branches", "")
+                ),
+                "user_2_unique_branches": _join_if_list(
+                    result.get("user_2_unique_branches", "")
+                ),
+                "user_1_call_to_action": _join_if_list(
+                    result.get("user_1_call_to_action", "")
+                ),
+                "user_2_call_to_action": _join_if_list(
+                    result.get("user_2_call_to_action", "")
+                ),
                 "is_sensitive": result.get("is_sensitive", False),
             }
     except Exception:

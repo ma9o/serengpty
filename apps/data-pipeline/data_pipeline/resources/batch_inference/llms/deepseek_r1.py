@@ -29,11 +29,11 @@ _deepinfra_config = RemoteLlmConfig(
     timeout=60 * 5,
     inference_url="https://api.deepinfra.com/v1/openai/chat/completions",
     inference_config={
-        "model": "deepseek-ai/DeepSeek-R1",
+        "model": "deepseek-ai/DeepSeek-R1-Turbo",
         "max_tokens": 8192,
     },
-    input_cpm=0.85,
-    output_cpm=2.5,
+    input_cpm=2,
+    output_cpm=6,
     context_length=64_000,
 )
 

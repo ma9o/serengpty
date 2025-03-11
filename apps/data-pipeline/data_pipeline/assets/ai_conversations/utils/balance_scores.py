@@ -8,7 +8,7 @@ from data_pipeline.assets.ai_conversations.utils.find_top_k_users import (
 )
 
 WEIGHTS = {
-    "imbalance": 2,
+    "imbalance": 1,
     "magnitude_factor": 1,
     "dist": 1,
 }
