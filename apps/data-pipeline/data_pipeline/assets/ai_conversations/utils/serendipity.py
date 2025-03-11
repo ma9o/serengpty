@@ -8,6 +8,27 @@ import polars as pl
 from json_repair import repair_json
 
 
+def _prepare_user_texts(user_summaries: List[Dict], excluded_indices: Set[int]) -> str:
+    filtered_summaries = [
+        s for s in user_summaries if s["row_idx"] not in excluded_indices
+    ]
+    texts = []
+    for s in filtered_summaries:
+        row_idx = s["row_idx"]
+        # Format human questions if they exist
+        questions_section = ""
+        if s.get("human_questions") and len(s["human_questions"]) > 0:
+            questions = s["human_questions"]
+            questions_text = "\n  - ".join(questions)
+            questions_section = f"\nQuestions Asked:\n  - {questions_text}"
+
+        texts.append(
+            f"ID: {row_idx}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}{questions_section}\n"
+        )
+
+    return chr(10).join(texts)
+
+
 def generate_serendipity_prompt(
     user1_summaries: List[Dict],
     user2_summaries: List[Dict],
@@ -25,68 +46,30 @@ def generate_serendipity_prompt(
     if excluded_indices is None:
         excluded_indices = set()
 
-    # Filter out conversations whose row_idx is in the excluded set
-    filtered_user1 = [
-        s for s in user1_summaries if s["row_idx"] not in excluded_indices
-    ]
-    filtered_user2 = [
-        s for s in user2_summaries if s["row_idx"] not in excluded_indices
-    ]
-
-    # If either user has no conversations left, return empty prompt
-    if not filtered_user1 or not filtered_user2:
-        return ""
-
-    user1_texts = []
-    for s in filtered_user1:
-        row_idx = s["row_idx"]
-        # Format human questions if they exist
-        questions_section = ""
-        if s.get("human_questions") and len(s["human_questions"]) > 0:
-            questions = s["human_questions"]
-            questions_text = "\n  - ".join(questions)
-            questions_section = f"\nQuestions Asked:\n  - {questions_text}"
-
-        user1_texts.append(
-            f"ID: {row_idx}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}{questions_section}"
-        )
-
-    user2_texts = []
-    for s in filtered_user2:
-        row_idx = s["row_idx"]
-        # Format human questions if they exist
-        questions_section = ""
-        if s.get("human_questions") and len(s["human_questions"]) > 0:
-            questions = s["human_questions"]
-            questions_text = "\n  - ".join(questions)
-            questions_section = f"\nQuestions Asked:\n  - {questions_text}"
-
-        user2_texts.append(
-            f"ID: {row_idx}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}{questions_section}"
-        )
-
-    # Rest of the function remains the same...
-    prompt = dedent(
+    return dedent(
         f"""
-          You'll be given summaries of AI conversations from two different users.
-          Your task is to find the best matching serendipitous progression between the two users, that spans across multiple conversations in either set.
+          You'll be given two lists of conversations between two users and AI assistants.
+          Your task is to find a serendipitous path between them, linking multiple conversations from each set.
 
-          The serendipitous path should have common nodes (the conversations) that establish a closely shared background, but it should branch out into unique nodes that are complementary to either user.
-          Common nodes between the two users should be as closely matched as possible, and the divergent paths have to be at least tangentially related to the common background.
-          Pay close attention to the specific questions asked by each user to better understand their interests and intentions.
+          The connection must include:
+          - **Common nodes**: Conversations with closely matching themes that form a shared foundation.
+          - **Unique nodes**: Complementary branches that diverge into distinct but related areas.
+
+          Focus on the the users' original questions and what they want to achieve.
+          In your outputs, assume the users are expert in the topics they are discussing so avoid any generalizations and be as specific as possible.
 
           Output in this JSON format:
           {{
-            "path_title": "A concise, engaging title for this serendipitous path that captures the essence of the connection. Add an emoji at the beginning of the title.",
-            "common_indices": [list of integer IDs from both users' CONVERSATIONS whose themes are shared],
-            "user1_unique_indices": [list of integer IDs from USER 1 CONVERSATIONS that explore topics unique to USER 1, not present in USER 2],
-            "user2_unique_indices": [list of integer IDs from USER 2 CONVERSATIONS that explore topics unique to USER 2, not present in USER 1],
-            "common_background": "A detailed description of the shared background between the two users (without the unique parts)",
-            "user_1_unique_branches": "A summary of the unique path undertaken by USER 1",
-            "user_2_unique_branches": "A summary of the unique path undertaken by USER 2",
-            "user_1_call_to_action": "A short prompt describing what USER 1 should ask USER 2, given their differences and similarities",
-            "user_2_call_to_action": "A short prompt describing what USER 2 should ask USER 1, given their differences and similarities",
-            "is_highly_sensitive": "Boolean value indicating whether the path contains highly sensitive content: physical and mental health problems, erotic content, etc."
+            "path_title": "A short summary title for the serendipitous path, with an emoji at the beginning",
+            "common_indices": [list of integer IDs from both users’ CONVERSATIONS with shared themes],
+            "user1_unique_indices": [list of integer IDs from <USER_1> CONVERSATIONS unique to <USER_1>, absent in <USER_2>],
+            "user2_unique_indices": [list of integer IDs from <USER_2> CONVERSATIONS unique to <USER_2>, absent in <USER_1>],
+            "common_background": "The common ground between <USER_1> and <USER_2> in 2/3 sentences",
+            "user_1_unique_branches": "Bullet points of how <USER_1> uniquely branches off from the common ground",
+            "user_2_unique_branches": "Bullet points of how <USER_2> uniquely branches off from the common ground",
+            "user_1_call_to_action": "Bullet points of what <USER_1> could ask <USER_2> to join the unique branches",
+            "user_2_call_to_action": "Bullet points of what <USER_2> could ask <USER_1> to join the unique branches",
+            "is_sensitive": "Boolean: true if the path involves sensitive topics (sickness, erotica, etc.), false otherwise."
           }}
 
           In the text, replace any references to the users with "<USER_1>" and "<USER_2>".
@@ -94,14 +77,12 @@ def generate_serendipity_prompt(
           If you cannot find a serendipitous path, return an empty object: {{}}
 
           USER 1 CONVERSATIONS:
-          {chr(10).join(user1_texts)}
+          {_prepare_user_texts(user1_summaries, excluded_indices)}
 
           USER 2 CONVERSATIONS:
-          {chr(10).join(user2_texts)}
+          {_prepare_user_texts(user2_summaries, excluded_indices)}
         """.strip()
     )
-
-    return prompt
 
 
 def parse_serendipity_result(content: str) -> Dict:
@@ -145,7 +126,7 @@ def parse_serendipity_result(content: str) -> Dict:
                 "user_2_unique_branches": result.get("user_2_unique_branches", ""),
                 "user_1_call_to_action": result.get("user_1_call_to_action", ""),
                 "user_2_call_to_action": result.get("user_2_call_to_action", ""),
-                "is_highly_sensitive": result.get("is_highly_sensitive", False),
+                "is_sensitive": result.get("is_sensitive", False),
             }
     except Exception:
         return {}
@@ -272,7 +253,7 @@ def get_out_df_schema() -> Dict:
         "user2_unique_branches": pl.Utf8,
         "user1_call_to_action": pl.Utf8,
         "user2_call_to_action": pl.Utf8,
-        "is_highly_sensitive": pl.Boolean,
+        "is_sensitive": pl.Boolean,
         "balance_score": pl.Float64,
         "balance_scores_detailed": pl.Struct(
             {

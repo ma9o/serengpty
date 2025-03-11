@@ -55,9 +55,9 @@ def _extract_conversation_summaries(
         ).sort(["conversation_id", "date", "time"])
 
         # Group by conversation_id and collect questions
-        for group in questions_df.group_by("conversation_id"):
+        for group, rows in questions_df.group_by("conversation_id"):
             conv_id = group[0]
-            questions = [row["question"] for row in group[1].iter_rows(named=True)]
+            questions = [row["question"] for row in rows.iter_rows(named=True)]
             human_questions_by_conv[conv_id] = questions
 
     summaries = []
@@ -127,7 +127,7 @@ def _create_path_entry(
         "cluster_id": cluster_id,
         "match_group_id": match_group_id,
         "category": category,
-        "is_highly_sensitive": path_obj.get("is_highly_sensitive", False),
+        "is_sensitive": path_obj.get("is_sensitive", False),
         "balance_score": balance_score,
         "balance_scores_detailed": balance_scores_detailed,
     }

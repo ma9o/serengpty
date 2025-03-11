@@ -32,7 +32,7 @@ export interface SerendipityOptimizedRow {
   common_conversation_ids: string[];
   user1_conversation_ids: string[];
   user2_conversation_ids: string[];
-  is_highly_sensitive: boolean;
+  is_sensitive: boolean;
   balance_score: number;
 }
 
@@ -42,6 +42,16 @@ export async function savePipelineResults(
   userSimilarities: UserSimilaritiesRow[],
   conversationPairClusters: ConversationPairClusterRow[]
 ): Promise<void> {
+  // Filter invalid rows
+  serendipityOptimized = serendipityOptimized.filter(
+    (row) =>
+      row.common_conversation_ids.length > 0 &&
+      row.user1_conversation_ids.length > 0 &&
+      row.user2_conversation_ids.length > 0 &&
+      row.user1_id &&
+      row.user2_id
+  );
+
   try {
     await prisma.$transaction(async (tx) => {
       // Declare variables at the transaction scope level
@@ -78,13 +88,7 @@ export async function savePipelineResults(
       // **Step 2 & 3: Group and Create UsersMatch Records**
       try {
         // **Step 2: Group SerendipityOptimized by match_group_id**
-        for (const row of serendipityOptimized.filter(
-          (row) =>
-            // Filter out rows that have been badly processed by the LLM
-            row.common_conversation_ids.length > 0 &&
-            row.user1_conversation_ids.length > 0 &&
-            row.user2_conversation_ids.length > 0
-        )) {
+        for (const row of serendipityOptimized) {
           const groupId = row.match_group_id;
           if (!matchGroups[groupId]) matchGroups[groupId] = [];
           matchGroups[groupId].push(row);
@@ -206,7 +210,7 @@ export async function savePipelineResults(
               commonSummary: row.path_description,
               category: row.category,
               balanceScore: row.balance_score,
-              isSensitive: row.is_highly_sensitive,
+              isSensitive: row.is_sensitive,
               usersMatchId,
               commonConversations: {
                 connect: row.common_conversation_ids.map((id) => ({ id })),

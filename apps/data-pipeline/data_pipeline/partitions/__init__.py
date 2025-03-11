@@ -14,7 +14,7 @@ if get_environment() == "LOCAL":
     instance.add_dynamic_partitions(
         partitions_def_name=user_partitions_def.name,
         partition_keys=[
-            "cm0i27jdj0000aqpa73ghpcxf",
-            "cm0i27jdj0000aqpa73ghpcxd",
+            "cm831cb2o0000s72w7oxnk7yk",
+            "cm831d09t0001s72w2s4x10vf",
         ],
     )

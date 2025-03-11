@@ -281,7 +281,9 @@ export function VerticalSerendipitousPaths({
                               <div className="font-medium mb-1 flex items-center gap-2">
                                 {processedTitle}
                                 {path.isSensitive && (
-                                  <Badge variant="destructive" className="ml-2 bg-orange-500/20 border-orange-700 text-orange-700">Sensitive</Badge>
+                                  <Badge className="ml-2 bg-orange-500/20 border-orange-700 text-orange-700 pointer-events-none">
+                                    Sensitive
+                                  </Badge>
                                 )}
                               </div>
                               <PathFeedback
@@ -447,14 +449,40 @@ function PathDetails({
   return (
     <div className="space-y-6">
       {/* Path Flow Container */}
+      <div className="mt-3 absolute right-10">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm">
+              View common path ({path.commonConversations.length})
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                Common Path ({path.commonConversations.length})
+              </DialogTitle>
+              <DialogDescription>
+                Conversations shared between users in this path
+              </DialogDescription>
+            </DialogHeader>
+            <div className="overflow-hidden">
+              <ConversationsList
+                conversations={path.commonConversations}
+                currentUserName={currentUserName}
+                matchedUserName={matchedUser.name}
+                currentUserPath={currentUserPath}
+                matchedUserPath={matchedUserPath}
+                // Common conversations don't belong to either user specifically
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
       <div className="flex flex-row items-center justify-between gap-4">
         {/* Common Summary with View Conversations Button */}
-        <div className="flex-1 p-4 bg-muted rounded-lg relative">
+        {/* <div className="flex-1 p-4 bg-muted rounded-lg relative">
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-medium mb-2">Common Interest</h3>
-            {path.isSensitive && (
-              <Badge variant="destructive" className="bg-orange-500/20 border-orange-700 text-orange-700">Sensitive</Badge>
-            )}
           </div>
           <p>{processedCommonSummary}</p>
           <div className="mt-3">
@@ -468,9 +496,6 @@ function PathDetails({
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     Common Conversations ({path.commonConversations.length})
-                    {path.isSensitive && (
-                      <Badge variant="destructive" className="ml-1 bg-orange-500/20 border-orange-700 text-orange-700">Sensitive</Badge>
-                    )}
                   </DialogTitle>
                   <DialogDescription>
                     Conversations shared between users in this path
@@ -491,7 +516,6 @@ function PathDetails({
           </div>
         </div>
 
-        {/* Separator: Split Arrow */}
         <div className="flex-shrink-0">
           <Image
             src="/arrow-split.svg"
@@ -500,7 +524,7 @@ function PathDetails({
             height={40}
             className="w-auto"
           />
-        </div>
+        </div> */}
 
         {/* Unique Summaries */}
         <div className="flex-1 flex flex-col space-y-4">
@@ -512,7 +536,7 @@ function PathDetails({
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
-                    View Conversations (
+                    View your unique path (
                     {currentUserPath.uniqueConversations.length})
                   </Button>
                 </DialogTrigger>
@@ -553,7 +577,7 @@ function PathDetails({
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
-                    View Conversations (
+                    View {matchedUser.name}&apos;s unique path (
                     {matchedUserPath.uniqueConversations.length})
                   </Button>
                 </DialogTrigger>
