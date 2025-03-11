@@ -4,7 +4,7 @@ from typing import Dict, Set
 import numpy as np
 
 from data_pipeline.assets.ai_conversations.utils.find_top_k_users import (
-    get_approx_user_sim,
+    get_approx_bipartite_match,
 )
 
 WEIGHTS = {
@@ -63,7 +63,9 @@ def calculate_balance_scores(
     magnitude_factor = 0
 
     # Calculate cosine similarity between embeddings
-    sim = get_approx_user_sim(np.array(embeddings_current), np.array(embeddings_other))
+    sim = get_approx_bipartite_match(
+        np.array(embeddings_current), np.array(embeddings_other)
+    )
     dist = 1 - sim
 
     return imbalance + magnitude_factor + dist, {

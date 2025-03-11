@@ -2,6 +2,7 @@ import heapq
 
 import faiss
 import numpy as np
+from scipy.optimize import linear_sum_assignment
 
 from data_pipeline.assets.ai_conversations.utils.load_user_dataframe import (
     load_user_dataframe,
@@ -24,7 +25,65 @@ def load_user_embeddings(user_id):
     return df, emb_array
 
 
-def get_approx_user_sim(
+def get_bipartite_match(
+    current_user_embeddings: np.ndarray,
+    user_embeddings: np.ndarray,
+) -> float:
+    """
+    Compute bipartite similarity between two sets of embeddings, using maximum flow.
+
+    Args:
+        current_user_embeddings: Shape (n1, d), normalized embeddings for current user
+        user_embeddings: Shape (n2, d), normalized embeddings for target user
+
+    Returns:
+        Float representing optimal bipartite similarity
+    """
+
+    assert current_user_embeddings.ndim == 2 and user_embeddings.ndim == 2
+    assert current_user_embeddings.shape[1] == user_embeddings.shape[1]
+
+    # Determine which set of embeddings to use as query vs. index
+    # For efficiency, build index on the larger set
+    if current_user_embeddings.shape[0] <= user_embeddings.shape[0]:
+        query_embeddings = current_user_embeddings
+        index_embeddings = user_embeddings
+        query_is_current = True
+    else:
+        query_embeddings = user_embeddings
+        index_embeddings = current_user_embeddings
+        query_is_current = False
+
+    # Build FAISS index with inner product similarity (for normalized vectors = cosine)
+    index = faiss.IndexFlatIP(index_embeddings.shape[1])
+    index.add(index_embeddings)
+
+    # Compute all pairwise similarities
+    # For each query embedding, get similarity to all index embeddings
+    similarity_matrix = np.zeros((query_embeddings.shape[0], index_embeddings.shape[0]))
+    for i, query_emb in enumerate(query_embeddings):
+        # Reshape to (1, d) for FAISS
+        query_emb = query_emb.reshape(1, -1)
+        # Get similarities to all index embeddings
+        distances, _ = index.search(query_emb, index_embeddings.shape[0])
+        similarity_matrix[i] = distances[0]
+
+    # Transpose if needed to maintain correct orientation
+    if not query_is_current:
+        similarity_matrix = similarity_matrix.T
+
+    # Create cost matrix (negative similarity since linear_sum_assignment minimizes)
+    cost_matrix = -similarity_matrix
+
+    # Find optimal assignment
+    row_ind, col_ind = linear_sum_assignment(cost_matrix)
+
+    # Return average similarity from the optimal assignment
+    optimal_sim = -np.mean(cost_matrix[row_ind, col_ind])
+    return float(optimal_sim)
+
+
+def get_approx_bipartite_match(
     current_user_embeddings: np.ndarray,
     user_embeddings: np.ndarray,
     sample_size: int = 100,
@@ -92,7 +151,7 @@ def find_top_k_users(
             user_id
         )  # Assume this function is available
         if embeddings is not None:
-            similarity = get_approx_user_sim(
+            similarity = get_approx_bipartite_match(
                 current_user_embeddings, embeddings, sample_size
             )
             if len(top_k_heap) < top_k:
