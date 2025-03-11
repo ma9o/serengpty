@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import traceback
 import uuid
 from collections import defaultdict
 from math import ceil
@@ -203,7 +204,7 @@ def _prepare_clusters(
 async def _generate_paths(
     cluster_data: Dict[int, Dict],
     current_user_id: str,
-    gemini_flash: BaseLlmResource,
+    llm: BaseLlmResource,
     logger,
     config: SerendipityOptimizedConfig,
 ) -> List[Dict]:
@@ -321,15 +322,13 @@ async def _generate_paths(
             (
                 completions,
                 cost,
-            ) = await gemini_flash.get_prompt_sequences_completions_batch_async(
-                [[prompt]]
-            )
+            ) = await llm.get_prompt_sequences_completions_batch_async([[prompt]])
             total_cost += cost
             completion = completions[0]
 
             try:
                 path_obj = parse_serendipity_result(completion[-1])
-                if not isinstance(path_obj, dict):
+                if not path_obj:
                     active_clusters.pop(0)  # Remove if parsing fails consistently
                     continue
             except Exception as e:
@@ -512,6 +511,7 @@ async def serendipity_optimized(
                 paths.extend(group_paths)
         except Exception as e:
             logger.error(f"Error processing match group {mg_id}: {e}")
+            logger.error(f"Error details: {traceback.format_exc()}")
 
     if not paths:
         return pl.DataFrame(schema=get_out_df_schema())

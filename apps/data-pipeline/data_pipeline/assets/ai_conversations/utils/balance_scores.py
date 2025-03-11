@@ -59,7 +59,8 @@ def calculate_balance_scores(
 
     # Calculate magnitude bonus (larger total is better)
     total_conversations = len_current + len_other
-    magnitude_factor = 1 / total_conversations  # Inverse so smaller is better
+    # magnitude_factor = 1 / total_conversations  # Inverse so smaller is better
+    magnitude_factor = 0
 
     # Calculate cosine similarity between embeddings
     sim = get_approx_user_sim(np.array(embeddings_current), np.array(embeddings_other))

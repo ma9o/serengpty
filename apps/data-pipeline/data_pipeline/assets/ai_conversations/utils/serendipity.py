@@ -19,7 +19,7 @@ def _prepare_user_texts(user_summaries: List[Dict], excluded_indices: Set[int]) 
         questions_section = ""
         if s.get("human_questions") and len(s["human_questions"]) > 0:
             questions = s["human_questions"]
-            questions_text = "\n  - ".join(questions)
+            questions_text = "\n  - ".join([q for q in questions if q])
             questions_section = f"\nQuestions Asked:\n  - {questions_text}"
 
         texts.append(
@@ -85,7 +85,7 @@ def generate_serendipity_prompt(
     )
 
 
-def parse_serendipity_result(content: str) -> Dict:
+def parse_serendipity_result(content: str) -> Dict | None:
     """
     Parse the LLM response (in JSON) and return a Python dictionary.
     If the JSON is invalid or empty, return an empty dict.
@@ -93,7 +93,7 @@ def parse_serendipity_result(content: str) -> Dict:
     try:
         result = repair_json(content, return_objects=True)
         if not isinstance(result, dict):
-            return {}
+            return None
 
         # LLM might return duplicate indices, so we need to remove them
         common_indices = np.unique(result["common_indices"]).tolist()
@@ -114,7 +114,7 @@ def parse_serendipity_result(content: str) -> Dict:
             or len(user1_unique_indices) == 0
             or len(user2_unique_indices) == 0
         ):
-            return {}
+            return None
         else:
             return {
                 "path_title": result.get("path_title", "Serendipitous Connection"),
@@ -129,7 +129,7 @@ def parse_serendipity_result(content: str) -> Dict:
                 "is_sensitive": result.get("is_sensitive", False),
             }
     except Exception:
-        return {}
+        return None
 
 
 def format_conversation_summary(row: Dict) -> Dict:

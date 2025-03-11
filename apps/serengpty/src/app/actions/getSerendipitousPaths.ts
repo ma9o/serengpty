@@ -96,6 +96,9 @@ export async function getSerendipitousPaths() {
           },
         },
         serendipitousPaths: {
+          orderBy: {
+            balanceScore: 'asc',
+          },
           select: {
             id: true,
             title: true,
