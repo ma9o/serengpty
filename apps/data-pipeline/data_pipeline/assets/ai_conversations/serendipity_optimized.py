@@ -32,7 +32,7 @@ from data_pipeline.resources.batch_inference.base_llm_resource import BaseLlmRes
 class SerendipityOptimizedConfig(RowLimitConfig):
     """Configuration for serendipity_optimized asset."""
 
-    max_paths_per_match_group: int = 10
+    max_paths_per_match_group: int = 20
 
     match_group_category_ratios: Dict[str, float] = {
         "coding": 0.0,

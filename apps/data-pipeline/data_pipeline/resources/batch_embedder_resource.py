@@ -24,11 +24,7 @@ class BatchEmbedderResource(ConfigurableResource, BaseEmbedderClient):
     def setup_for_execution(self, context: InitResourceContext) -> None:
         self._client = (
             DeepInfraEmbedderClient(api_key=self.api_key, logger=get_dagster_logger())
-            # LocalEmbedderClient()
-            # if get_environment() == "LOCAL"
-            # else RayClusterEmbedderClient(
-            #     base_url=self.base_url, logger=get_dagster_logger()
-            # )
+            # RayClusterEmbedderClient(logger=get_dagster_logger())
         )
         # Initialize the event loop if it doesn't exist
         try:
