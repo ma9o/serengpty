@@ -60,11 +60,14 @@ export const StreamChatUserProvider = ({
   const [userName, setUserName] = useState<string | null>(null);
   const [initialChatText, setInitialChatText] = useState<string | null>(null);
 
-  // Register for notification updates
+  // Register for notification updates - use this effect only on initial mount
   useEffect(() => {
-    const unregister = registerNotificationCallback((count) => {
+    // Create stable callback reference to avoid unregistering and re-registering
+    const updateUnreadCount = (count: number) => {
       setUnreadCount(count);
-    });
+    };
+    
+    const unregister = registerNotificationCallback(updateUnreadCount);
 
     // Clean up on unmount
     return () => {

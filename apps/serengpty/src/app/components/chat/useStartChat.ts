@@ -18,6 +18,7 @@ export const useStartChat = () => {
     otherUserName: string,
     initialText?: string
   ) => {
+    // Ensure we have a valid chat client
     if (!chatClient) {
       setError(new Error('Chat client not initialized'));
       return null;
