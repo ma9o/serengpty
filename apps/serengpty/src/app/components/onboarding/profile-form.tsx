@@ -126,7 +126,7 @@ function CountrySelector({
     if (isOpen) {
       // Only add the listener when the dropdown is open
       document.addEventListener('mousedown', handleClickOutside);
-      
+
       // Focus the search input when dropdown opens
       if (searchInputRef.current) {
         searchInputRef.current.focus();
@@ -258,11 +258,6 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
 
         if (result.success) {
           setLastSavedValues(values);
-          toast({
-            title: 'Changes saved',
-            description: 'Your profile has been updated.',
-            duration: 2000,
-          });
         } else {
           toast({
             title: 'Error',
@@ -321,14 +316,14 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
   useEffect(() => {
     // This should only run once on component mount
     let isMounted = true;
-    
+
     async function fetchUserProfile() {
       try {
         if (isMounted) {
           setIsLoading(true);
           setIsProfileLoading(true);
         }
-        
+
         const userData = await getUserProfile();
 
         if (userData && isMounted) {
@@ -358,7 +353,7 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
     }
 
     fetchUserProfile();
-    
+
     return () => {
       isMounted = false;
     };
@@ -404,7 +399,7 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
                   <FormControl>
                     <Input
                       {...field}
-                      disabled={isFormLoading || isSaving}
+                      disabled={isFormLoading}
                       onBlur={() => {
                         field.onBlur();
                         if (isUsernameValid) {
@@ -500,13 +495,6 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
                 </FormItem>
               )}
             />
-
-            {/* Status indicator */}
-            {isSaving && (
-              <p className="text-sm text-muted-foreground text-center">
-                Saving changes...
-              </p>
-            )}
           </div>
         </Form>
       </ConditionalWrapper>

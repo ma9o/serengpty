@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Loader2 } from 'lucide-react';
 import { validateUsername } from '../../actions/validateUsername';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -68,15 +68,6 @@ export function UsernameStatus({
         <div className="flex items-center text-green-500">
           <CheckCircle className="h-4 w-4 mr-1" />
           <span className="text-xs">Username available</span>
-        </div>
-      )}
-
-      {validationState === 'invalid' && (
-        <div className="flex items-center text-red-500">
-          <XCircle className="h-4 w-4 mr-1" />
-          <span className="text-xs">
-            {errorMessage || 'Username unavailable'}
-          </span>
         </div>
       )}
     </div>
