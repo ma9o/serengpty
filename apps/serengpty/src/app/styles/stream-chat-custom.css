@@ -1,5 +1,3 @@
-/* Custom styles for Stream Chat */
-
 /* Hide the username in chat messages */
 .str-chat__message-simple-name {
   display: none !important;

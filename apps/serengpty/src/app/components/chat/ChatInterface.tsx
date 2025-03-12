@@ -115,9 +115,9 @@ export const ChatInterface = ({ activeChannelId: propActiveChannelId }: ChatInte
   };
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full overflow-auto">
       <div className="flex h-full w-full">
-        <div className="w-64 border-r dark:border-gray-800">
+        <div className="w-64 border-r dark:border-gray-800 overflow-y-auto">
           <ChannelList
             customActiveChannel={activeChannel}
             filters={filters}
@@ -126,7 +126,7 @@ export const ChatInterface = ({ activeChannelId: propActiveChannelId }: ChatInte
             Avatar={CustomAvatar}
           />
         </div>
-        <div className="flex-1">
+        <div className="flex-1 overflow-auto">
           <Channel
             Avatar={
               // Disable avatars in thread
@@ -135,7 +135,7 @@ export const ChatInterface = ({ activeChannelId: propActiveChannelId }: ChatInte
             markReadOnMount
           >
             <Window>
-              <MessageList />
+              <MessageList className="str-chat__message-list--scrollable" />
               <MessageInput
                 focus
                 noFiles

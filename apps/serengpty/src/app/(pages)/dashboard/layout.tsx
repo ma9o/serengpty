@@ -40,7 +40,7 @@ export default async function Layout({
   const streamChatToken = await getChatToken();
 
   return (
-    <div className="h-full">
+    <div className="h-full overflow-hidden">
       <UnviewedMatchesProvider>
         <ChatProvider
           userId={user?.id}
