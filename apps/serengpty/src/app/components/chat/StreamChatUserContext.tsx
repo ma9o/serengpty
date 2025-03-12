@@ -62,27 +62,11 @@ export const StreamChatUserProvider = ({
   const [userName, setUserName] = useState<string | null>(null);
   const [initialChatText, setInitialChatText] = useState<string | null>(null);
 
-  // Memoize state setter functions to maintain stable references
-  const memoizedSetUnreadCount = useCallback((count: number) => {
-    setUnreadCount(count);
-  }, []);
-
-  const memoizedSetActiveChannelId = useCallback((channelId: string) => {
-    setActiveChannelId(channelId);
-  }, []);
-
-  const memoizedSetInitialChatText = useCallback((text: string) => {
-    setInitialChatText(text);
-  }, []);
-
-  // Register for notification updates - use this effect only on initial mount
+  // Register for notification updates
   useEffect(() => {
-    // Create stable callback reference to avoid unregistering and re-registering
-    const updateUnreadCount = (count: number) => {
+    const unregister = registerNotificationCallback((count) => {
       setUnreadCount(count);
-    };
-    
-    const unregister = registerNotificationCallback(updateUnreadCount);
+    });
 
     // Clean up on unmount
     return () => {
@@ -154,32 +138,19 @@ export const StreamChatUserProvider = ({
     };
   }, []);
 
-  // Memoize the context value to prevent unnecessary re-renders of children
-  const contextValue = useMemo(() => ({
+  const contextValue = {
     userId,
     userToken,
     userName,
     isLoading,
     error,
     unreadCount,
-    setUnreadCount: memoizedSetUnreadCount,
+    setUnreadCount,
     activeChannelId,
-    setActiveChannelId: memoizedSetActiveChannelId,
+    setActiveChannelId,
     initialChatText,
-    setInitialChatText: memoizedSetInitialChatText,
-  }), [
-    userId, 
-    userToken, 
-    userName, 
-    isLoading, 
-    error, 
-    unreadCount,
-    memoizedSetUnreadCount,
-    activeChannelId,
-    memoizedSetActiveChannelId,
-    initialChatText,
-    memoizedSetInitialChatText
-  ]);
+    setInitialChatText,
+  };
 
   return (
     <StreamChatUserContext.Provider value={contextValue}>

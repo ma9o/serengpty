@@ -72,7 +72,7 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
     initialChatText
   );
 
-  // Check for channel ID in URL on client side - only run once on mount
+  // Check for channel ID in URL on client side
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -83,7 +83,7 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
     }
   }, []);
 
-  // Update from context if it changes - separate effect for clarity
+  // Update from context if it changes
   useEffect(() => {
     if (contextActiveChannelId) {
       setActiveChannel(contextActiveChannelId);
@@ -91,12 +91,10 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
   }, [contextActiveChannelId]);
 
   // Store initialChatText in local state and clear the context
-  // This effect runs when initialChatText changes
   useEffect(() => {
     if (initialChatText) {
       setLocalInitialText(initialChatText);
       // Clear the context value after capturing it locally
-      // This is safe because we've already stored the value in local state
       setInitialChatText('');
     }
   }, [initialChatText, setInitialChatText]);

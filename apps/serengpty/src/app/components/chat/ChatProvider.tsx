@@ -19,7 +19,6 @@ export const ChatProvider = ({
   userName,
   children,
 }: ChatProviderProps) => {
-  // Memoize chat client parameters to prevent unnecessary re-initializations
   const { client, isLoading, error } = useChatClient(
     userId,
     userToken,
