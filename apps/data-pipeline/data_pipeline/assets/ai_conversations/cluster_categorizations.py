@@ -38,25 +38,36 @@ def get_cluster_categorization_prompt_sequence(
     return [
         dedent(
             f"""
-            You will be given a set of conversation summaries that have been grouped together based on their semantic similarity.
-            Your task is to categorize this cluster of conversations by its domain as either "coding", "humanistic" or "practical".
+You will be given a set of conversation summaries grouped together based on semantic similarity.
+Your task is to categorize this cluster into exactly one of four categories: "coding", "practical", "research", or "humanistic".
 
-            Definitions:
-            - "humanistic": Focus on values, beliefs, and worldviews. Invite vulnerability and self-disclosure, with high shareability potential.
-            - "coding": Topics related to programming, software development, coding languages, debugging, etc. This category takes precedence over "practical".
-            - "practical": Task focused conversations. Everything else that is less personal or emotionally revealing.
+Definitions:
 
-            First analyze each conversation and then determine the overarching theme of the cluster.
-            IMPORTANT: If the conversations are related to coding or programming, you MUST categorize as "coding" even if they could also fit into another category.
+- "coding": Technical conversations explicitly about writing, debugging, understanding, or improving code. These typically include direct requests such as fixing bugs, explaining snippets, refactoring, or questions about programming syntax and languages.
+  Examples: debugging Python code, explaining JavaScript functions, refactoring SQL queries.
 
-            At the end of your analysis, output the following JSON:
-            {{
-                "category": str,
-            }}
+- "practical": Task-oriented conversations involving everyday problems, logistical questions, or practical advice. These may include technology-related questions, but only if they are higher-level (architecture, frameworks) or general tech inquiries not narrowly focused on coding syntax. It also includes mundane requests about language use, definitions, writing emails, troubleshooting everyday issues, health-related questions, and similar logistical tasks.
+  Examples: software architecture advice, troubleshooting Wi-Fi issues, "how to write a formal email", "symptoms of flu".
 
-            Here are the conversations:
-            {conversations_text}
-            """
+- "research": Conversations involving detailed inquiries or deep exploration of specific, niche, or specialized topics that require thorough and in-depth analysis or investigation. This is distinct from "practical" by its depth and specificity, and from "humanistic" by its focus on precise, factual, and detailed exploration rather than broad philosophical or personal discussions.
+  Examples: detailed history of quantum mechanics, comparative analysis of AI ethics frameworks, comprehensive review of microbiome research.
+
+- "humanistic": Broad, intellectually stimulating conversations about topics connected to human culture, beliefs, interests, or personal development. These are discussions that invite reflection, self-disclosure, or personal insights. They often include humanities, arts, history, culture, philosophy, psychology, or general science when discussed at a higher conceptual or reflective level.
+  Examples: personal growth strategies, philosophical implications of technology, historical lessons from World War II.
+
+Procedure:
+1. Carefully read each conversation in the provided cluster.
+2. Evaluate whether the conversations are explicitly about code, practical tasks/questions, in-depth specialized research, or broader humanistic inquiry.
+3. Assign exactly ONE category that best fits the overarching theme of the entire cluster.
+
+Output your final decision as a JSON:
+{{
+    "category": str
+}}
+
+Here are the conversations:
+{conversations_text}
+"""
         ).strip(),
     ]
 

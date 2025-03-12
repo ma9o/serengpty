@@ -34,6 +34,7 @@ resources = {
         # base_url=EnvVar("RAY_APP_ADDRESS"),
     ),
     "gemini_flash": gemini_flash_resource(),
+    "gpt4o": create_gpt4o_resource(),
     "gpt4o_mini": create_gpt4o_mini_resource(),
     "deepseek_r1": create_deepseek_r1_resource(),
     "parquet_io_manager": PolarsParquetIOManager(
