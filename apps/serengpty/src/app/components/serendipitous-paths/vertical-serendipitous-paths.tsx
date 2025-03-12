@@ -13,6 +13,7 @@ import { ChatButton } from '../chat/ChatButton';
 import { ScoreCircle } from './score-circle';
 import { getIdenticon } from '../../utils/getIdenticon';
 import { getCountryFlag } from '../../utils/getCountryFlag';
+import ReactMarkdown from 'react-markdown';
 import {
   Accordion,
   AccordionItem,
@@ -531,7 +532,9 @@ function PathDetails({
           {/* Your Path */}
           <div className="p-4 bg-muted rounded-lg">
             <h3 className="text-lg font-medium mb-2">Your Perspective</h3>
-            <p>{processedCurrentUserSummary}</p>
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown>{processedCurrentUserSummary}</ReactMarkdown>
+            </div>
             <div className="mt-3">
               <Dialog>
                 <DialogTrigger asChild>
@@ -572,7 +575,9 @@ function PathDetails({
             <h3 className="text-lg font-medium mb-2">
               {matchedUser.name}&apos;s Perspective
             </h3>
-            <p>{processedMatchedUserSummary}</p>
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown>{processedMatchedUserSummary}</ReactMarkdown>
+            </div>
             <div className="mt-3">
               <Dialog>
                 <DialogTrigger asChild>
@@ -620,16 +625,20 @@ function PathDetails({
         </div>
 
         {/* Call to Action */}
-        <div className="flex-1 bg-muted p-4 rounded-lg text-center flex flex-col items-center justify-center">
+        <div className="flex-1 bg-muted p-4 rounded-lg flex flex-col">
           <h3 className="text-lg font-medium mb-2">Start a Conversation</h3>
-          <p className="text-muted-foreground mb-3">{processedCallToAction}</p>
-          <ChatButton
-            otherUserId={matchedUser.id}
-            otherUserName={matchedUser.name}
-            variant="default"
-            size="default"
-            initialText={processedCallToAction}
-          />
+          <div className="prose prose-sm dark:prose-invert text-muted-foreground mb-3 max-w-none">
+            <ReactMarkdown>{processedCallToAction}</ReactMarkdown>
+          </div>
+          <div className="mt-auto">
+            <ChatButton
+              otherUserId={matchedUser.id}
+              otherUserName={matchedUser.name}
+              variant="default"
+              size="default"
+              initialText={processedCallToAction}
+            />
+          </div>
         </div>
       </div>
     </div>

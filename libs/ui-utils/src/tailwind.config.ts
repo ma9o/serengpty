@@ -1,6 +1,7 @@
 const { createGlobPatternsForDependencies } = require('@nx/react/tailwind');
 const { join } = require('node:path');
 const TailwindAnimate = require('tailwindcss-animate');
+const Typography = require('@tailwindcss/typography');
 
 function buildConfig(appDir) {
   return {
@@ -92,7 +93,7 @@ function buildConfig(appDir) {
     		}
     	}
     },
-    plugins: [TailwindAnimate],
+    plugins: [TailwindAnimate, Typography],
   };
 }
 

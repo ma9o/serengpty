@@ -42,14 +42,14 @@ def get_cluster_categorization_prompt_sequence(
             Your task is to categorize this cluster of conversations by its domain as either "coding", "humanistic" or "practical".
 
             Definitions:
-            - "humanistic": Focus on values, beliefs, and worldviews. Invite vulnerability and self-disclosure
-            - "coding": Topics related to programming, software development, coding languages, algorithms, debugging, etc. This category takes precedence over "practical".
-            - "practical": Task focused conversations. Generally less personal or emotionally revealing.
+            - "humanistic": Focus on values, beliefs, and worldviews. Invite vulnerability and self-disclosure, with high shareability potential.
+            - "coding": Topics related to programming, software development, coding languages, debugging, etc. This category takes precedence over "practical".
+            - "practical": Task focused conversations. Everything else that is less personal or emotionally revealing.
 
             First analyze each conversation and then determine the overarching theme of the cluster.
             IMPORTANT: If the conversations are related to coding or programming, you MUST categorize as "coding" even if they could also fit into another category.
 
-            Use this output schema:
+            At the end of your analysis, output the following JSON:
             {{
                 "category": str,
             }}
@@ -177,7 +177,10 @@ async def cluster_categorizations(
     # Only make LLM call if we have prompts to process
     if all_prompt_sequences:
         # Get LLM completions for all clusters in a single batch call
-        completions, total_cost = await gpt4o_mini.get_prompt_sequences_completions_batch_async(
+        (
+            completions,
+            total_cost,
+        ) = await gpt4o_mini.get_prompt_sequences_completions_batch_async(
             all_prompt_sequences
         )
 

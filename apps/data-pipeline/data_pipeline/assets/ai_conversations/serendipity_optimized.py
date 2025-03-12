@@ -326,14 +326,12 @@ async def _generate_paths(
             total_cost += cost
             completion = completions[0]
 
-            try:
-                path_obj = parse_serendipity_result(completion[-1])
-                if not path_obj:
-                    active_clusters.pop(0)  # Remove if parsing fails consistently
-                    continue
-            except Exception as e:
-                logger.warning(f"Error parsing LLM response for cluster {cid}: {e}")
-                active_clusters.pop(0)  # Remove on error to avoid infinite loop
+            path_obj, indices_to_exclude = parse_serendipity_result(completion[-1])
+
+            # Update exclusions, regardless of whether parsing was successful
+            exclusions.update(indices_to_exclude)
+
+            if not path_obj:
                 continue
 
             # Create and store the path
@@ -351,12 +349,6 @@ async def _generate_paths(
             )
             paths_by_category[category].append(path)
 
-            # Update exclusions
-            exclusions.update(
-                path_obj.get("common_indices", [])
-                + path_obj.get("user1_unique_indices", [])
-                + path_obj.get("user2_unique_indices", [])
-            )
             data["iteration"] += 1
 
             # Recalculate balance score for this cluster

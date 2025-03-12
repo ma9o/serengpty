@@ -96,9 +96,7 @@ export async function getSerendipitousPaths() {
           },
         },
         serendipitousPaths: {
-          orderBy: {
-            balanceScore: 'asc',
-          },
+          orderBy: [{ category: 'asc' }, { balanceScore: 'asc' }],
           select: {
             id: true,
             title: true,

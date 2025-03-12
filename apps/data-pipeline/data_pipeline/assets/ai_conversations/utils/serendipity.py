@@ -1,14 +1,17 @@
 """Utilities for serendipity path generation."""
 
 from textwrap import dedent
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 
 import numpy as np
 import polars as pl
+from dagster import get_dagster_logger
 from json_repair import repair_json
 
 
-def _prepare_user_texts(user_summaries: List[Dict], excluded_indices: Set[int]) -> str:
+def _prepare_user_texts(
+    user_summaries: List[Dict], excluded_indices: Set[int]
+) -> Optional[str]:
     filtered_summaries = [
         s for s in user_summaries if s["row_idx"] not in excluded_indices
     ]
@@ -25,15 +28,17 @@ def _prepare_user_texts(user_summaries: List[Dict], excluded_indices: Set[int]) 
         texts.append(
             f"ID: {row_idx}\nTitle: {s['title']}\nDate: {s.get('date', 'Unknown')}\nSummary: {s['summary']}{questions_section}\n"
         )
-
-    return chr(10).join(texts)
+    if not texts:
+        return None
+    else:
+        return chr(10).join(texts)
 
 
 def generate_serendipity_prompt(
     user1_summaries: List[Dict],
     user2_summaries: List[Dict],
-    excluded_indices: Set[int] = None,
-) -> str:
+    excluded_indices: Set[int],
+) -> Optional[str]:
     """
     Generate a prompt for finding serendipitous paths between two users' conversation summaries.
     The LLM directly uses the row_idx values from the summaries.
@@ -43,46 +48,51 @@ def generate_serendipity_prompt(
     Returns:
         prompt_text: The generated prompt
     """
-    if excluded_indices is None:
-        excluded_indices = set()
+    user1_texts = _prepare_user_texts(user1_summaries, excluded_indices)
+    user2_texts = _prepare_user_texts(user2_summaries, excluded_indices)
 
-    return dedent(
-        f"""
-          You'll be given two lists of conversations between two users and AI assistants.
-          Your task is to find a serendipitous path between them, linking multiple conversations from each set.
+    if not user1_texts or not user2_texts:
+        return None
+    else:
+        return dedent(
+            f"""
+              You'll be given two lists of conversations between two users and AI assistants.
+              Your task is to find a serendipitous path between them, linking multiple conversations from each set.
 
-          The connection must include:
-          - **Common nodes**: Conversations with closely matching themes that form a shared foundation.
-          - **Unique nodes**: Complementary branches that diverge into distinct but related areas.
+              The connection must include:
+              - **Common nodes**: Conversations with closely matching themes that form a shared foundation.
+              - **Unique nodes**: Complementary branches that diverge into distinct but related areas.
 
-          Focus on the the users' original questions and what they want to achieve.
-          In your outputs, assume the users are expert in the topics they are discussing so avoid any generalizations and be as specific as possible.
+              Focus on the the users' original questions and what they want to achieve.
+              In your outputs, assume the users are expert in the topics they are discussing so avoid any generalizations and be as specific as possible.
 
-          Output in this JSON format:
-          {{
-            "path_title": "A short summary title for the serendipitous path, with an emoji at the beginning",
-            "common_indices": [list of integer IDs from both users’ CONVERSATIONS with shared themes],
-            "user1_unique_indices": [list of integer IDs from <USER_1> CONVERSATIONS unique to <USER_1>, absent in <USER_2>],
-            "user2_unique_indices": [list of integer IDs from <USER_2> CONVERSATIONS unique to <USER_2>, absent in <USER_1>],
-            "common_background": "The common ground between <USER_1> and <USER_2> in 2/3 sentences",
-            "user_1_unique_branches": "Bullet points of how <USER_1> uniquely branches off from the common ground",
-            "user_2_unique_branches": "Bullet points of how <USER_2> uniquely branches off from the common ground",
-            "user_1_call_to_action": "Bullet points of what <USER_1> could ask <USER_2> to join the unique branches",
-            "user_2_call_to_action": "Bullet points of what <USER_2> could ask <USER_1> to join the unique branches",
-            "is_sensitive": "Boolean: true if the path involves sensitive topics (sickness, erotica, etc.), false otherwise."
-          }}
+              Output in this JSON format:
+              {{
+                "path_title": "A short summary title for the serendipitous path, with an emoji at the beginning",
+                "common_indices": [list of integer IDs from both users’ CONVERSATIONS with shared themes],
+                "user1_unique_indices": [list of integer IDs from <USER_1> CONVERSATIONS unique to <USER_1>, absent in <USER_2>],
+                "user2_unique_indices": [list of integer IDs from <USER_2> CONVERSATIONS unique to <USER_2>, absent in <USER_1>],
+                "common_background": "The common ground between <USER_1> and <USER_2> in 2/3 sentences, without mentioning the differences between them.",
+                "user_1_unique_branches": "In Markdown: Bullet points of how <USER_1> uniquely branches off from the common ground",
+                "user_2_unique_branches": "In Markdown: Bullet points of how <USER_2> uniquely branches off from the common ground",
+                "user_1_call_to_action": "In Markdown: Bullet points of what <USER_1> could ask <USER_2> to join the unique branches",
+                "user_2_call_to_action": "In Markdown: Bullet points of what <USER_2> could ask <USER_1> to join the unique branches",
+                "is_sensitive": "Boolean: true if the path involves things that might be embarrassing or delicate to share."
+              }}
 
-          In the text, replace any references to the users with "<USER_1>" and "<USER_2>".
+              IMPORTANT: common_indices, user1_unique_indices, and user2_unique_indices cannot be empty!
 
-          If you cannot find a serendipitous path, return an empty object: {{}}
+              In the text, replace any references to the users with "<USER_1>" and "<USER_2>".
 
-          USER 1 CONVERSATIONS:
-          {_prepare_user_texts(user1_summaries, excluded_indices)}
+              If you cannot find a serendipitous path, return an empty object: {{}}
 
-          USER 2 CONVERSATIONS:
-          {_prepare_user_texts(user2_summaries, excluded_indices)}
-        """.strip()
-    )
+              USER 1 CONVERSATIONS:
+              {_prepare_user_texts(user1_summaries, excluded_indices)}
+
+              USER 2 CONVERSATIONS:
+              {_prepare_user_texts(user2_summaries, excluded_indices)}
+            """.strip()
+        )
 
 
 def _join_if_list(value) -> str:
@@ -92,15 +102,16 @@ def _join_if_list(value) -> str:
         return value
 
 
-def parse_serendipity_result(content: str) -> Dict | None:
+def parse_serendipity_result(content: str) -> tuple[Optional[Dict], Set[int]]:
     """
     Parse the LLM response (in JSON) and return a Python dictionary.
     If the JSON is invalid or empty, return an empty dict.
     """
     try:
         result = repair_json(content, return_objects=True)
+
         if not isinstance(result, dict):
-            return None
+            return None, set()
 
         # LLM might return duplicate indices, so we need to remove them
         common_indices = np.unique(result["common_indices"]).tolist()
@@ -114,6 +125,9 @@ def parse_serendipity_result(content: str) -> Dict | None:
             - set(user1_unique_indices)  # Just to be sure
             - set(common_indices)
         )
+        indices_to_exclude = (
+            set(common_indices) | set(user1_unique_indices) | set(user2_unique_indices)
+        )
 
         # If any of these lists are empty, the path doesnt make sense
         if (
@@ -121,7 +135,10 @@ def parse_serendipity_result(content: str) -> Dict | None:
             or len(user1_unique_indices) == 0
             or len(user2_unique_indices) == 0
         ):
-            return None
+            get_dagster_logger().warning(
+                f"Discarding incomplete serendipity result: {content}"
+            )
+            return None, indices_to_exclude
         else:
             return {
                 "path_title": result.get("path_title", "Serendipitous Connection"),
@@ -142,9 +159,9 @@ def parse_serendipity_result(content: str) -> Dict | None:
                     result.get("user_2_call_to_action", "")
                 ),
                 "is_sensitive": result.get("is_sensitive", False),
-            }
+            }, indices_to_exclude
     except Exception:
-        return None
+        return None, set()
 
 
 def format_conversation_summary(row: Dict) -> Dict:
