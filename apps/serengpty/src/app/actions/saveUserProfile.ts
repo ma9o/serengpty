@@ -1,24 +1,9 @@
 'use server';
 
-import { z } from 'zod';
 import { prisma } from '../services/db/prisma';
 import { auth } from '../services/auth';
 import { revalidatePath } from 'next/cache';
-
-// Form validation schema
-const userProfileSchema = z.object({
-  username: z
-    .string()
-    .min(3, { message: 'name must be at least 3 characters.' })
-    .max(20, { message: 'name cannot be longer than 20 characters.' })
-    .regex(/^[a-zA-Z0-9_]+$/, {
-      message: 'name can only contain letters, numbers, and underscores.',
-    }),
-  country: z.string(),
-  sensitiveMatching: z.boolean().default(false),
-});
-
-export type UserProfileFormData = z.infer<typeof userProfileSchema>;
+import { userProfileSchema, UserProfileFormData } from '../schemas/validation';
 
 /**
  * Saves the user profile data from the onboarding form

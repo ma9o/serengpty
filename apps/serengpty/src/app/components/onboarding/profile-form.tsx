@@ -2,7 +2,6 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { useToast } from '@enclaveid/ui/hooks/use-toast';
 import { Shield, Search, ChevronDown, Check } from 'lucide-react';
 import countries from 'i18n-iso-countries';
@@ -12,6 +11,7 @@ import { saveUserProfile } from '../../actions/saveUserProfile';
 import { UsernameStatus } from './username-status';
 import { getUserProfile } from '../../actions/getUserProfile';
 import { getIdenticon } from '../../utils/getIdenticon';
+import { userProfileSchema } from '../../schemas/validation';
 
 // UI Components
 import { Button } from '@enclaveid/ui/button';
@@ -59,21 +59,7 @@ const ALL_COUNTRIES = [
     .sort((a, b) => a.name.localeCompare(b.name)),
 ];
 
-// Form validation schema
-const formSchema = z.object({
-  username: z
-    .string()
-    .min(3, {
-      message: 'Username must be at least 3 characters.',
-    })
-    .max(20, {
-      message: 'Username cannot be longer than 20 characters.',
-    }),
-  country: z.string({
-    required_error: 'Please select a country.',
-  }),
-  sensitiveMatching: z.boolean().default(false),
-});
+// We're using the centralized schema from validation.ts
 
 export interface ProfileFormProps {
   isPreferences?: boolean;
@@ -224,12 +210,12 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedValues, setLastSavedValues] = useState<z.infer<
-    typeof formSchema
+    typeof userProfileSchema
   > | null>(null);
 
   // Form setup
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof userProfileSchema>>({
+    resolver: zodResolver(userProfileSchema),
     defaultValues: {
       username: '',
       country: 'INTERNET',
@@ -240,7 +226,7 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
 
   // Function to save profile data to database
   const saveProfileData = useCallback(
-    async (values: z.infer<typeof formSchema>) => {
+    async (values: z.infer<typeof userProfileSchema>) => {
       // Skip saving if values haven't changed
       if (
         lastSavedValues &&

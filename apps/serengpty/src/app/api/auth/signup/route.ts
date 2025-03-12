@@ -6,6 +6,7 @@ import path from 'path';
 import fs from 'fs';
 import { getUniqueUsername } from '../../../actions/getUniqueUsername';
 import { validateUsername } from '../../../actions/validateUsername';
+import { usernameSchema } from '../../../schemas/validation';
 import { StreamChat } from 'stream-chat';
 import { signIn } from '../../../services/auth';
 
@@ -35,9 +36,17 @@ export async function POST(request: NextRequest) {
     let name: string;
 
     if (customUsername) {
-      // Validate the custom username
+      // First validate format with schema
+      const schemaResult = usernameSchema.safeParse(customUsername);
+      if (!schemaResult.success) {
+        return NextResponse.json(
+          { error: schemaResult.error.errors[0].message },
+          { status: 400 }
+        );
+      }
+      
+      // Then check availability
       const { isValid, message } = await validateUsername(customUsername);
-
       if (!isValid) {
         return NextResponse.json(
           { error: message || 'Invalid username' },
