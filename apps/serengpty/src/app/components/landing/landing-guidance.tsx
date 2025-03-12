@@ -2,43 +2,17 @@ import Image from 'next/image';
 import { Icon } from '@iconify/react';
 import React from 'react';
 import { Card, CardContent } from '@enclaveid/ui/card';
-
-const steps = [
-  {
-    text: 'Navigate to chatgpt.com and open Settings',
-    imageSrc: '/1.png',
-    scale: 1.2,
-    objectPosition: 'right top',
-  },
-  {
-    text: "Click 'Data controls' and 'Export'",
-    imageSrc: '/2.png',
-    scale: 1,
-    objectPosition: 'center top',
-  },
-  {
-    text: "Select 'Confirm export'",
-    imageSrc: '/3.png',
-    scale: 1,
-    objectPosition: 'center',
-  },
-  {
-    text: "Navigate to your inbox and 'Download data export'",
-    imageSrc: '/4.png',
-    scale: 1.15,
-    objectPosition: 'left bottom',
-  },
-];
+import { GUIDANCE_STEPS } from '../../constants/landing-page';
 
 export function LandingGuidance() {
   return (
-    <Card className="max-w-7xl mx-auto relative">
+    <Card className="max-w-7xl mx-auto relative overflow-x-auto">
       <CardContent className="py-4">
         <div className="flex flex-col items-center">
-          {/* Row: Images and Arrows */}
-          <div className="flex items-center justify-center gap-4">
-            {steps.map((step, index) => (
-              <React.Fragment key={index}>
+          {/* Mobile View (shown only on small screens) */}
+          <div className="flex flex-col items-center space-y-6 px-2 md:hidden">
+            {GUIDANCE_STEPS.map((step, index) => (
+              <div key={index} className="flex flex-col items-center">
                 <div className="w-64 h-32 relative overflow-hidden rounded-lg">
                   <Image
                     src={step.imageSrc}
@@ -53,27 +27,55 @@ export function LandingGuidance() {
                     }}
                   />
                 </div>
-                {index < steps.length - 1 && (
-                  <div className="flex items-center justify-center">
-                    <Icon icon="material-symbols:arrow-forward-ios-rounded" className="w-8 h-8 text-gray-400" />
-                  </div>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-          {/* Row: Texts */}
-          <div className="flex items-center justify-center gap-4 mt-4">
-            {steps.map((step, index) => (
-              <React.Fragment key={index}>
-                <div className="w-64 text-center text-gray-600">
+                <div className="text-center text-gray-600 mt-2 w-64 mb-2">
                   <p>{step.text}</p>
                 </div>
-                {index < steps.length - 1 && (
-                  // Empty spacer that matches the width of the arrow container.
-                  <div className="w-8" />
-                )}
-              </React.Fragment>
+                {/* No arrows in mobile version */}
+              </div>
             ))}
+          </div>
+
+          {/* Desktop view - horizontal layout (hidden on mobile) */}
+          <div className="hidden md:block">
+            {/* Row: Images and Arrows */}
+            <div className="flex items-center justify-center gap-4">
+              {GUIDANCE_STEPS.map((step, index) => (
+                <React.Fragment key={index}>
+                  <div className="w-64 h-32 relative overflow-hidden rounded-lg">
+                    <Image
+                      src={step.imageSrc}
+                      alt={step.text}
+                      fill
+                      className="object-cover"
+                      style={{
+                        transform: `scale(${step.scale})`,
+                        transformOrigin: step.objectPosition,
+                        objectPosition: step.objectPosition,
+                        filter: 'brightness(1.15)',
+                      }}
+                    />
+                  </div>
+                  {index < GUIDANCE_STEPS.length - 1 && (
+                    <div className="flex items-center justify-center">
+                      <Icon icon="material-symbols:arrow-forward-ios-rounded" className="w-8 h-8 text-gray-400" />
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+            {/* Row: Texts */}
+            <div className="flex items-center justify-center gap-4 mt-4">
+              {GUIDANCE_STEPS.map((step, index) => (
+                <React.Fragment key={index}>
+                  <div className="w-64 text-center text-gray-600">
+                    <p>{step.text}</p>
+                  </div>
+                  {index < GUIDANCE_STEPS.length - 1 && (
+                    <div className="w-8" />
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
         </div>
       </CardContent>

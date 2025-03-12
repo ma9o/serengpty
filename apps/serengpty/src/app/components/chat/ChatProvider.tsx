@@ -30,9 +30,9 @@ const ChatContext = createContext<ChatContextType>({
   error: null,
   unreadCount: 0,
   activeChannelId: null,
-  setActiveChannelId: () => {},
+  setActiveChannelId: (channelId: string | null) => { /* Default empty implementation */ },
   initialChatText: null,
-  setInitialChatText: () => {},
+  setInitialChatText: (text: string | null) => { /* Default empty implementation */ },
 });
 
 export const useChatContext = () => useContext(ChatContext);

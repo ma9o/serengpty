@@ -252,7 +252,7 @@ export function ZipOnboardingForm() {
   });
 
   return (
-    <div className="onboarding-form p-4 w-1/2">
+    <div className="onboarding-form p-4 w-full md:w-1/2">
       <Toaster />
 
       <form onSubmit={handleSubmit}>

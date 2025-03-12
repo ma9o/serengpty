@@ -23,22 +23,22 @@ export function LoginForm({
           e.preventDefault();
           setError(null);
           const formData = new FormData(e.currentTarget);
-          
+
           const username = formData.get('username') as string;
           const password = formData.get('password') as string;
-          
+
           if (!username || !password) {
             setError('Username and password are required');
             return;
           }
-          
+
           // Call SignIn with our credentials provider, username and password
           const result = await signIn('credentials', {
             username,
             password,
             redirect: false,
           });
-          
+
           if (result?.error) {
             setError('Invalid username or password');
           } else if (result?.ok) {
@@ -78,7 +78,7 @@ export function LoginForm({
                 <Input
                   id="password"
                   name="password"
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your password"
                   className="pr-10"
                   required
@@ -88,15 +88,13 @@ export function LoginForm({
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 focus:outline-none"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
-            {error && (
-              <div className="text-sm text-red-500">{error}</div>
-            )}
+            {error && <div className="text-sm text-red-500">{error}</div>}
             <Button type="submit" className="w-full">
               Log in
             </Button>

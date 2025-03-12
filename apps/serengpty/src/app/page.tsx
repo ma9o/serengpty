@@ -5,6 +5,7 @@ import { Button } from '@enclaveid/ui/button';
 import Link from 'next/link';
 import { LandingGuidance } from './components/landing/landing-guidance';
 import { ZipOnboardingForm } from './components/landing/zip-onboarding-form';
+import { HEADER, HERO, PRIVACY, FOOTER } from './constants/landing-page';
 
 export default function Index() {
   return (
@@ -28,32 +29,32 @@ function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo / Company Name */}
-          <div className="flex items-center gap-1 font-bold text-2xl text-content-primary">
+          <div className="flex items-center gap-1 font-bold text-xl sm:text-2xl text-content-primary">
             <Logo />
-            SerenGPTy
+            <span>{HEADER.COMPANY_NAME}</span>
           </div>
 
           {/* Navigation / Social Icons */}
-          <nav className="flex gap-4 items-center">
+          <nav className="flex gap-2 sm:gap-4 items-center">
             <a
-              href="https://discord.gg/3BHPkHDs"
+              href={HEADER.DISCORD_LINK}
               target="_blank"
               rel="noopener noreferrer"
               className="text-content-secondary hover:text-content-primary"
             >
-              <Icon icon="mdi:discord" className="w-6 h-6" />
+              <Icon icon="mdi:discord" className="w-5 h-5 sm:w-6 sm:h-6" />
             </a>
             <a
-              href="https://github.com/enclaveid/enclaveid"
+              href={HEADER.GITHUB_LINK}
               target="_blank"
               rel="noopener noreferrer"
               className="text-content-secondary hover:text-content-primary"
             >
-              <Icon icon="mdi:github" className="w-6 h-6" />
+              <Icon icon="mdi:github" className="w-5 h-5 sm:w-6 sm:h-6" />
             </a>
 
             <Link href="/dashboard/home">
-              <Button size="sm">Login</Button>
+              <Button size="sm">{HEADER.LOGIN_BUTTON_TEXT}</Button>
             </Link>
           </nav>
         </div>
@@ -64,17 +65,15 @@ function Header() {
 
 function Hero() {
   return (
-    <section className="bg-offwhite pt-12 relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 my-24">
-        <div className="flex flex-col md:flex-row items-center gap-12">
+    <section className="bg-offwhite pt-6 sm:pt-12 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 my-10 sm:my-16 md:my-24">
+        <div className="flex flex-col md:flex-row items-center gap-6 md:gap-12">
           <div className="w-full md:w-1/2 max-w-2xl md:mt-[-100px]">
-            <h1 className="text-3xl md:text-5xl font-bold mb-4">
-              Find similar ChatGPT users, anonymously
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-3 md:mb-4">
+              {HERO.TITLE}
             </h1>
-            <p className="text-lg md:text-xl text-gray-600 mb-6">
-              That have gone down your same rabbit holes, are exploring the same
-              philosophical questions, or are even just working out the exact
-              same coding problems!
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6">
+              {HERO.SUBTITLE}
             </p>
           </div>
 
@@ -112,7 +111,7 @@ function Hero() {
         alt="Arrow end"
         width={100}
         height={100}
-        className="absolute bottom-[200px] right-[100px] h-[150px] w-[150px]"
+        className="absolute bottom-[200px] right-[100px] h-[150px] w-[150px] hidden md:block"
       />
     </section>
   );
@@ -120,23 +119,24 @@ function Hero() {
 
 function PrivacySection() {
   return (
-    <section className="bg-white py-16 sm:py-20 lg:py-24">
+    <section className="bg-white py-12 sm:py-16 lg:py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-16">
-          {/* Left column */}
-          <div className="flex flex-col justify-center gap-8 md:gap-16">
-            <div className="flex flex-col">
-              <div className="flex flex-row md:flex-col text-brand">
-                <h2 className="text-3xl md:text-5xl font-bold leading-snug mr-2 opacity-50">
-                  Your data,
-                </h2>
-                <h2 className="text-3xl md:text-5xl font-bold leading-snug">
-                  Your rules
-                </h2>
-              </div>
+        <div className="md:hidden">
+          {/* Mobile layout - completely restructured for mobile */}
+          <div className="flex flex-col gap-8">
+            {/* 1. Mobile heading */}
+            <div className="flex flex-row text-brand">
+              <h2 className="text-2xl sm:text-3xl font-bold leading-snug mr-2 opacity-50">
+                {PRIVACY.MAIN_TITLE.FIRST_PART}
+              </h2>
+              <h2 className="text-2xl sm:text-3xl font-bold leading-snug">
+                {PRIVACY.MAIN_TITLE.SECOND_PART}
+              </h2>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-1 gap-2 md:gap-8 place-items-center md:place-items-start">
-              <div className="flex items-center w-32 md:w-40 lg:w-48">
+
+            {/* 2. Images grid - commented out
+            <div className="grid grid-cols-2 gap-2 place-items-center">
+              <div className="flex items-center w-24 sm:w-32">
                 <Image
                   src="/nvtrust.png"
                   alt="NVIDIA nvtrust logo"
@@ -145,7 +145,7 @@ function PrivacySection() {
                   className="w-full h-auto"
                 />
               </div>
-              <div className="flex items-center w-32 md:w-40 lg:w-48">
+              <div className="flex items-center w-24 sm:w-32">
                 <Image
                   src="/coco.png"
                   alt="Confidential Containers"
@@ -154,7 +154,7 @@ function PrivacySection() {
                   className="w-full h-auto"
                 />
               </div>
-              <div className="flex items-center w-32 md:w-40 lg:w-48 col-span-2 md:col-span-1 justify-self-center md:justify-self-start">
+              <div className="flex items-center w-24 sm:w-32 col-span-2 justify-self-center">
                 <Image
                   src="/amd.png"
                   alt="AMD SEV-SNP"
@@ -164,48 +164,110 @@ function PrivacySection() {
                 />
               </div>
             </div>
+            */}
+
+            {/* 3. Info blocks */}
+            <div className="space-y-6">
+              {/* Open Source */}
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-brand mb-2 flex items-center">
+                  <Icon
+                    icon={PRIVACY.ANONYMITY.ICON}
+                    className="mr-3 text-2xl sm:text-3xl"
+                  />
+                  {PRIVACY.ANONYMITY.TITLE}
+                </h3>
+                <p className="text-sm sm:text-base text-gray-700">
+                  {PRIVACY.ANONYMITY.DESCRIPTION}
+                </p>
+              </div>
+
+              {/* Community Owned */}
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-brand mb-2 flex items-center">
+                  <Icon
+                    icon={PRIVACY.OPEN_SOURCE.ICON}
+                    className="mr-3 text-2xl sm:text-3xl"
+                  />
+                  {PRIVACY.OPEN_SOURCE.TITLE}
+                </h3>
+                <p className="text-sm sm:text-base text-gray-700">
+                  {PRIVACY.OPEN_SOURCE.DESCRIPTION}
+                </p>
+              </div>
+
+              {/* Zero Trust */}
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-brand mb-2 flex items-center">
+                  <Icon
+                    icon={PRIVACY.ZERO_TRUST.ICON}
+                    className="mr-3 text-2xl sm:text-3xl"
+                  />
+                  {PRIVACY.ZERO_TRUST.TITLE}
+                </h3>
+                <p className="text-sm sm:text-base text-content-secondary">
+                  {PRIVACY.ZERO_TRUST.DESCRIPTION}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop layout - revised with top header and 3-column grid below */}
+        <div className="hidden md:flex flex-col gap-20">
+          {/* Top row - "Your data, Your rules" heading */}
+          <div className="flex justify-center">
+            <div className="flex flex-row text-center text-brand">
+              <h2 className="text-4xl lg:text-5xl font-bold leading-snug mr-3 opacity-50">
+                {PRIVACY.MAIN_TITLE.FIRST_PART}
+              </h2>
+              <h2 className="text-4xl lg:text-5xl font-bold leading-snug">
+                {PRIVACY.MAIN_TITLE.SECOND_PART}
+              </h2>
+            </div>
           </div>
 
-          {/* Right column: Info blocks */}
-          <div className="space-y-8">
+          {/* Three-column grid for text blocks */}
+          <div className="grid grid-cols-3 gap-8">
             {/* Open Source */}
             <div>
-              <h3 className="text-xl font-bold text-brand mb-2">
-                As anonymous as you&apos;re comfortable with
+              <h3 className="text-xl font-bold text-brand mb-2 flex items-center">
+                <Icon
+                  icon={PRIVACY.ANONYMITY.ICON}
+                  className="mr-3 text-3xl lg:text-4xl"
+                />
+                {PRIVACY.ANONYMITY.TITLE}
               </h3>
-              <p className="text-gray-700">
-                Every single component of EnclaveID is publicly available on
-                GitHub and the build pipeline is fully reproducible. Thanks to
-                remote
-                <em> attestation</em>, this means that you can trust that
-                whatever is in the code is what is running in our Kubernetes
-                cluster, much like an Ethereum smart contract.
+              <p className="text-base text-gray-700">
+                {PRIVACY.ANONYMITY.DESCRIPTION}
               </p>
             </div>
 
             {/* Community Owned */}
             <div>
-              <h3 className="text-xl font-bold text-brand mb-2">
-                100% Open Source and Community Owned
+              <h3 className="text-xl font-bold text-brand mb-2 flex items-center">
+                <Icon
+                  icon={PRIVACY.OPEN_SOURCE.ICON}
+                  className="mr-3 text-3xl lg:text-4xl"
+                />
+                {PRIVACY.OPEN_SOURCE.TITLE}
               </h3>
-              <p className="text-gray-700">
-                EnclaveID is a community-owned project with the goal of
-                empowering individuals for a flourishing democratic society. Our
-                code is a reflection of the will of such individuals, so
-                contributions and feedback are strongly encouraged!
+              <p className="text-base text-gray-700">
+                {PRIVACY.OPEN_SOURCE.DESCRIPTION}
               </p>
             </div>
 
             {/* Zero Trust */}
             <div>
-              <h3 className="text-xl font-bold text-brand mb-2">
-                Zero Trust Infrastructure [coming soon!]
+              <h3 className="text-xl font-bold text-brand mb-2 flex items-center">
+                <Icon
+                  icon={PRIVACY.ZERO_TRUST.ICON}
+                  className="mr-3 text-3xl lg:text-4xl"
+                />
+                {PRIVACY.ZERO_TRUST.TITLE}
               </h3>
-              <p className="text-content-secondary">
-                EnclaveID runs on AMD SEV-SNP capable hardware – hence &quot;enclave&quot;
-                in the name – which guarantees that your data is inaccessible by
-                any other software or human (except you), even by the
-                infrastructure provider!
+              <p className="text-base text-content-secondary">
+                {PRIVACY.ZERO_TRUST.DESCRIPTION}
               </p>
             </div>
           </div>
@@ -218,18 +280,21 @@ function PrivacySection() {
 function Footer() {
   return (
     <footer className="bg-offwhite text-text">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Company Info */}
-          <div className="col-span-1">
-            <h3 className="text-gray-900 font-bold text-lg mb-4">EnclaveID</h3>
-            <p className="text-sm text-gray-900">Get LLMs to know you</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-5">
+        <div className="flex flex-col items-center justify-center w-full">
+          {/* Single line footer with copyright - centered on mobile, justified on desktop */}
+          <div className="w-full text-sm">
+            <div className="flex flex-col sm:flex-row sm:justify-between items-center">
+              <p className="flex items-center gap-1">
+                <span className="text-gray-900 font-medium">{FOOTER.COMPANY_NAME}</span>
+                <span className="text-gray-600">—</span>
+                <span className="text-gray-600">{FOOTER.TAGLINE}</span>
+              </p>
+              <p className="text-gray-600 mt-1 sm:mt-0">
+                {FOOTER.COPYRIGHT.replace('{year}', new Date().getFullYear().toString())}
+              </p>
+            </div>
           </div>
-        </div>
-
-        {/* Copyright */}
-        <div className="border-t border-footer-border mt-8 pt-8 text-sm text-gray-900">
-          © {new Date().getFullYear()} EnclaveID. All rights reserved.
         </div>
       </div>
     </footer>
