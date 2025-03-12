@@ -6,6 +6,8 @@ import {
   useContext,
   useState,
   useEffect,
+  useMemo,
+  useCallback,
 } from 'react';
 import { Chat, useCreateChatClient } from 'stream-chat-react';
 import { StreamChat } from 'stream-chat';
@@ -54,23 +56,19 @@ export const ChatProvider = ({
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [initialChatText, setInitialChatText] = useState<string | null>(null);
   const [error, setError] = useState<Error | null>(null);
-  const [client, setClient] = useState<StreamChat | null>(null);
+  //const [client, setClient] = useState<StreamChat | null>(null);
 
-  // Use the Stream Chat hook pattern
-  const newClient = useCreateChatClient({
-    apiKey: process.env.NEXT_PUBLIC_STREAM_CHAT_API_KEY!,
-    tokenOrProvider: userToken,
-    userData: { id: userId, name: userName },
-  });
+  // Use the Stream Chat hook pattern with memoized parameters
+  const chatClientParams = useMemo(
+    () => ({
+      apiKey: process.env.NEXT_PUBLIC_STREAM_CHAT_API_KEY!,
+      tokenOrProvider: userToken,
+      userData: { id: userId, name: userName },
+    }),
+    [userId, userName, userToken]
+  );
 
-  const saveNewClient = !client && newClient;
-
-  useEffect(() => {
-    if (saveNewClient) {
-      console.log('Saving new client');
-      setClient(newClient);
-    }
-  }, [saveNewClient]);
+  const client = useCreateChatClient(chatClientParams);
 
   // Initial unread count check when the client connects
   useEffect(() => {
@@ -90,6 +88,44 @@ export const ChatProvider = ({
     checkUnreadCount();
   }, [client]);
 
+  // Memoize state setter callbacks to maintain stable references
+  const setUnreadCountCallback = useCallback((count: number) => {
+    setUnreadCount(count);
+  }, []);
+
+  const setActiveChannelIdCallback = useCallback((channelId: string | null) => {
+    setActiveChannelId(channelId);
+  }, []);
+
+  const setInitialChatTextCallback = useCallback((text: string | null) => {
+    setInitialChatText(text);
+  }, []);
+
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo<ChatContextType>(
+    () => ({
+      client,
+      isLoading: !client,
+      error,
+      unreadCount,
+      setUnreadCount: setUnreadCountCallback,
+      activeChannelId,
+      setActiveChannelId: setActiveChannelIdCallback,
+      initialChatText,
+      setInitialChatText: setInitialChatTextCallback,
+    }),
+    [
+      client,
+      error,
+      unreadCount,
+      setUnreadCountCallback,
+      activeChannelId,
+      setActiveChannelIdCallback,
+      initialChatText,
+      setInitialChatTextCallback,
+    ]
+  );
+  // Create error and loading fragments
   if (error) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -110,18 +146,6 @@ export const ChatProvider = ({
       </div>
     );
   }
-
-  const contextValue: ChatContextType = {
-    client,
-    isLoading: !client,
-    error,
-    unreadCount,
-    setUnreadCount,
-    activeChannelId,
-    setActiveChannelId,
-    initialChatText,
-    setInitialChatText,
-  };
 
   return (
     <ChatContext.Provider value={contextValue}>

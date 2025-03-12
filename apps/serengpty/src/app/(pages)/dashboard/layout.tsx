@@ -39,17 +39,15 @@ export default async function Layout({
   const user = await getCurrentUser();
   const streamChatToken = await getChatToken();
 
-  return user && streamChatToken.token ? (
+  return (
     <UnviewedMatchesProvider>
       <ChatProvider
-        userId={user.id}
-        userName={user.name}
+        userId={user?.id}
+        userName={user?.name}
         userToken={streamChatToken.token}
       >
         <DashboardLayout>{children}</DashboardLayout>
       </ChatProvider>
     </UnviewedMatchesProvider>
-  ) : (
-    <div>Not logged in</div>
   );
 }

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Link from 'next/link';
 
 import {
   Sidebar,
@@ -52,10 +53,10 @@ export function AppSidebar({
                 {item.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={item.isActive}>
-                      <a href={item.url}>
+                      <Link href={item.url}>
                         {item.icon}
                         {item.title}
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                     {item.badge && (
                       <SidebarMenuBadge className="bg-primary text-primary-foreground">
