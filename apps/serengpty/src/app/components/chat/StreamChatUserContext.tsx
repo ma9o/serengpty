@@ -6,6 +6,8 @@ import {
   useEffect,
   useState,
   ReactNode,
+  useCallback,
+  useMemo
 } from 'react';
 import {
   getTestToken,
@@ -59,6 +61,19 @@ export const StreamChatUserProvider = ({
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [initialChatText, setInitialChatText] = useState<string | null>(null);
+
+  // Memoize state setter functions to maintain stable references
+  const memoizedSetUnreadCount = useCallback((count: number) => {
+    setUnreadCount(count);
+  }, []);
+
+  const memoizedSetActiveChannelId = useCallback((channelId: string) => {
+    setActiveChannelId(channelId);
+  }, []);
+
+  const memoizedSetInitialChatText = useCallback((text: string) => {
+    setInitialChatText(text);
+  }, []);
 
   // Register for notification updates - use this effect only on initial mount
   useEffect(() => {
@@ -139,22 +154,35 @@ export const StreamChatUserProvider = ({
     };
   }, []);
 
+  // Memoize the context value to prevent unnecessary re-renders of children
+  const contextValue = useMemo(() => ({
+    userId,
+    userToken,
+    userName,
+    isLoading,
+    error,
+    unreadCount,
+    setUnreadCount: memoizedSetUnreadCount,
+    activeChannelId,
+    setActiveChannelId: memoizedSetActiveChannelId,
+    initialChatText,
+    setInitialChatText: memoizedSetInitialChatText,
+  }), [
+    userId, 
+    userToken, 
+    userName, 
+    isLoading, 
+    error, 
+    unreadCount,
+    memoizedSetUnreadCount,
+    activeChannelId,
+    memoizedSetActiveChannelId,
+    initialChatText,
+    memoizedSetInitialChatText
+  ]);
+
   return (
-    <StreamChatUserContext.Provider
-      value={{
-        userId,
-        userToken,
-        userName,
-        isLoading,
-        error,
-        unreadCount,
-        setUnreadCount,
-        activeChannelId,
-        setActiveChannelId,
-        initialChatText,
-        setInitialChatText,
-      }}
-    >
+    <StreamChatUserContext.Provider value={contextValue}>
       {children}
     </StreamChatUserContext.Provider>
   );

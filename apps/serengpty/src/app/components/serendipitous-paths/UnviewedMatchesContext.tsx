@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from 'react';
 import { getUnviewedMatchesCount } from '../../actions/getSerendipitousPaths';
 
 interface UnviewedMatchesContextType {
@@ -14,21 +14,22 @@ const UnviewedMatchesContext = createContext<UnviewedMatchesContextType | undefi
 export function UnviewedMatchesProvider({ children }: { children: ReactNode }) {
   const [unviewedCount, setUnviewedCount] = useState(0);
 
-  const decrementCount = () => {
+  // Memoize the decrement function to maintain stable reference
+  const decrementCount = useCallback(() => {
     setUnviewedCount(prev => Math.max(0, prev - 1));
-  };
+  }, []);
 
-  const refreshCount = async () => {
+  // Memoize the refresh function to maintain stable reference
+  const refreshCount = useCallback(async () => {
     try {
       const count = await getUnviewedMatchesCount();
       setUnviewedCount(count);
     } catch (error) {
       console.error('Error fetching unviewed matches count:', error);
     }
-  };
+  }, []);
 
   // Initial fetch on component mount
-  // We need to include refreshCount in dependencies and handle it properly
   useEffect(() => {
     // Create a wrapper function to avoid dependency on refreshCount
     // which would cause the effect to re-run whenever the function reference changes
@@ -46,8 +47,15 @@ export function UnviewedMatchesProvider({ children }: { children: ReactNode }) {
     // No need for cleanup as this is a one-time fetch operation
   }, []);
 
+  // Memoize the context value to prevent unnecessary re-renders of children
+  const contextValue = useMemo(() => ({
+    unviewedCount,
+    decrementCount,
+    refreshCount
+  }), [unviewedCount, decrementCount, refreshCount]);
+
   return (
-    <UnviewedMatchesContext.Provider value={{ unviewedCount, decrementCount, refreshCount }}>
+    <UnviewedMatchesContext.Provider value={contextValue}>
       {children}
     </UnviewedMatchesContext.Provider>
   );
