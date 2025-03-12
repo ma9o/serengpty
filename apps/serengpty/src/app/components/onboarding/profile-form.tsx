@@ -112,6 +112,7 @@ function CountrySelector({
 
   // Handle clicking outside to close dropdown
   useEffect(() => {
+    // Define the handler within the effect to ensure we capture the latest props
     function handleClickOutside(event: MouseEvent) {
       if (
         dropdownRef.current &&
@@ -123,19 +124,23 @@ function CountrySelector({
     }
 
     if (isOpen) {
+      // Only add the listener when the dropdown is open
       document.addEventListener('mousedown', handleClickOutside);
+      
       // Focus the search input when dropdown opens
       if (searchInputRef.current) {
         searchInputRef.current.focus();
       }
     } else {
+      // Clear search when dropdown closes
       setSearchTerm('');
     }
 
+    // Clean up the event listener to prevent memory leaks
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onBlur]);
+  }, [isOpen, onBlur, setIsOpen]); // Include all dependencies
 
   // Handle selecting a country
   const handleSelectCountry = (country: (typeof ALL_COUNTRIES)[0]) => {
@@ -312,15 +317,21 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
     saveProfileData,
   ]);
 
-  // Fetch user profile data from database
+  // Fetch user profile data from database - only on initial mount
   useEffect(() => {
+    // This should only run once on component mount
+    let isMounted = true;
+    
     async function fetchUserProfile() {
       try {
-        setIsLoading(true);
-        setIsProfileLoading(true);
+        if (isMounted) {
+          setIsLoading(true);
+          setIsProfileLoading(true);
+        }
+        
         const userData = await getUserProfile();
 
-        if (userData) {
+        if (userData && isMounted) {
           const profileData = {
             username: userData.name || '',
             country: userData.country || 'INTERNET',
@@ -334,16 +345,24 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
-        // Generate a fallback username in case of error
-        form.setValue('username', `user_${Date.now().toString(36)}`);
+        if (isMounted) {
+          // Generate a fallback username in case of error
+          form.setValue('username', `user_${Date.now().toString(36)}`);
+        }
       } finally {
-        setIsLoading(false);
-        setIsProfileLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+          setIsProfileLoading(false);
+        }
       }
     }
 
     fetchUserProfile();
-  }, [form]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Empty dependency array as this should only run once on mount
 
   // Combined loading state
   const isFormLoading = isLoading || isProfileLoading;

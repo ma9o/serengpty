@@ -28,8 +28,22 @@ export function UnviewedMatchesProvider({ children }: { children: ReactNode }) {
   };
 
   // Initial fetch on component mount
+  // We need to include refreshCount in dependencies and handle it properly
   useEffect(() => {
-    refreshCount();
+    // Create a wrapper function to avoid dependency on refreshCount
+    // which would cause the effect to re-run whenever the function reference changes
+    const fetchInitialCount = async () => {
+      try {
+        const count = await getUnviewedMatchesCount();
+        setUnviewedCount(count);
+      } catch (error) {
+        console.error('Error fetching initial unviewed matches count:', error);
+      }
+    };
+    
+    fetchInitialCount();
+    
+    // No need for cleanup as this is a one-time fetch operation
   }, []);
 
   return (

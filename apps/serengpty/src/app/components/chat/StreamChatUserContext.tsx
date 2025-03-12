@@ -75,10 +75,15 @@ export const StreamChatUserProvider = ({
     };
   }, []);
 
+  // Fetch user and token on initial render only
+  // This is a side effect that only needs to run once on component mount
+  // No dependencies needed as this is an initialization task
   useEffect(() => {
+    let isMounted = true; // Flag to prevent state updates after unmount
+
     const fetchUser = async () => {
       try {
-        setIsLoading(true);
+        if (isMounted) setIsLoading(true);
 
         // Get the current user from your authentication system
         const user = await getCurrentUser();
@@ -106,20 +111,32 @@ export const StreamChatUserProvider = ({
           token = getTestToken(user.id);
         }
 
-        setUserId(user.id);
-        setUserToken(token);
-        setUserName(user.name || null);
+        // Only update state if component is still mounted
+        if (isMounted) {
+          setUserId(user.id);
+          setUserToken(token);
+          setUserName(user.name || null);
+        }
       } catch (err) {
         console.error('Error fetching user:', err);
-        setError(
-          err instanceof Error ? err : new Error('Failed to fetch user')
-        );
+        if (isMounted) {
+          setError(
+            err instanceof Error ? err : new Error('Failed to fetch user')
+          );
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchUser();
+
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
