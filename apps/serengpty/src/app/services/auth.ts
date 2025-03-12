@@ -1,4 +1,4 @@
-import NextAuth from 'next-auth';
+import NextAuth, { CredentialsSignin } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from './db/prisma';
@@ -52,12 +52,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) return null;
+        if (!credentials?.username || !credentials?.password) {
+          throw new CredentialsSignin();
+        }
 
         // Find the user by username
         const user = await prisma.user.findUnique({
           where: {
-            name: credentials.username,
+            name: credentials.username as string,
           },
         });
 
@@ -77,7 +79,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
         }
 
-        return null;
+        throw new CredentialsSignin();
       },
     }),
   ],

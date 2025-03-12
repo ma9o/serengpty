@@ -1,29 +1,94 @@
 'use client';
 
-import { ReactNode } from 'react';
-import { Chat } from 'stream-chat-react';
+import {
+  ReactNode,
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+} from 'react';
+import { Chat, useCreateChatClient } from 'stream-chat-react';
 import { StreamChat } from 'stream-chat';
-import { useChatClient } from '../../services/streamChat';
 import 'stream-chat-react/dist/css/v2/index.css';
+
+interface ChatContextType {
+  client: StreamChat | null;
+  isLoading: boolean;
+  error: Error | null;
+  unreadCount: number;
+  setUnreadCount: (count: number) => void;
+  activeChannelId: string | null;
+  setActiveChannelId: (channelId: string | null) => void;
+  initialChatText: string | null;
+  setInitialChatText: (text: string | null) => void;
+}
+
+const ChatContext = createContext<ChatContextType>({
+  client: null,
+  isLoading: true,
+  error: null,
+  unreadCount: 0,
+  setUnreadCount: () => {},
+  activeChannelId: null,
+  setActiveChannelId: () => {},
+  initialChatText: null,
+  setInitialChatText: () => {},
+});
+
+export const useChatContext = () => useContext(ChatContext);
 
 interface ChatProviderProps {
   userId: string;
-  userToken: string;
   userName: string;
+  userToken: string;
   children: ReactNode;
 }
 
 export const ChatProvider = ({
   userId,
-  userToken,
   userName,
+  userToken,
   children,
 }: ChatProviderProps) => {
-  const { client, isLoading, error } = useChatClient(
-    userId,
-    userToken,
-    userName
-  );
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
+  const [initialChatText, setInitialChatText] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+  const [client, setClient] = useState<StreamChat | null>(null);
+
+  // Use the Stream Chat hook pattern
+  const newClient = useCreateChatClient({
+    apiKey: process.env.NEXT_PUBLIC_STREAM_CHAT_API_KEY!,
+    tokenOrProvider: userToken,
+    userData: { id: userId, name: userName },
+  });
+
+  const saveNewClient = !client && newClient;
+
+  useEffect(() => {
+    if (saveNewClient) {
+      console.log('Saving new client');
+      setClient(newClient);
+    }
+  }, [saveNewClient]);
+
+  // Initial unread count check when the client connects
+  useEffect(() => {
+    if (!client) return;
+
+    const checkUnreadCount = async () => {
+      try {
+        const unreadData = await client.getUnreadCount();
+        if (unreadData?.total_unread_count !== undefined) {
+          setUnreadCount(unreadData.total_unread_count);
+        }
+      } catch (err) {
+        console.error('Error getting initial unread count:', err);
+      }
+    };
+
+    checkUnreadCount();
+  }, [client]);
 
   if (error) {
     return (
@@ -38,7 +103,7 @@ export const ChatProvider = ({
     );
   }
 
-  if (isLoading) {
+  if (!client) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"></div>
@@ -46,15 +111,23 @@ export const ChatProvider = ({
     );
   }
 
+  const contextValue: ChatContextType = {
+    client,
+    isLoading: !client,
+    error,
+    unreadCount,
+    setUnreadCount,
+    activeChannelId,
+    setActiveChannelId,
+    initialChatText,
+    setInitialChatText,
+  };
+
   return (
-    <div className="h-full">
-      {client ? (
-        <Chat client={client as StreamChat}>{children}</Chat>
-      ) : (
-        <div className="flex h-full items-center justify-center">
-          <p className="text-gray-500">Chat client not initialized</p>
-        </div>
-      )}
-    </div>
+    <ChatContext.Provider value={contextValue}>
+      <div className="h-full">
+        <Chat client={client}>{children}</Chat>
+      </div>
+    </ChatContext.Provider>
   );
 };

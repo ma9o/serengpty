@@ -1,5 +1,5 @@
 // layout.tsx
-'use client';
+'use server';
 
 import { Separator } from '@enclaveid/ui/separator';
 import {
@@ -8,13 +8,13 @@ import {
   SidebarTrigger,
 } from '@enclaveid/ui/sidebar';
 import { DashboardBreadcrumb } from '../../components/dashboard-breadcrumb';
-import { StreamChatUserProvider } from '../../components/chat/StreamChatUserContext';
 import { UnviewedMatchesProvider } from '../../components/serendipitous-paths/UnviewedMatchesContext';
-
-// Import our new component
+import { ChatProvider } from '../../components/chat/ChatProvider';
 import { DashboardSidebar } from '../../components/dashboard-sidebar';
 
-// Need to convert to client component since we're using state
+import { getChatToken } from '../../actions/getChatToken';
+import { getCurrentUser } from '../../actions/getCurrentUser';
+
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
@@ -31,13 +31,25 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Export the wrapped component
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return (
-    <StreamChatUserProvider>
-      <UnviewedMatchesProvider>
+export default async function Layout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const user = await getCurrentUser();
+  const streamChatToken = await getChatToken();
+
+  return user && streamChatToken.token ? (
+    <UnviewedMatchesProvider>
+      <ChatProvider
+        userId={user.id}
+        userName={user.name}
+        userToken={streamChatToken.token}
+      >
         <DashboardLayout>{children}</DashboardLayout>
-      </UnviewedMatchesProvider>
-    </StreamChatUserProvider>
+      </ChatProvider>
+    </UnviewedMatchesProvider>
+  ) : (
+    <div>Not logged in</div>
   );
 }

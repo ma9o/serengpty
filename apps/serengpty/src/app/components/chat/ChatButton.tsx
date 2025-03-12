@@ -2,9 +2,9 @@
 
 import { Button } from '@enclaveid/ui/button';
 import { ChatBubbleIcon } from '@radix-ui/react-icons';
-import { useStreamChatUser } from './StreamChatUserContext';
-import { useChatClient } from '../../services/streamChat';
-import { useStartChat } from './useStartChat';
+import { useChatContext } from './ChatProvider';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 interface ChatButtonProps {
@@ -24,12 +24,12 @@ export function ChatButton({
   className,
   initialText,
 }: ChatButtonProps) {
-  const { userId, userToken, userName } = useStreamChatUser();
-  const { client } = useChatClient(userId, userToken, userName);
-  const { startChatWithUser, isLoading, error } = useStartChat();
+  const router = useRouter();
+  const { client, setActiveChannelId, setInitialChatText } = useChatContext();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleClick = async () => {
-    if (!userId) {
+    if (!client || !client.userID) {
       toast.error('You must be logged in to start a chat');
       return;
     }
@@ -39,29 +39,34 @@ export function ChatButton({
       return;
     }
 
-    // Make sure client is initialized
-    if (!client) {
-      toast.error('Chat client not initialized. Please try again later.');
-      return;
-    }
-
     try {
-      console.log('Starting chat with:', { userId, otherUserId });
+      setIsLoading(true);
+      
+      // Create a channel between the two users
+      const channel = client.channel('messaging', {
+        members: [client.userID, otherUserId],
+        created_by_id: client.userID,
+      });
 
-      const result = await startChatWithUser(
-        userId,
-        otherUserId,
-        client,
-        otherUserName,
-        initialText
-      );
+      await channel.watch();
 
-      if (!result) {
-        toast.error(`Failed to start chat${error ? `: ${error.message}` : ''}`);
+      // Set active channel in context
+      if (channel.id) {
+        setActiveChannelId(channel.id);
+        
+        // Store the initial text if provided
+        if (initialText) {
+          setInitialChatText(initialText);
+        }
       }
+
+      // Navigate to the chat page with the specific channel ID
+      router.push(`/dashboard/chats?cid=${encodeURIComponent(channel.id)}`);
     } catch (err) {
-      console.error('Error in chat button:', err);
+      console.error('Error starting chat:', err);
       toast.error('Failed to start a chat. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 

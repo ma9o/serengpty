@@ -13,7 +13,7 @@ import {
 } from 'stream-chat-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@enclaveid/ui/avatar';
 import { getIdenticon } from '../../utils/getIdenticon';
-import { useStreamChatUser } from './StreamChatUserContext';
+import { useChatContext } from './ChatProvider';
 
 interface ChatInterfaceProps {
   activeChannelId?: string;
@@ -58,16 +58,19 @@ const CustomAvatar = (props: {
   );
 };
 
-export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
+export const ChatInterface = ({ activeChannelId: propActiveChannelId }: ChatInterfaceProps) => {
   const {
-    userId,
+    client,
     activeChannelId: contextActiveChannelId,
+    setActiveChannelId,
     initialChatText,
     setInitialChatText,
-  } = useStreamChatUser();
+  } = useChatContext();
+  
   const [activeChannel, setActiveChannel] = useState<string | undefined>(
-    activeChannelId || contextActiveChannelId
+    propActiveChannelId || contextActiveChannelId || undefined
   );
+  
   const [localInitialText, setLocalInitialText] = useState<string | null>(
     initialChatText
   );
@@ -79,9 +82,10 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
       const channelId = url.searchParams.get('cid');
       if (channelId) {
         setActiveChannel(channelId);
+        setActiveChannelId(channelId);
       }
     }
-  }, []);
+  }, [setActiveChannelId]);
 
   // Update from context if it changes
   useEffect(() => {
@@ -95,19 +99,19 @@ export const ChatInterface = ({ activeChannelId }: ChatInterfaceProps) => {
     if (initialChatText) {
       setLocalInitialText(initialChatText);
       // Clear the context value after capturing it locally
-      setInitialChatText('');
+      setInitialChatText(null);
     }
   }, [initialChatText, setInitialChatText]);
 
-  // If userId is not available, don't render the chat interface
-  if (!userId) {
+  // If client is not available, don't render the chat interface
+  if (!client) {
     return null;
   }
 
-  // Prepare filters with the userId from context
+  // Prepare filters with the user ID
   const filters: ChannelFilters<DefaultStreamChatGenerics> = {
     type: 'messaging',
-    members: { $in: [userId] },
+    members: { $in: [client.userID || ''] },
   };
 
   return (

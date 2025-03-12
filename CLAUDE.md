@@ -31,6 +31,7 @@
 - Components: Follow existing patterns in similar files
 - Naming: camelCase for JS/TS variables, PascalCase for components/classes
 - CI runs: `bun nx affected -t lint test build`
+- When refactoring: Delete old files completely instead of keeping deprecated versions
 
 ## Documentation
 - Architecture: `docs/architecture.md`
