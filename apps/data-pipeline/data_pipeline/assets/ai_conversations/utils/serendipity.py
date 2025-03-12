@@ -77,14 +77,13 @@ def generate_serendipity_prompt(
                 "user_2_unique_branches": "In Markdown: Bullet points of how <USER_2> uniquely branches off from the common ground",
                 "user_1_call_to_action": "In Markdown: Bullet points of what <USER_1> could ask <USER_2> to join the unique branches",
                 "user_2_call_to_action": "In Markdown: Bullet points of what <USER_2> could ask <USER_1> to join the unique branches",
-                "is_sensitive": "Boolean: true if the path involves things that might be embarrassing or delicate to share."
+                "is_sensitive": "Boolean: true if the path involves discussions on topics such as odd curiosities, erotica or other topics that might be embarrassing or delicate to share."
               }}
 
-              IMPORTANT: common_indices, user1_unique_indices, and user2_unique_indices cannot be empty!
-
-              In the text, replace any references to the users with "<USER_1>" and "<USER_2>".
-
-              If you cannot find a serendipitous path, return an empty object: {{}}
+              IMPORTANT:
+              - common_indices, user1_unique_indices, and user2_unique_indices cannot be empty!
+              - In any texts, replace any references to the users with "<USER_1>" and "<USER_2>".
+              - If you cannot find a serendipitous path, return an empty object: {{}}
 
               USER 1 CONVERSATIONS:
               {_prepare_user_texts(user1_summaries, excluded_indices)}

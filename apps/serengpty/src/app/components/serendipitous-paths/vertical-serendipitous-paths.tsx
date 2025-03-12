@@ -572,9 +572,7 @@ function PathDetails({
 
           {/* Their Path */}
           <div className="p-4 bg-muted rounded-lg">
-            <h3 className="text-lg font-medium mb-2">
-              {matchedUser.name}&apos;s Perspective
-            </h3>
+            <h3 className="text-lg font-medium mb-2">Their Perspective</h3>
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown>{processedMatchedUserSummary}</ReactMarkdown>
             </div>
