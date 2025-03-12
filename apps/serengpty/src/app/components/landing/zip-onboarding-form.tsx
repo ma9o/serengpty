@@ -252,7 +252,7 @@ export function ZipOnboardingForm() {
   });
 
   return (
-    <div className="onboarding-form p-4 w-full md:w-1/2">
+    <div className="onboarding-form w-full md:w-1/2 flex justify-center">
       <Toaster />
 
       <form onSubmit={handleSubmit}>
@@ -281,7 +281,7 @@ export function ZipOnboardingForm() {
                       className="text-gray-500 mr-2"
                     />
                     <p className="text-sm text-gray-500 font-medium">
-                      Your data will be anonymized locally before uploading
+                      Data will be anonymized locally before upload
                     </p>
                   </>
                 )
@@ -320,7 +320,7 @@ export function ZipOnboardingForm() {
             ) : (
               <div
                 {...getRootProps()}
-                className="relative w-full mb-8 md:mb-0 border-2 border-dashed border-gray-300 p-6 rounded-lg flex flex-col items-center justify-center text-center hover:border-green-800 transition-colors cursor-pointer"
+                className="relative w-full md:w-[400px] mx-auto mb-8 md:mb-0 border-2 border-dashed border-gray-300 p-6 rounded-lg flex flex-col items-center justify-center text-center hover:border-green-800 transition-colors cursor-pointer"
               >
                 <input {...getInputProps()} />
                 {/* <FileArchive className="mb-4 text-gray-500" size={32} /> */}

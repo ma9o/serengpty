@@ -6,8 +6,8 @@ import { GUIDANCE_STEPS } from '../../constants/landing-page';
 
 export function LandingGuidance() {
   return (
-    <Card className="max-w-7xl mx-auto relative overflow-x-auto">
-      <CardContent className="py-4">
+    <Card className="max-w-7xl mx-auto relative overflow-x-auto mx-5 sm:mx-auto">
+      <CardContent className="py-4 px-2 md:px-4">
         <div className="flex flex-col items-center">
           {/* Mobile View (shown only on small screens) */}
           <div className="flex flex-col items-center space-y-6 px-2 md:hidden">

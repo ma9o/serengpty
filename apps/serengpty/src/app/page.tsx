@@ -67,8 +67,8 @@ function Hero() {
   return (
     <section className="bg-offwhite pt-6 sm:pt-12 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 my-10 sm:my-16 md:my-24">
-        <div className="flex flex-col md:flex-row items-center gap-6 md:gap-12">
-          <div className="w-full md:w-1/2 max-w-2xl md:mt-[-100px]">
+        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+          <div className="w-full md:w-1/2 flex flex-col justify-center">
             <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-3 md:mb-4">
               {HERO.TITLE}
             </h1>
