@@ -280,12 +280,30 @@ export function VerticalSerendipitousPaths({
                           <div className="flex-row">
                             <div className="flex justify-between items-center">
                               <div className="font-medium mb-1 flex items-center gap-2">
-                                {processedTitle}
                                 {path.isSensitive && (
-                                  <Badge className="ml-2 bg-orange-500/20 border-orange-700 text-orange-700 pointer-events-none">
+                                  <Badge className="bg-red-500/20 border-red-700 text-red-700 pointer-events-none">
                                     Sensitive
                                   </Badge>
                                 )}
+                                <Badge
+                                  className={cn(
+                                    'pointer-events-none capitalize',
+                                    {
+                                      humanistic:
+                                        'bg-green-500/20 border-green-700 text-green-700',
+
+                                      research:
+                                        'bg-purple-500/20 border-purple-700 text-purple-700',
+                                      coding:
+                                        'bg-amber-500/20 border-amber-700 text-amber-700',
+                                      practical:
+                                        'bg-orange-500/20 border-orange-700 text-orange-700',
+                                    }[path.category]
+                                  )}
+                                >
+                                  {path.category}
+                                </Badge>
+                                {processedTitle}
                               </div>
                               <PathFeedback
                                 pathId={path.id}

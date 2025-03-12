@@ -96,12 +96,16 @@ export async function getSerendipitousPaths() {
           },
         },
         serendipitousPaths: {
-          orderBy: [{ category: 'asc' }, { balanceScore: 'asc' }],
+          orderBy: [
+            // { category: 'asc' },
+            { balanceScore: 'asc' },
+          ],
           select: {
             id: true,
             title: true,
             commonSummary: true,
             isSensitive: true,
+            category: true,
             commonConversations: {
               select: {
                 id: true,
