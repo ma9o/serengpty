@@ -9,28 +9,10 @@ import {
 import { useChatContext } from './chat/ChatProvider';
 import { LogoutButton } from './logout-button';
 import { useUnviewedMatches } from './serendipitous-paths/UnviewedMatchesContext';
-import { useEffect } from 'react';
 
 export function DashboardSidebar() {
-  const { unreadCount, client, setUnreadCount } = useChatContext();
+  const { unreadCount } = useChatContext();
   const { unviewedCount } = useUnviewedMatches();
-
-  // Set up notification listeners
-  useEffect(() => {
-    if (!client) return;
-
-    const handleUnreadCount = (event: any) => {
-      if (event.total_unread_count !== undefined) {
-        setUnreadCount(event.total_unread_count);
-      }
-    };
-
-    client.on(handleUnreadCount);
-
-    return () => {
-      client.off(handleUnreadCount);
-    };
-  }, [client, setUnreadCount]);
 
   const sidebarItems = {
     navMain: [

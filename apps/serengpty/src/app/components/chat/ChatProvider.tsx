@@ -18,7 +18,6 @@ interface ChatContextType {
   isLoading: boolean;
   error: Error | null;
   unreadCount: number;
-  setUnreadCount: (count: number) => void;
   activeChannelId: string | null;
   setActiveChannelId: (channelId: string | null) => void;
   initialChatText: string | null;
@@ -30,7 +29,6 @@ const ChatContext = createContext<ChatContextType>({
   isLoading: true,
   error: null,
   unreadCount: 0,
-  setUnreadCount: () => {},
   activeChannelId: null,
   setActiveChannelId: () => {},
   initialChatText: null,
@@ -58,7 +56,6 @@ export const ChatProvider = ({
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [initialChatText, setInitialChatText] = useState<string | null>(null);
   const [error, setError] = useState<Error | null>(null);
-  //const [client, setClient] = useState<StreamChat | null>(null);
 
   // Use the Stream Chat hook pattern with memoized parameters
   const chatClientParams = useMemo(
@@ -72,28 +69,29 @@ export const ChatProvider = ({
 
   const client = useCreateChatClient(chatClientParams);
 
-  // Initial unread count check when the client connects
+  // Set up notification listeners
   useEffect(() => {
     if (!client) return;
 
-    const checkUnreadCount = async () => {
-      try {
-        const unreadData = await client.getUnreadCount();
-        if (unreadData?.total_unread_count !== undefined) {
-          setUnreadCount(unreadData.total_unread_count);
-        }
-      } catch (err) {
-        console.error('Error getting initial unread count:', err);
+    const handleUnreadCount = (event: any) => {
+      if (event.total_unread_count !== undefined) {
+        setUnreadCount(event.total_unread_count);
       }
     };
 
-    checkUnreadCount();
-  }, [client]);
+    client.on(handleUnreadCount);
 
-  // Memoize state setter callbacks to maintain stable references
-  const setUnreadCountCallback = useCallback((count: number) => {
-    setUnreadCount(count);
-  }, []);
+    // Get initial unread count
+    client.getUnreadCount().then((unreadData) => {
+      if (unreadData?.total_unread_count !== undefined) {
+        setUnreadCount(unreadData.total_unread_count);
+      }
+    });
+
+    return () => {
+      client.off(handleUnreadCount);
+    };
+  }, [client, setUnreadCount]);
 
   const setActiveChannelIdCallback = useCallback((channelId: string | null) => {
     setActiveChannelId(channelId);
@@ -110,7 +108,6 @@ export const ChatProvider = ({
       isLoading: !client,
       error,
       unreadCount,
-      setUnreadCount: setUnreadCountCallback,
       activeChannelId,
       setActiveChannelId: setActiveChannelIdCallback,
       initialChatText,
@@ -120,7 +117,6 @@ export const ChatProvider = ({
       client,
       error,
       unreadCount,
-      setUnreadCountCallback,
       activeChannelId,
       setActiveChannelIdCallback,
       initialChatText,
