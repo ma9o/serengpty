@@ -44,6 +44,7 @@ interface ChatProviderProps {
   userName: string;
   userToken: string;
   children: ReactNode;
+  className?: string;
 }
 
 export const ChatProvider = ({
@@ -51,6 +52,7 @@ export const ChatProvider = ({
   userName,
   userToken,
   children,
+  className,
 }: ChatProviderProps) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
@@ -149,7 +151,7 @@ export const ChatProvider = ({
 
   return (
     <ChatContext.Provider value={contextValue}>
-      <div className="h-full">
+      <div className={`h-full ${className || ''}`}>
         <Chat client={client}>{children}</Chat>
       </div>
     </ChatContext.Provider>

@@ -15,7 +15,7 @@ export default async function Page() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       <div className="flex-1 rounded-xl bg-card overflow-hidden">
         <VerticalSerendipitousPaths
           initialData={pathsData}

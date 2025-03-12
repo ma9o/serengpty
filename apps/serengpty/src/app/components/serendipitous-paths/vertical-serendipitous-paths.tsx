@@ -11,10 +11,7 @@ import {
 } from '@enclaveid/ui/accordion';
 import { Badge } from '@enclaveid/ui/badge';
 import { cn } from '@enclaveid/ui-utils';
-import {
-  getSerendipitousPaths,
-  markUserMatchAsViewed,
-} from '../../actions/getSerendipitousPaths';
+import { markUserMatchAsViewed } from '../../actions/getSerendipitousPaths';
 import { useUnviewedMatches } from './UnviewedMatchesContext';
 import { UserCard } from './user-card';
 import { PathDetails } from './path-details';
