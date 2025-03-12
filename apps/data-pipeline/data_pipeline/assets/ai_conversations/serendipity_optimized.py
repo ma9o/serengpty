@@ -12,6 +12,7 @@ from dagster import AssetExecutionContext, AssetIn, asset
 from sklearn.discriminant_analysis import StandardScaler
 
 from data_pipeline.assets.ai_conversations.utils.balance_scores import (
+    FINITE_INF,
     calculate_balance_scores,
     sum_balance_scores,
 )
@@ -134,6 +135,23 @@ def _create_path_entry(
     }
 
 
+def _filter_embeddings_without_exclusions(
+    cluster_data: Dict,
+    exclusions: Set[int],
+) -> tuple[list[np.ndarray], list[np.ndarray]]:
+    embeddings_current = [
+        s["embedding"]
+        for s in cluster_data["current_summaries"]
+        if s["row_idx"] not in exclusions
+    ]
+    embeddings_other = [
+        s["embedding"]
+        for s in cluster_data["summaries"]
+        if s["row_idx"] not in exclusions
+    ]
+    return embeddings_current, embeddings_other
+
+
 def _prepare_clusters(
     clusters_df: pl.DataFrame,
     current_user_id: str,
@@ -243,14 +261,16 @@ async def _generate_paths(
 
         # Initialize scaler for current category
         initial_scores = [
-            calculate_balance_scores(cluster_data[cid], exclusions)[1]
+            calculate_balance_scores(
+                *_filter_embeddings_without_exclusions(cluster_data[cid], exclusions)
+            )[1]
             for cid in initial_cluster_ids
         ]
 
         # Filter out inf scores
         valid_entries = []
         for i, score in enumerate(initial_scores):
-            if not any(v == float("inf") for v in score.values()):
+            if not any(v == FINITE_INF for v in score.values()):
                 valid_entries.append((i, score))
 
         # Keep only valid cluster ids and their scores
@@ -353,9 +373,9 @@ async def _generate_paths(
 
             # Recalculate balance score for this cluster
             new_balance_score, new_scores_detailed = calculate_balance_scores(
-                data, exclusions
+                *_filter_embeddings_without_exclusions(data, exclusions)
             )
-            if new_balance_score == float("inf"):
+            if new_balance_score == FINITE_INF:
                 # No remaining conversations; remove cluster
                 active_clusters.pop(0)
             else:

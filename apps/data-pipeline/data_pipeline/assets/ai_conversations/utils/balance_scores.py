@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Set
+from typing import Dict
 
 import numpy as np
 
@@ -25,9 +25,12 @@ def sum_balance_scores(imbalance: float, magnitude_factor: float, dist: float) -
     )
 
 
+FINITE_INF = 9999.9
+
+
 def calculate_balance_scores(
-    data: Dict,
-    exclusions: Set[int],
+    embeddings_current: list[np.ndarray],
+    embeddings_other: list[np.ndarray],
 ) -> tuple[float, Dict[str, float]]:
     """Calculate balance score based on remaining conversations.
 
@@ -36,21 +39,13 @@ def calculate_balance_scores(
     2. More balanced ratio between sides
     Lower scores are better.
     """
-    embeddings_current = [
-        s["embedding"]
-        for s in data["current_summaries"]
-        if s["row_idx"] not in exclusions
-    ]
-    embeddings_other = [
-        s["embedding"] for s in data["summaries"] if s["row_idx"] not in exclusions
-    ]
     len_current = len(embeddings_current)
     len_other = len(embeddings_other)
     if len_other == 0 or len_current == 0:
-        return float("inf"), {
-            "imbalance": float("inf"),
-            "magnitude_factor": float("inf"),
-            "dist": float("inf"),
+        return FINITE_INF, {
+            "imbalance": FINITE_INF,
+            "magnitude_factor": FINITE_INF,
+            "dist": FINITE_INF,
         }  # Deprioritize if either side has no conversations
 
     # Calculate imbalance penalty (smaller is better)
@@ -62,14 +57,14 @@ def calculate_balance_scores(
     # magnitude_factor = 1 / total_conversations  # Inverse so smaller is better
 
     # Disable magnitude factor for now
-    magnitude_factor = 0
+    magnitude_factor = 0.0
 
     # Calculate cosine similarity between embeddings
     sim = get_bipartite_match(np.array(embeddings_current), np.array(embeddings_other))
     dist = 1 - sim
 
-    return imbalance + magnitude_factor + dist, {
-        "imbalance": imbalance,
-        "magnitude_factor": magnitude_factor,
-        "dist": dist,
+    return float(imbalance) + float(magnitude_factor) + float(dist), {
+        "imbalance": float(imbalance),
+        "magnitude_factor": float(magnitude_factor),
+        "dist": float(dist),
     }
