@@ -58,7 +58,9 @@ const CustomAvatar = (props: {
   );
 };
 
-export const ChatInterface = ({ activeChannelId: propActiveChannelId }: ChatInterfaceProps) => {
+export const ChatInterface = ({
+  activeChannelId: propActiveChannelId,
+}: ChatInterfaceProps) => {
   const {
     client,
     activeChannelId: contextActiveChannelId,
@@ -66,11 +68,11 @@ export const ChatInterface = ({ activeChannelId: propActiveChannelId }: ChatInte
     initialChatText,
     setInitialChatText,
   } = useChatContext();
-  
+
   const [activeChannel, setActiveChannel] = useState<string | undefined>(
     propActiveChannelId || contextActiveChannelId || undefined
   );
-  
+
   const [localInitialText, setLocalInitialText] = useState<string | null>(
     initialChatText
   );
@@ -132,10 +134,9 @@ export const ChatInterface = ({ activeChannelId: propActiveChannelId }: ChatInte
               // Disable avatars in thread
               () => <></>
             }
-            markReadOnMount
           >
             <Window>
-              <MessageList className="str-chat__message-list--scrollable" />
+              <MessageList />
               <MessageInput
                 focus
                 noFiles

@@ -14,39 +14,24 @@ import { useEffect } from 'react';
 export function DashboardSidebar() {
   const { unreadCount, client, setUnreadCount } = useChatContext();
   const { unviewedCount } = useUnviewedMatches();
-  
+
   // Set up notification listeners
   useEffect(() => {
     if (!client) return;
-    
-    const updateUnreadCount = async () => {
-      try {
-        // Get updated unread count from the client
-        const unreadData = await client.getUnreadCount();
-        if (unreadData?.total_unread_count !== undefined && setUnreadCount) {
-          setUnreadCount(unreadData.total_unread_count);
-        }
-      } catch (err) {
-        console.error('Error updating unread count:', err);
+
+    const handleUnreadCount = (event: any) => {
+      if (event.total_unread_count !== undefined) {
+        setUnreadCount(event.total_unread_count);
       }
     };
-    
-    // Listen for notification events
-    client.on('notification.message_new', updateUnreadCount);
-    client.on('notification.mark_read', updateUnreadCount);
-    client.on('channel.truncated', updateUnreadCount);
-    
-    // Initial update
-    updateUnreadCount();
-    
+
+    client.on(handleUnreadCount);
+
     return () => {
-      // Clean up event listeners
-      client.off('notification.message_new', updateUnreadCount);
-      client.off('notification.mark_read', updateUnreadCount);
-      client.off('channel.truncated', updateUnreadCount);
+      client.off(handleUnreadCount);
     };
-  }, [client]);
-  
+  }, [client, setUnreadCount]);
+
   const sidebarItems = {
     navMain: [
       {
@@ -80,9 +65,6 @@ export function DashboardSidebar() {
   };
 
   return (
-    <AppSidebar
-      LogoutButton={<LogoutButton />}
-      sidebarItems={sidebarItems}
-    />
+    <AppSidebar LogoutButton={<LogoutButton />} sidebarItems={sidebarItems} />
   );
 }
