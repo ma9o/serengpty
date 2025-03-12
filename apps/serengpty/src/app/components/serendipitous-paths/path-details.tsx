@@ -105,35 +105,7 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
   return (
     <div className="space-y-6">
       {/* Path Flow Container */}
-      <div className="mt-3 absolute right-10">
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              View common path ({path.commonConversations.length})
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                Common Path ({path.commonConversations.length})
-              </DialogTitle>
-              <DialogDescription>
-                Conversations shared between users in this path
-              </DialogDescription>
-            </DialogHeader>
-            <div className="overflow-hidden">
-              <ConversationsList
-                conversations={path.commonConversations}
-                currentUserName={currentUserName}
-                matchedUserName={matchedUser.name}
-                currentUserPath={currentUserPath}
-                matchedUserPath={matchedUserPath}
-                // Common conversations don't belong to either user specifically
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+      <div className="mb-3 flex justify-end"></div>
       <div className="flex flex-row items-center justify-between gap-4">
         {/* Unique Summaries */}
         <div className="flex-1 flex flex-col space-y-4">
@@ -236,7 +208,34 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
           <div className="prose prose-sm dark:prose-invert text-muted-foreground mb-3 max-w-none">
             <ReactMarkdown>{processedCallToAction}</ReactMarkdown>
           </div>
-          <div className="mt-auto">
+          <div className="mt-auto flex flex-row gap-2 justify-center">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="default">
+                  View common path ({path.commonConversations.length})
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    Common Path ({path.commonConversations.length})
+                  </DialogTitle>
+                  <DialogDescription>
+                    Conversations shared between users in this path
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="overflow-hidden">
+                  <ConversationsList
+                    conversations={path.commonConversations}
+                    currentUserName={currentUserName}
+                    matchedUserName={matchedUser.name}
+                    currentUserPath={currentUserPath}
+                    matchedUserPath={matchedUserPath}
+                    // Common conversations don't belong to either user specifically
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
             <ChatButton
               otherUserId={matchedUser.id}
               otherUserName={matchedUser.name}
