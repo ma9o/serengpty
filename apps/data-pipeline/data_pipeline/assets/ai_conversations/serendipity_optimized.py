@@ -37,8 +37,9 @@ class SerendipityOptimizedConfig(RowLimitConfig):
 
     match_group_category_ratios: Dict[str, float] = {
         "coding": 0.0,
-        "humanistic": 0.7,
-        "practical": 0.3,
+        "research": 0.4,
+        "humanistic": 0.4,
+        "practical": 0.2,
     }
 
 

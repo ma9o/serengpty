@@ -46,18 +46,18 @@ Definitions:
 - "coding": Technical conversations explicitly about writing, debugging, understanding, or improving code. These typically include direct requests such as fixing bugs, explaining snippets, refactoring, or questions about programming syntax and languages.
   Examples: debugging Python code, explaining JavaScript functions, refactoring SQL queries.
 
-- "practical": Task-oriented conversations involving everyday problems, logistical questions, or practical advice. These may include technology-related questions, but only if they are higher-level (architecture, frameworks) or general tech inquiries not narrowly focused on coding syntax. It also includes mundane requests about language use, definitions, writing emails, troubleshooting everyday issues, health-related questions, and similar logistical tasks.
-  Examples: software architecture advice, troubleshooting Wi-Fi issues, "how to write a formal email", "symptoms of flu".
+- "practical": Task-oriented conversations involving everyday problems, logistical questions, or practical advice. These typically include mundane requests about language use, definitions, writing emails, troubleshooting everyday issues, health-related questions, and similar logistical tasks. They may involve technology-related inquiries only if they are general and not deeply technical or specialized.
+  Examples: troubleshooting Wi-Fi issues, "how to write a formal email", "symptoms of flu".
 
-- "research": Conversations involving detailed inquiries or deep exploration of specific, niche, or specialized topics that require thorough and in-depth analysis or investigation. This is distinct from "practical" by its depth and specificity, and from "humanistic" by its focus on precise, factual, and detailed exploration rather than broad philosophical or personal discussions.
-  Examples: detailed history of quantum mechanics, comparative analysis of AI ethics frameworks, comprehensive review of microbiome research.
+- "research": Conversations involving detailed inquiries or deep exploration of specific, niche, specialized, or high-level technical topics. This includes detailed discussions about software architecture, advanced data science methodologies, technology frameworks, algorithms, or specialized research in any technical field.
+  Examples: software architecture decisions, comparing machine learning models, advanced algorithm analysis, detailed history of quantum mechanics.
 
 - "humanistic": Broad, intellectually stimulating conversations about topics connected to human culture, beliefs, interests, or personal development. These are discussions that invite reflection, self-disclosure, or personal insights. They often include humanities, arts, history, culture, philosophy, psychology, or general science when discussed at a higher conceptual or reflective level.
   Examples: personal growth strategies, philosophical implications of technology, historical lessons from World War II.
 
 Procedure:
 1. Carefully read each conversation in the provided cluster.
-2. Evaluate whether the conversations are explicitly about code, practical tasks/questions, in-depth specialized research, or broader humanistic inquiry.
+2. Evaluate whether the conversations are explicitly about code, practical tasks/questions, in-depth specialized or high-level technical research, or broader humanistic inquiry.
 3. Assign exactly ONE category that best fits the overarching theme of the entire cluster.
 
 Output your final decision as a JSON:
@@ -81,7 +81,6 @@ def parse_cluster_categorization(completion: str) -> dict:
             isinstance(res, dict)
             and "category" in res
             and isinstance(res["category"], str)
-            and res["category"].lower() in ["coding", "humanistic", "practical"]
         ):
             return {
                 "category": res["category"].lower(),
