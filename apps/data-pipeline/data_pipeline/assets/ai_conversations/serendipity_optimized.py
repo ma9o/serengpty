@@ -48,7 +48,7 @@ def _extract_conversation_summaries(
 ) -> List[Dict]:
     """Extract and sort conversation summaries from a DataFrame."""
     # Extract human questions from parsed_conversations if provided
-    human_questions_by_conv = {}
+    raw_questions_by_conv = {}
     if parsed_conversations is not None:
         # Create a DataFrame with sorted questions for each conversation_id
         questions_df = parsed_conversations.select(
@@ -59,7 +59,7 @@ def _extract_conversation_summaries(
         for group, rows in questions_df.group_by("conversation_id"):
             conv_id = group[0]
             questions = [row["question"] for row in rows.iter_rows(named=True)]
-            human_questions_by_conv[conv_id] = questions
+            raw_questions_by_conv[conv_id] = questions
 
     summaries = []
     for row in df.iter_rows(named=True):
@@ -73,7 +73,7 @@ def _extract_conversation_summaries(
             "start_date": row["start_date"],
             "start_time": row["start_time"],
             "embedding": row["embedding"],
-            "human_questions": human_questions_by_conv.get(conv_id, []),
+            "raw_questions": raw_questions_by_conv.get(conv_id, []),
             **({"user_id": row["user_id"]} if not is_current_user else {}),
         }
         summaries.append(summary_dict)

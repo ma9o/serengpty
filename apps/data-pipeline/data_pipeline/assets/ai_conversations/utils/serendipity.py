@@ -20,8 +20,8 @@ def _prepare_user_texts(
         row_idx = s["row_idx"]
         # Format human questions if they exist
         questions_section = ""
-        if s.get("human_questions") and len(s["human_questions"]) > 0:
-            questions = s["human_questions"]
+        if s.get("raw_questions") and len(s["raw_questions"]) > 0:
+            questions = s["raw_questions"]
             questions_text = "\n  - ".join([q for q in questions if q])
             questions_section = f"\nQuestions Asked:\n  - {questions_text}"
 
@@ -193,7 +193,7 @@ def format_conversation_summary(row: Dict) -> Dict:
         "summary": row["summary"],
         "date": date_str,
         "category": row.get("category", "practical"),
-        "human_questions": row.get("human_questions", []),  # Add human questions
+        "raw_questions": row.get("raw_questions", []),  # Add human questions
     }
 
 
@@ -217,7 +217,7 @@ def prepare_conversation_summaries(
     sorted_df = df_with_idx.sort(["start_date", "start_time"])
 
     # Extract human questions from parsed_conversations if provided
-    human_questions_by_conv = {}
+    raw_questions_by_conv = {}
     if parsed_conversations is not None:
         # Create a DataFrame with sorted questions for each conversation_id
         questions_df = parsed_conversations.select(
@@ -228,7 +228,7 @@ def prepare_conversation_summaries(
         for group in questions_df.group_by("conversation_id"):
             conv_id = group[0]
             questions = [row["question"] for row in group[1].iter_rows(named=True)]
-            human_questions_by_conv[conv_id] = questions
+            raw_questions_by_conv[conv_id] = questions
 
     summaries = []
     for row in sorted_df.select(
@@ -244,7 +244,7 @@ def prepare_conversation_summaries(
     ).iter_rows(named=True):
         # Add human questions to the row data
         row_data = dict(row)
-        row_data["human_questions"] = human_questions_by_conv.get(
+        row_data["raw_questions"] = raw_questions_by_conv.get(
             row["conversation_id"], []
         )
 
