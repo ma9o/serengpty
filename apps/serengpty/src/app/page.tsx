@@ -5,7 +5,7 @@ import { Button } from '@enclaveid/ui/button';
 import Link from 'next/link';
 import { LandingGuidance } from './components/landing/landing-guidance';
 import { ZipOnboardingForm } from './components/landing/zip-onboarding-form';
-import { HEADER, HERO, PRIVACY, FOOTER } from './constants/landing-page';
+import { HEADER, HERO, PRIVACY, FOOTER, COLLABORATIVE } from './constants/landing-page';
 
 export default function Index() {
   return (
@@ -16,6 +16,7 @@ export default function Index() {
       {/* <GlobalDragBlurOverlay /> */}
       <main className="flex-grow">
         <Hero />
+        <CollaborativeSection />
         <PrivacySection />
       </main>
       <Footer />
@@ -69,7 +70,7 @@ function Hero() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 my-10 sm:my-16 md:my-24">
         <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
           <div className="w-full md:w-1/2 flex flex-col justify-center">
-            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-3 md:mb-4">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-3 md:mb-4 text-brand">
               {HERO.TITLE}
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6">
@@ -89,12 +90,14 @@ function Hero() {
         }}
       /> */}
 
+      {/* Commented out white polygon 
       <div
         className="absolute bottom-0 left-0 right-0 md:h-[500px] h-[250px] bg-white"
         style={{
           clipPath: 'polygon(0 100%, 100% 100%, 100% 75%, 0 75%)',
         }}
       />
+      */}
 
       {/* <Image
         src="/arrow-start.svg"
@@ -270,6 +273,37 @@ function PrivacySection() {
                 {PRIVACY.ZERO_TRUST.DESCRIPTION}
               </p>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CollaborativeSection() {
+  return (
+    <section className="bg-offwhite py-12 sm:py-16 lg:py-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+          {/* Left side with text */}
+          <div className="w-full md:w-1/2">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-brand">
+              {COLLABORATIVE.TITLE}
+            </h2>
+            <p className="text-base sm:text-lg text-gray-700">
+              {COLLABORATIVE.SUBTITLE}
+            </p>
+          </div>
+          
+          {/* Right side with SVG image */}
+          <div className="w-full md:w-1/2 flex justify-center md:justify-end mt-8 md:mt-0">
+            <Image
+              src="/collab-path.svg"
+              alt="Collaborative path visualization"
+              width={600}
+              height={300}
+              className="object-contain w-full"
+            />
           </div>
         </div>
       </div>

@@ -39,6 +39,12 @@ export const PRIVACY = {
   },
 };
 
+// Collaborative Section Constants
+export const COLLABORATIVE = {
+  TITLE: 'Collaborative chain of thought',
+  SUBTITLE: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vitae justo ac magna vestibulum ultricies.',
+};
+
 // Footer Constants
 export const FOOTER = {
   COMPANY_NAME: 'SerenGPTy',
