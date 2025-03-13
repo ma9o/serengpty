@@ -51,7 +51,7 @@ export const PRIVACY = {
 // Collaborative Section Constants
 export const COLLABORATIVE = {
   TITLE: 'Collaboratively broaden your personal Chains-of-Thought',
-  SUBTITLE: `Navigating your own world model is as much of an effort for us humans as it is for AIs, yet differently from AIs we do get frustrated when stuck.
+  SUBTITLE: `Navigating world models is as much of an effort for us humans as it is for AIs, yet differently from AIs we do get frustrated when stuck.
     Sometimes a fresh outside perspective from someone who has walked our same steps is all that's needed.`,
 };
 
