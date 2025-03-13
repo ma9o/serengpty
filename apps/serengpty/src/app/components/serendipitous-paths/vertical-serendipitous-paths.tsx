@@ -82,7 +82,7 @@ export function VerticalSerendipitousPaths({
 
   const handlePathSelect = (pathId: string | null) => {
     setSelectedPathId(pathId);
-    setSelectedPathId(null);
+    setSelectedPathId(null); // Do not remove, this fixes the accordion bug
   };
 
   // Sort the data array by score in descending order
@@ -93,11 +93,12 @@ export function VerticalSerendipitousPaths({
   // Get the matched user (the one who is not the current user)
   const matchedUser = selectedMatch.users[0];
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Mobile User Carousel */}
-      {isMobile && (
-        <div className="w-full border-b pb-1">
+  if (isMobile) {
+    // Mobile layout
+    return (
+      <div className="flex flex-col h-full">
+        {/* User Carousel */}
+        <div className="flex-shrink-0 w-full border-b">
           <div className="px-4 py-2 flex items-center">
             <h3 className="text-sm font-medium text-muted-foreground mr-2">
               Your matches:
@@ -154,49 +155,22 @@ export function VerticalSerendipitousPaths({
             </Carousel>
           </div>
         </div>
-      )}
 
-      <div className={isMobile ? 'flex flex-col h-full' : 'flex h-full'}>
-        {/* Desktop Users List - Hide on Mobile */}
-        {!isMobile && (
-          <div className="w-1/5 border-r">
-            <div className="p-4 border-b">
-              <h2 className="text-xl font-semibold">Your matches</h2>
-            </div>
-            <ScrollArea className="h-[calc(100%-56px)]">
-              <div className="p-2 space-y-2">
-                {sortedData.map((match, index) => {
-                  const user = match.users[0];
-                  return (
-                    <UserCard
-                      key={user.id}
-                      user={user}
-                      score={match.score}
-                      totalPaths={match.serendipitousPaths.length}
-                      isActive={index === selectedMatchIndex}
-                      viewed={match.viewed}
-                      onClick={() => handleUserSelect(index)}
-                    />
-                  );
-                })}
-              </div>
-            </ScrollArea>
-          </div>
-        )}
+        {/* User info header */}
+        <div className="flex-shrink-0 p-4 border-b flex justify-between items-center">
+          <h2 className="text-xl font-semibold">{matchedUser.name}</h2>
+          <ChatButton
+            otherUserId={matchedUser.id}
+            otherUserName={''}
+            variant="outline"
+            size="sm"
+            className="flex items-center"
+          />
+        </div>
 
-        {/* Path Summaries and Details */}
-        <div className="flex-1">
-          <div className="p-4 border-b flex justify-between items-center">
-            <h2 className="text-xl font-semibold">{matchedUser.name}</h2>
-            <ChatButton
-              otherUserId={matchedUser.id}
-              otherUserName={''}
-              variant="outline"
-              size="sm"
-              className="flex items-center"
-            />
-          </div>
-          <ScrollArea className="h-[calc(100%-56px)]">
+        {/* Scrollable content area */}
+        <div className="flex-grow overflow-hidden">
+          <ScrollArea className="h-full">
             <div className="p-2">
               <Accordion
                 type="single"
@@ -306,6 +280,159 @@ export function VerticalSerendipitousPaths({
             </div>
           </ScrollArea>
         </div>
+      </div>
+    );
+  }
+
+  // Desktop layout
+  return (
+    <div className="flex h-full">
+      {/* Desktop Users List */}
+      <div className="w-1/5 border-r">
+        <div className="p-4 border-b">
+          <h2 className="text-xl font-semibold">Your matches</h2>
+        </div>
+        <ScrollArea className="h-[calc(100%-56px)]">
+          <div className="p-2 space-y-2">
+            {sortedData.map((match, index) => {
+              const user = match.users[0];
+              return (
+                <UserCard
+                  key={user.id}
+                  user={user}
+                  score={match.score}
+                  totalPaths={match.serendipitousPaths.length}
+                  isActive={index === selectedMatchIndex}
+                  viewed={match.viewed}
+                  onClick={() => handleUserSelect(index)}
+                />
+              );
+            })}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Path Summaries and Details */}
+      <div className="flex-1 flex flex-col">
+        <div className="p-4 border-b flex justify-between items-center">
+          <h2 className="text-xl font-semibold">{matchedUser.name}</h2>
+          <ChatButton
+            otherUserId={matchedUser.id}
+            otherUserName={''}
+            variant="outline"
+            size="sm"
+            className="flex items-center"
+          />
+        </div>
+        <ScrollArea className="h-[calc(100%-56px)]">
+          <div className="p-2">
+            <Accordion
+              type="single"
+              collapsible
+              value={selectedPathId || undefined}
+              onValueChange={(value) => {
+                handlePathSelect(value || null);
+              }}
+              className="space-y-2"
+            >
+              {selectedMatch.serendipitousPaths.map((path) => {
+                // Find current user and matched user paths for this serendipitous path
+                const pMatchedUserPath = path.userPaths.find(
+                  (p) => p.user.id === matchedUser.id
+                );
+                const pCurrentUserPath = path.userPaths.find(
+                  (p) => p.user.id !== matchedUser.id
+                );
+
+                // Only proceed with replacement if we have both paths
+                let processedTitle = path.title;
+                let processedSummary = path.commonSummary;
+
+                if (pCurrentUserPath && pMatchedUserPath) {
+                  const currentUserName = pCurrentUserPath.user.name;
+
+                  // Process title and summary
+                  processedTitle = replaceUserPlaceholders(
+                    path.title,
+                    currentUserName,
+                    matchedUser.name,
+                    pCurrentUserPath,
+                    pMatchedUserPath
+                  );
+
+                  processedSummary = replaceUserPlaceholders(
+                    path.commonSummary,
+                    currentUserName,
+                    matchedUser.name,
+                    pCurrentUserPath,
+                    pMatchedUserPath
+                  );
+                }
+
+                return (
+                  <AccordionItem
+                    key={path.id}
+                    value={path.id}
+                    className="border rounded-lg overflow-hidden shadow-sm"
+                  >
+                    <div
+                      className={cn(
+                        'bg-background rounded-lg hover:bg-muted/50 transition-colors',
+                        selectedPathId === path.id && 'bg-muted/50'
+                      )}
+                    >
+                      <AccordionTrigger className="px-3 py-3 hover:no-underline rounded-lg focus:outline-none">
+                        <div className="w-full text-left flex justify-between items-start gap-2">
+                          <div className="flex-row">
+                            <div className="flex justify-between items-center">
+                              <div className="font-medium mb-1 flex items-center gap-2">
+                                {path.isSensitive && (
+                                  <Badge className="bg-red-500/20 border-red-700 text-red-700 pointer-events-none">
+                                    Sensitive
+                                  </Badge>
+                                )}
+                                <Badge
+                                  className={cn(
+                                    'pointer-events-none capitalize',
+                                    {
+                                      humanistic:
+                                        'bg-green-500/20 border-green-700 text-green-700',
+
+                                      research:
+                                        'bg-purple-500/20 border-purple-700 text-purple-700',
+                                      coding:
+                                        'bg-amber-500/20 border-amber-700 text-amber-700',
+                                      practical:
+                                        'bg-orange-500/20 border-orange-700 text-orange-700',
+                                    }[path.category]
+                                  )}
+                                >
+                                  {path.category}
+                                </Badge>
+                                {processedTitle}
+                              </div>
+                              <PathFeedback
+                                pathId={path.id}
+                                existingFeedback={path.feedback?.[0]?.score}
+                              />
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {processedSummary}
+                            </div>
+                          </div>
+                        </div>
+                      </AccordionTrigger>
+                    </div>
+
+                    <AccordionContent className="px-4 pt-2 pb-4 border-t transition-all">
+                      <PathDetails path={path} matchedUser={matchedUser} />
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
+          </div>
+        </ScrollArea>
       </div>
     </div>
   );
