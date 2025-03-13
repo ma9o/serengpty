@@ -281,7 +281,7 @@ export function ZipOnboardingForm() {
                       className="text-gray-500 mr-2"
                     />
                     <p className="text-sm text-gray-500 font-medium">
-                      Data will be anonymized locally before upload
+                      Your data will be anonymized locally before being uploaded
                     </p>
                   </>
                 )
@@ -325,7 +325,7 @@ export function ZipOnboardingForm() {
                 <input {...getInputProps()} />
                 {/* <FileArchive className="mb-4 text-gray-500" size={32} /> */}
                 <p className="mt-2 text-base text-gray-500">
-                  Drop your data export zip here
+                  Drop your data export archive here
                 </p>
                 <p className="text-sm text-gray-400 mt-1">
                   Only *.zip and *.dms files are accepted

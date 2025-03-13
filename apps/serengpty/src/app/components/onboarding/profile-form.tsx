@@ -192,7 +192,9 @@ function CountrySelector({
                 >
                   <span className="mr-1.5 sm:mr-2">{country.flag}</span>
                   <span className="flex-1">{country.name}</span>
-                  {value === country.code && <Check className="h-3 w-3 sm:h-4 sm:w-4" />}
+                  {value === country.code && (
+                    <Check className="h-3 w-3 sm:h-4 sm:w-4" />
+                  )}
                 </div>
               ))
             )}
@@ -381,7 +383,9 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
               name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm sm:text-base">Username</FormLabel>
+                  <FormLabel className="text-sm sm:text-base">
+                    Username
+                  </FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -418,7 +422,9 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
               name="country"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm sm:text-base">Country</FormLabel>
+                  <FormLabel className="text-sm sm:text-base">
+                    Country
+                  </FormLabel>
                   <FormControl>
                     <CountrySelector
                       value={field.value}
@@ -451,7 +457,8 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
                       Sensitive Matching
                     </FormLabel>
                     <FormDescription className="text-xs sm:text-sm">
-                      Enable deeper matching for sensitive data patterns.
+                      Enable deeper matches using your more sensitive
+                      conversations
                     </FormDescription>
                   </div>
                   <FormControl>

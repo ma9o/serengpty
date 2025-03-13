@@ -6,8 +6,8 @@ import './styles/stream-chat-custom.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'EnclaveID',
-  description: 'Get LLMs to know you',
+  title: 'SerenGPTy',
+  description: 'Find ChatGPT and Claude users who think like you',
   icons: {
     icon: [
       {

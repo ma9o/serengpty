@@ -6,7 +6,7 @@ const senderAddress =
 
 export async function sendEmail(to: string, subject: string, body: string) {
   const emailMessage = {
-    sender: `EnclaveID <${senderAddress}>`,
+    sender: `SerenGPTy <${senderAddress}>`,
     senderAddress,
     content: {
       subject,

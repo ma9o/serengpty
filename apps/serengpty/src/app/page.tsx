@@ -5,7 +5,14 @@ import { Button } from '@enclaveid/ui/button';
 import Link from 'next/link';
 import { LandingGuidance } from './components/landing/landing-guidance';
 import { ZipOnboardingForm } from './components/landing/zip-onboarding-form';
-import { HEADER, HERO, PRIVACY, FOOTER, COLLABORATIVE } from './constants/landing-page';
+import {
+  HEADER,
+  HERO,
+  PRIVACY,
+  FOOTER,
+  COLLABORATIVE,
+} from './constants/landing-page';
+import { getCurrentUser } from './actions/getCurrentUser';
 
 export default function Index() {
   return (
@@ -54,9 +61,7 @@ function Header() {
               <Icon icon="mdi:github" className="w-5 h-5 sm:w-6 sm:h-6" />
             </a>
 
-            <Link href="/dashboard/home">
-              <Button size="sm">{HEADER.LOGIN_BUTTON_TEXT}</Button>
-            </Link>
+            <AuthButton />
           </nav>
         </div>
       </div>
@@ -90,7 +95,7 @@ function Hero() {
         }}
       /> */}
 
-      {/* Commented out white polygon 
+      {/* Commented out white polygon
       <div
         className="absolute bottom-0 left-0 right-0 md:h-[500px] h-[250px] bg-white"
         style={{
@@ -294,7 +299,7 @@ function CollaborativeSection() {
               {COLLABORATIVE.SUBTITLE}
             </p>
           </div>
-          
+
           {/* Right side with SVG image */}
           <div className="w-full md:w-1/2 flex justify-center md:justify-end mt-8 md:mt-0">
             <Image
@@ -320,17 +325,40 @@ function Footer() {
           <div className="w-full text-sm">
             <div className="flex flex-col sm:flex-row sm:justify-between items-center">
               <p className="flex items-center gap-1">
-                <span className="text-gray-900 font-medium">{FOOTER.COMPANY_NAME}</span>
+                <span className="text-gray-900 font-medium">
+                  {FOOTER.COMPANY_NAME}
+                </span>
                 <span className="text-gray-600">—</span>
                 <span className="text-gray-600">{FOOTER.TAGLINE}</span>
               </p>
               <p className="text-gray-600 mt-1 sm:mt-0">
-                {FOOTER.COPYRIGHT.replace('{year}', new Date().getFullYear().toString())}
+                {FOOTER.COPYRIGHT.replace(
+                  '{year}',
+                  new Date().getFullYear().toString()
+                )}
               </p>
             </div>
           </div>
         </div>
       </div>
     </footer>
+  );
+}
+
+async function AuthButton() {
+  const user = await getCurrentUser();
+
+  if (user) {
+    return (
+      <Link href="/dashboard/home">
+        <Button size="sm">Dashboard</Button>
+      </Link>
+    );
+  }
+
+  return (
+    <Link href="/login">
+      <Button size="sm">{HEADER.LOGIN_BUTTON_TEXT}</Button>
+    </Link>
   );
 }

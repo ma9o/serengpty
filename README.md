@@ -1,6 +1,6 @@
-# EnclaveID
+# SerenGPTy
 
-User understanding for the AI era
+Find ChatGPT and Claude users who think like you.
 
 ## Docs
 

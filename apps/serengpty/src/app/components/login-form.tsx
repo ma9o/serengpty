@@ -55,10 +55,10 @@ export function LoginForm({
               <div className="flex h-8 w-8 items-center justify-center rounded-md">
                 <Logo />
               </div>
-              <span className="sr-only">EnclaveID</span>
+              <span className="sr-only">SerenGPTy</span>
             </a>
-            <h1 className="text-xl font-bold">Welcome to EnclaveID</h1>
-            <div className="text-center text-sm">Get LLMs to know you</div>
+            <h1 className="text-xl font-bold">Welcome to SerenGPTy</h1>
+            <div className="text-center text-sm">Find ChatGPT and Claude users who think like you</div>
           </div>
           <div className="flex flex-col gap-4">
             <div className="grid gap-2">

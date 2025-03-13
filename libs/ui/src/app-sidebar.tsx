@@ -41,7 +41,7 @@ export function AppSidebar({
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <Logo />
-          <p className="text-lg font-bold">EnclaveID</p>
+          <p className="text-lg font-bold">SerenGPTy</p>
         </div>
       </SidebarHeader>
       <SidebarContent>
