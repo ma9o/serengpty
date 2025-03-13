@@ -4,7 +4,7 @@ import { prisma } from '../services/db/prisma';
 import { auth } from '../services/auth';
 import { revalidatePath } from 'next/cache';
 import { userProfileSchema, UserProfileFormData } from '../schemas/validation';
-import { StreamChat } from 'stream-chat';
+import { upsertStreamChatUser } from '../utils/upsertStreamChatUser';
 
 /**
  * Saves the user profile data from the onboarding form
@@ -47,7 +47,7 @@ export async function saveUserProfile(
     }
 
     // Update or create the user profile
-    await prisma.user.update({
+    const user = await prisma.user.update({
       where: { id: userId },
       data: {
         name: data.username,
@@ -57,14 +57,7 @@ export async function saveUserProfile(
     });
 
     // Update username on StreamChat
-    await StreamChat.getInstance(
-      process.env.NEXT_PUBLIC_STREAM_CHAT_API_KEY!,
-      process.env.STREAM_CHAT_API_SECRET!
-    ).upsertUser({
-      id: userId,
-      username: data.username,
-      name: data.username,
-    });
+    await upsertStreamChatUser(user);
 
     // Revalidate paths that might display user data
     revalidatePath('/');

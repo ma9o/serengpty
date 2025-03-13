@@ -7,8 +7,8 @@ import fs from 'fs';
 import { getUniqueUsername } from '../../../actions/getUniqueUsername';
 import { validateUsername } from '../../../actions/validateUsername';
 import { usernameSchema } from '../../../schemas/validation';
-import { StreamChat } from 'stream-chat';
 import { signIn } from '../../../services/auth';
+import { upsertStreamChatUser } from '../../../utils/upsertStreamChatUser';
 
 /**
  * Anonymous user signup API endpoint
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       // Then check availability
       const { isValid, message } = await validateUsername(customUsername);
       if (!isValid) {
@@ -103,14 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create a StreamChat user
-    await StreamChat.getInstance(
-      process.env.NEXT_PUBLIC_STREAM_CHAT_API_KEY!,
-      process.env.STREAM_CHAT_API_SECRET!
-    ).upsertUser({
-      id: user.id,
-      role: 'user',
-      name: user.name,
-    });
+    await upsertStreamChatUser(user);
 
     // Authenticate the user
     await signIn('credentials', {
