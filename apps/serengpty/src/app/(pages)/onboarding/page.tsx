@@ -55,14 +55,14 @@ export default function OnboardingPage() {
   }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-offwhite bg-gray-50 px-2 sm:px-4 py-6 sm:py-12 overflow-x-hidden">
       <div className="mx-auto flex w-full max-w-3xl flex-col items-center">
-        <h1 className="mb-4 text-center text-4xl font-bold flex items-center justify-center gap-3">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" /> Processing
+        <h1 className="mb-3 sm:mb-4 text-center text-3xl sm:text-4xl font-bold flex items-center justify-center gap-2 sm:gap-3 px-3">
+          <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin text-primary" /> Processing
           your data
         </h1>
-        <div className="mb-12 flex flex-col items-center space-y-2">
-          <p className="max-w-md text-center text-muted-foreground">
+        <div className="mb-6 sm:mb-12 flex flex-col items-center space-y-2 px-3">
+          <p className="w-full max-w-md text-center text-muted-foreground text-sm sm:text-base">
             {isLoading ? (
               'Checking status...'
             ) : queuePosition > 0 ? (
@@ -78,12 +78,14 @@ export default function OnboardingPage() {
               'Your data is being processed...'
             )}
           </p>
-          <p className="max-w-md text-center text-sm text-muted-foreground">
+          <p className="w-full max-w-md text-center text-xs sm:text-sm text-muted-foreground">
             You can complete your profile below while you wait.
           </p>
         </div>
 
-        <ProfileForm isPreferences={false} />
+        <div className="w-full px-2 sm:px-4">
+          <ProfileForm isPreferences={false} />
+        </div>
 
         <Toaster />
       </div>

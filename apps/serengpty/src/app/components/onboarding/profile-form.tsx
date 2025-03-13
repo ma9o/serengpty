@@ -143,7 +143,7 @@ function CountrySelector({
         variant="outline"
         role="combobox"
         aria-expanded={isOpen}
-        className="w-full justify-between font-normal"
+        className="w-full justify-between font-normal text-sm sm:text-base h-9 sm:h-10"
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled}
       >
@@ -155,44 +155,44 @@ function CountrySelector({
         ) : (
           'Select your country'
         )}
-        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        <ChevronDown className="ml-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0 opacity-50" />
       </Button>
 
       {/* Custom dropdown */}
       {isOpen && (
-        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-input bg-background p-1 shadow-md">
+        <div className="absolute z-50 mt-1 max-h-48 sm:max-h-60 w-full overflow-auto rounded-md border border-input bg-background p-1 shadow-md">
           {/* Search box */}
-          <div className="flex items-center border-b px-3 py-2 sticky top-0 bg-background">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-70" />
+          <div className="flex items-center border-b px-2 sm:px-3 py-1.5 sm:py-2 sticky top-0 bg-background">
+            <Search className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0 opacity-70" />
             <Input
               ref={searchInputRef}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search countries..."
-              className="border-0 bg-transparent p-1 text-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="border-0 bg-transparent p-1 text-xs sm:text-sm h-7 sm:h-8 outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
 
           {/* Country list */}
           <div className="pt-1 pb-1">
             {filteredCountries.length === 0 ? (
-              <div className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none text-muted-foreground">
+              <div className="relative flex w-full cursor-default select-none items-center rounded-sm py-1 sm:py-1.5 px-2 text-xs sm:text-sm outline-none text-muted-foreground">
                 No countries found
               </div>
             ) : (
               filteredCountries.map((country) => (
                 <div
                   key={country.code}
-                  className={`relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 px-2 text-sm font-normal outline-none hover:bg-accent hover:text-accent-foreground ${
+                  className={`relative flex w-full cursor-default select-none items-center rounded-sm py-1 sm:py-1.5 px-2 text-xs sm:text-sm font-normal outline-none hover:bg-accent hover:text-accent-foreground ${
                     value === country.code
                       ? 'bg-accent text-accent-foreground'
                       : ''
                   }`}
                   onClick={() => handleSelectCountry(country)}
                 >
-                  <span className="mr-2">{country.flag}</span>
+                  <span className="mr-1.5 sm:mr-2">{country.flag}</span>
                   <span className="flex-1">{country.name}</span>
-                  {value === country.code && <Check className="h-4 w-4" />}
+                  {value === country.code && <Check className="h-3 w-3 sm:h-4 sm:w-4" />}
                 </div>
               ))
             )}
@@ -355,13 +355,13 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
       {/* User profile form */}
       <ConditionalWrapper
         condition={!isPreferences}
-        wrapper={(children) => <Card className="p-6">{children}</Card>}
+        wrapper={(children) => <Card className="p-3 sm:p-6">{children}</Card>}
       >
         <Form {...form}>
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Avatar/Identicon */}
-            <div className="flex flex-col items-center mb-6">
-              <Avatar className="h-24 w-24 mb-2">
+            <div className="flex flex-col items-center mb-4 sm:mb-6">
+              <Avatar className="h-20 w-20 sm:h-24 sm:w-24 mb-2">
                 <AvatarImage
                   src={getIdenticon(watchUsername)}
                   alt="User identicon"
@@ -370,7 +370,7 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
                   {watchUsername.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Your unique identicon
               </p>
             </div>
@@ -381,11 +381,12 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
               name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Username</FormLabel>
+                  <FormLabel className="text-sm sm:text-base">Username</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
                       disabled={isFormLoading}
+                      className="text-sm sm:text-base h-9 sm:h-10"
                       onBlur={() => {
                         field.onBlur();
                         if (isUsernameValid) {
@@ -395,7 +396,7 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
                     />
                   </FormControl>
                   <div className="flex flex-col space-y-1">
-                    <FormDescription>
+                    <FormDescription className="text-xs sm:text-sm">
                       This will be your display name in the system.
                     </FormDescription>
                     {!isFormLoading && (
@@ -406,7 +407,7 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
                       />
                     )}
                   </div>
-                  <FormMessage />
+                  <FormMessage className="text-xs sm:text-sm" />
                 </FormItem>
               )}
             />
@@ -417,7 +418,7 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
               name="country"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Country</FormLabel>
+                  <FormLabel className="text-sm sm:text-base">Country</FormLabel>
                   <FormControl>
                     <CountrySelector
                       value={field.value}
@@ -431,10 +432,10 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
                       disabled={isFormLoading || isSaving}
                     />
                   </FormControl>
-                  <FormDescription>
+                  <FormDescription className="text-xs sm:text-sm">
                     Select the country you&apos;re based in.
                   </FormDescription>
-                  <FormMessage />
+                  <FormMessage className="text-xs sm:text-sm" />
                 </FormItem>
               )}
             />
@@ -444,12 +445,12 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
               control={form.control}
               name="sensitiveMatching"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 sm:p-4">
+                  <div className="space-y-0.5 max-w-[70%]">
+                    <FormLabel className="text-sm sm:text-base">
                       Sensitive Matching
                     </FormLabel>
-                    <FormDescription>
+                    <FormDescription className="text-xs sm:text-sm">
                       Enable deeper matching for sensitive data patterns.
                     </FormDescription>
                   </div>
@@ -458,8 +459,8 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
                       <Shield
                         className={
                           field.value
-                            ? 'text-primary h-4 w-4'
-                            : 'text-muted-foreground h-4 w-4'
+                            ? 'text-primary h-3 w-3 sm:h-4 sm:w-4'
+                            : 'text-muted-foreground h-3 w-3 sm:h-4 sm:w-4'
                         }
                       />
                       <Switch

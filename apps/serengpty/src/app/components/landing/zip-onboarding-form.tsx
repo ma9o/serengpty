@@ -252,10 +252,10 @@ export function ZipOnboardingForm() {
   });
 
   return (
-    <div className="onboarding-form w-full md:w-1/2 flex justify-center">
+    <div className="onboarding-form w-full md:w-1/2 flex justify-center px-4 sm:px-0">
       <Toaster />
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="w-full max-w-md">
         {/* When processing is complete, show the sign-up button */}
         {!ready ? (
           <div>
@@ -335,9 +335,9 @@ export function ZipOnboardingForm() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center">
-            <div className="flex items-center justify-center gap-4">
-              <FileArchive className="mb-4 text-gray-700" size={32} />
-              <p className="text-md text-gray-700 mb-4 w-[400px]">
+            <div className="flex items-center justify-center gap-3 w-full px-4 sm:px-0">
+              <FileArchive className="text-gray-700 mb-4 h-10 w-10 sm:h-8 sm:w-8" />
+              <p className="text-md text-gray-700 mb-4 max-w-[400px]">
                 Your
                 <span className="font-bold">
                   {providerName === 'anthropic' ? ' Claude ' : ' ChatGPT '}
@@ -346,7 +346,7 @@ export function ZipOnboardingForm() {
               </p>
             </div>
 
-            <div className="flex flex-col items-center gap-4 w-[470px]">
+            <div className="flex flex-col items-center gap-4 w-full max-w-[470px]">
               <div className="w-full">
                 <label
                   htmlFor="username"

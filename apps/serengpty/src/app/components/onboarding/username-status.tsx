@@ -59,15 +59,15 @@ export function UsernameStatus({
     <div className="flex items-center mt-1">
       {validationState === 'loading' && (
         <div className="flex items-center text-muted-foreground">
-          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-          <span className="text-xs">Checking availability...</span>
+          <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 animate-spin" />
+          <span className="text-[10px] sm:text-xs">Checking availability...</span>
         </div>
       )}
 
       {validationState === 'valid' && (
         <div className="flex items-center text-green-500">
-          <CheckCircle className="h-4 w-4 mr-1" />
-          <span className="text-xs">Username available</span>
+          <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+          <span className="text-[10px] sm:text-xs">Username available</span>
         </div>
       )}
     </div>
