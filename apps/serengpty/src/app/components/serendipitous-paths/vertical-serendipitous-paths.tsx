@@ -73,6 +73,7 @@ export function VerticalSerendipitousPaths({
 
   const handlePathSelect = (pathId: string | null) => {
     setSelectedPathId(pathId);
+    setSelectedPathId(null);
   };
 
   // Sort the data array by score in descending order
