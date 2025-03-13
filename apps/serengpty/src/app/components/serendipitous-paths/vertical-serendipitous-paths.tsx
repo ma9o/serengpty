@@ -229,31 +229,33 @@ export function VerticalSerendipitousPaths({
                           <div className="w-full text-left flex justify-between items-start gap-2">
                             <div className="flex-row">
                               <div className="flex justify-between items-center">
-                                <div className="font-medium mb-1 flex items-center gap-2">
-                                  {path.isSensitive && (
-                                    <Badge className="bg-red-500/20 border-red-700 text-red-700 pointer-events-none">
-                                      Sensitive
-                                    </Badge>
-                                  )}
-                                  <Badge
-                                    className={cn(
-                                      'pointer-events-none capitalize',
-                                      {
-                                        humanistic:
-                                          'bg-green-500/20 border-green-700 text-green-700',
-
-                                        research:
-                                          'bg-purple-500/20 border-purple-700 text-purple-700',
-                                        coding:
-                                          'bg-amber-500/20 border-amber-700 text-amber-700',
-                                        practical:
-                                          'bg-orange-500/20 border-orange-700 text-orange-700',
-                                      }[path.category]
+                                <div className="font-medium mb-1 flex flex-col items-start gap-1">
+                                  <div className="flex flex-wrap gap-1">
+                                    {path.isSensitive && (
+                                      <Badge className="bg-red-500/20 border-red-700 text-red-700 pointer-events-none">
+                                        Sensitive
+                                      </Badge>
                                     )}
-                                  >
-                                    {path.category}
-                                  </Badge>
-                                  {processedTitle}
+                                    <Badge
+                                      className={cn(
+                                        'pointer-events-none capitalize',
+                                        {
+                                          humanistic:
+                                            'bg-green-500/20 border-green-700 text-green-700',
+
+                                          research:
+                                            'bg-purple-500/20 border-purple-700 text-purple-700',
+                                          coding:
+                                            'bg-amber-500/20 border-amber-700 text-amber-700',
+                                          practical:
+                                            'bg-orange-500/20 border-orange-700 text-orange-700',
+                                        }[path.category]
+                                      )}
+                                    >
+                                      {path.category}
+                                    </Badge>
+                                  </div>
+                                  <div>{processedTitle}</div>
                                 </div>
                                 <PathFeedback
                                   pathId={path.id}
