@@ -18,6 +18,7 @@ import { ConversationsList } from './conversation-list';
 import { replaceUserPlaceholders } from './user-placeholder-utils';
 import { User } from './user-card';
 import { getSerendipitousPaths } from '../../actions/getSerendipitousPaths';
+import { useIsMobile } from '@enclaveid/ui/hooks/use-mobile';
 
 type UserPathsResponse = Awaited<ReturnType<typeof getSerendipitousPaths>>;
 
@@ -27,6 +28,8 @@ interface PathDetailsProps {
 }
 
 export function PathDetails({ path, matchedUser }: PathDetailsProps) {
+  const isMobile = useIsMobile();
+
   // Find the current user and matched user paths
   const matchedUserPath = path.userPaths.find(
     (p) => p.user.id === matchedUser.id
@@ -102,6 +105,153 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
     );
   }
 
+  // Mobile layout stacks the sections vertically
+  if (isMobile) {
+    return (
+      <div className="space-y-6">
+        {/* Path Flow Container */}
+        <div className="mb-3 flex justify-end"></div>
+        <div className="flex flex-col gap-4">
+          {/* Your Path */}
+          <div className="p-4 bg-muted rounded-lg">
+            <h3 className="text-lg font-medium mb-2">Your Perspective</h3>
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown>{processedCurrentUserSummary}</ReactMarkdown>
+            </div>
+            <div className="mt-3">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full">
+                    View your unique path (
+                    {currentUserPath.uniqueConversations.length})
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
+                  <DialogHeader>
+                    <DialogTitle>
+                      Your Unique Conversations (
+                      {currentUserPath.uniqueConversations.length})
+                    </DialogTitle>
+                    <DialogDescription>
+                      Conversations unique to your perspective
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="overflow-hidden">
+                    <ConversationsList
+                      conversations={currentUserPath.uniqueConversations}
+                      currentUserName={currentUserName}
+                      matchedUserName={matchedUser.name}
+                      currentUserPath={currentUserPath}
+                      matchedUserPath={matchedUserPath}
+                      isCurrentUserContext={true} // These are current user's conversations
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+
+          {/* Their Path */}
+          <div className="p-4 bg-muted rounded-lg">
+            <h3 className="text-lg font-medium mb-2">Their Perspective</h3>
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown>{processedMatchedUserSummary}</ReactMarkdown>
+            </div>
+            <div className="mt-3">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full">
+                    View {matchedUser.name}&apos;s unique path (
+                    {matchedUserPath.uniqueConversations.length})
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {matchedUser.name}&apos;s Unique Conversations (
+                      {matchedUserPath.uniqueConversations.length})
+                    </DialogTitle>
+                    <DialogDescription>
+                      Conversations unique to {matchedUser.name}&apos;s
+                      perspective
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="overflow-hidden">
+                    <ConversationsList
+                      conversations={matchedUserPath.uniqueConversations}
+                      currentUserName={currentUserName}
+                      matchedUserName={matchedUser.name}
+                      currentUserPath={currentUserPath}
+                      matchedUserPath={matchedUserPath}
+                      isCurrentUserContext={false} // These are the other user's conversations
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+
+          {/* Merge indicator - centered on mobile with minimal height */}
+          <div className="flex justify-center -my-12">
+            <Image
+              src="/arrow-merge.svg"
+              alt="Paths merge"
+              width={24}
+              height={24}
+              className="w-auto rotate-90" // Rotate to show vertical flow
+            />
+          </div>
+
+          {/* Call to Action */}
+          <div className="bg-muted p-4 rounded-lg flex flex-col">
+            <h3 className="text-lg font-medium mb-2">Start a Conversation</h3>
+            <div className="prose prose-sm dark:prose-invert text-muted-foreground mb-3 max-w-none">
+              <ReactMarkdown>{processedCallToAction}</ReactMarkdown>
+            </div>
+            <div className="mt-3 flex flex-col gap-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="default" className="w-full">
+                    View common path ({path.commonConversations.length})
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      Common Path ({path.commonConversations.length})
+                    </DialogTitle>
+                    <DialogDescription>
+                      Conversations shared between users in this path
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="overflow-hidden">
+                    <ConversationsList
+                      conversations={path.commonConversations}
+                      currentUserName={currentUserName}
+                      matchedUserName={matchedUser.name}
+                      currentUserPath={currentUserPath}
+                      matchedUserPath={matchedUserPath}
+                      // Common conversations don't belong to either user specifically
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <ChatButton
+                otherUserId={matchedUser.id}
+                otherUserName={matchedUser.name}
+                variant="default"
+                size="default"
+                initialText={processedCallToAction}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop layout (unchanged)
   return (
     <div className="space-y-6">
       {/* Path Flow Container */}

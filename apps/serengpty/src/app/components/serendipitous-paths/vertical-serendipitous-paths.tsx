@@ -28,15 +28,13 @@ import {
 import { getIdenticon } from '../../utils/getIdenticon';
 import Image from 'next/image';
 
-interface VerticalSerendipitousPathsProps {
-  initialData?: UserPathsResponse;
-  initialError?: string | null;
-}
-
 export function VerticalSerendipitousPaths({
   initialData = [],
   initialError = null,
-}: VerticalSerendipitousPathsProps) {
+}: {
+  initialData?: UserPathsResponse;
+  initialError?: string | null;
+}) {
   const [loading] = useState(initialData.length === 0 && !initialError);
   const [error] = useState<string | null>(initialError);
   const [data, setData] = useState<UserPathsResponse>(initialData);

@@ -1,11 +1,14 @@
 # EnclaveID Development Guide
 
 ## Build, Lint, Test Commands
-- Build: `bun nx run [project]:build`
-- Lint: `bun nx run [project]:lint`
+- Lint: `bun nx run [project]:lint` (prefer this for checking code quality)
 - Test: `bun nx run [project]:test`
 - Run specific test: `bun nx run [project]:test --testFile=path/to/test.spec.ts`
 - Affected commands: `bun nx affected -t [command]`
+
+## Important Notes
+- Do not run build or dev commands (they can lock ports and resources)
+- Always use lint to check code quality instead of building or running the app
 
 ## Python Commands
 - Install dependencies: `poetry install`
