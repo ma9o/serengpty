@@ -1,8 +1,6 @@
 import { Icon } from '@iconify/react';
 import Image from 'next/image';
 import { Logo } from '@enclaveid/ui/logo';
-import { Button } from '@enclaveid/ui/button';
-import Link from 'next/link';
 import { LandingGuidance } from './components/landing/landing-guidance';
 import { ZipOnboardingForm } from './components/landing/zip-onboarding-form';
 import {
@@ -12,7 +10,7 @@ import {
   FOOTER,
   COLLABORATIVE,
 } from './constants/landing-page';
-import { getCurrentUser } from './actions/getCurrentUser';
+import { LandingButton } from './components/landing-button';
 
 export default function Index() {
   return (
@@ -61,7 +59,7 @@ function Header() {
               <Icon icon="mdi:github" className="w-5 h-5 sm:w-6 sm:h-6" />
             </a>
 
-            <AuthButton />
+            <LandingButton />
           </nav>
         </div>
       </div>
@@ -342,23 +340,5 @@ function Footer() {
         </div>
       </div>
     </footer>
-  );
-}
-
-async function AuthButton() {
-  const user = await getCurrentUser();
-
-  if (user) {
-    return (
-      <Link href="/dashboard/home">
-        <Button size="sm">Dashboard</Button>
-      </Link>
-    );
-  }
-
-  return (
-    <Link href="/login">
-      <Button size="sm">{HEADER.LOGIN_BUTTON_TEXT}</Button>
-    </Link>
   );
 }

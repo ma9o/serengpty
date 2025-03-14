@@ -1,10 +1,8 @@
 'use server';
 
 import { auth } from '../services/auth';
-import { cache } from 'react';
 
-// Cache the getCurrentUser function to avoid multiple DB hits
-export const getCurrentUser = cache(async () => {
+export async function getCurrentUser() {
   try {
     const session = await auth();
 
@@ -20,4 +18,4 @@ export const getCurrentUser = cache(async () => {
     console.error('Error getting current user:', error);
     return null;
   }
-});
+}

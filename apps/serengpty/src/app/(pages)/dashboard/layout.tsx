@@ -1,6 +1,3 @@
-// layout.tsx
-'use server';
-
 import { Separator } from '@enclaveid/ui/separator';
 import {
   SidebarInset,
@@ -14,6 +11,8 @@ import { DashboardSidebar } from '../../components/dashboard-sidebar';
 
 import { getChatToken } from '../../actions/getChatToken';
 import { getCurrentUser } from '../../actions/getCurrentUser';
+
+export const dynamic = 'force-dynamic';
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
