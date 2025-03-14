@@ -250,8 +250,9 @@ def parsed_conversations(
     json_file = user_dir / path_prefix / "latest.json"
 
     # Load the JSON file directly
-    with open(json_file) as f:
-        conversations_data = json.load(f)
+    with json_file.fs.open(json_file.path) as f:
+        data = f.read()
+        conversations_data = json.loads(data)
 
     if not conversations_data:
         raise ValueError("Expected non-empty conversation data but got empty data.")
