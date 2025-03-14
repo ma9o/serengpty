@@ -68,6 +68,16 @@
         "command": "poetry run pytest tests/",
         "cwd": "apps/data-pipeline"
       }
+    },
+    "export": {
+      "executor": "@nxlv/python:run-commands",
+      "cache": true,
+      "outputs": ["{projectRoot}/requirements.txt"],
+      "inputs": ["{projectRoot}/poetry.lock"],
+      "options": {
+        "command": "poetry export --without dev -f requirements.txt --output requirements.txt --without-hashes",
+        "cwd": "apps/data-pipeline"
+      }
     }
   },
   "tags": [],
