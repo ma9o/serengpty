@@ -2,18 +2,18 @@ name: Serverless Prod Deployment
 on:
   push:
     branches:
-      - "main"
-      - "master"
+      - 'main'
+      - 'master'
 
 concurrency:
   # Cancel in-progress deploys to same branch
   group: ${{ github.ref }}/deploy
   cancel-in-progress: true
 env:
-  DAGSTER_CLOUD_URL: "http://serengpty.dagster.cloud"
+  DAGSTER_CLOUD_URL: 'http://serengpty.dagster.cloud'
   DAGSTER_CLOUD_API_TOKEN: ${{ secrets.DAGSTER_CLOUD_API_TOKEN }}
   ENABLE_FAST_DEPLOYS: 'true'
-  PYTHON_VERSION: '3.10'
+  PYTHON_VERSION: '3.12.7'
   DAGSTER_CLOUD_FILE: 'dagster_cloud.yaml'
 
 jobs:
@@ -46,9 +46,9 @@ jobs:
         if: steps.prerun.outputs.result == 'pex-deploy'
         uses: dagster-io/dagster-cloud-action/actions/build_deploy_python_executable@v0.1
         with:
-          dagster_cloud_file: "$GITHUB_WORKSPACE/project-repo/$DAGSTER_CLOUD_FILE"
-          build_output_dir: "$GITHUB_WORKSPACE/build"
-          python_version: "${{ env.PYTHON_VERSION }}"
+          dagster_cloud_file: '$GITHUB_WORKSPACE/project-repo/$DAGSTER_CLOUD_FILE'
+          build_output_dir: '$GITHUB_WORKSPACE/build'
+          python_version: '${{ env.PYTHON_VERSION }}'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -71,7 +71,7 @@ jobs:
         with:
           dagster_cloud_api_token: ${{ secrets.DAGSTER_CLOUD_API_TOKEN }}
           location: ${{ toJson(matrix.location) }}
-          base_image: "python:${{ env.PYTHON_VERSION }}-slim"
+          base_image: 'python:${{ env.PYTHON_VERSION }}-slim'
           # Uncomment to pass through Github Action secrets as a JSON string of key-value pairs
           # env_vars: ${{ toJson(secrets) }}
           organization_id: ${{ secrets.ORGANIZATION_ID }}
