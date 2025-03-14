@@ -12,6 +12,7 @@ import {
 import { Chat, useCreateChatClient } from 'stream-chat-react';
 import { StreamChat } from 'stream-chat';
 import 'stream-chat-react/dist/css/v2/index.css';
+import { env } from '../../constants/environment';
 
 interface ChatContextType {
   client: StreamChat | null;
@@ -30,9 +31,13 @@ const ChatContext = createContext<ChatContextType>({
   error: null,
   unreadCount: 0,
   activeChannelId: null,
-  setActiveChannelId: (channelId: string | null) => { /* Default empty implementation */ },
+  setActiveChannelId: (channelId: string | null) => {
+    /* Default empty implementation */
+  },
   initialChatText: null,
-  setInitialChatText: (text: string | null) => { /* Default empty implementation */ },
+  setInitialChatText: (text: string | null) => {
+    /* Default empty implementation */
+  },
 });
 
 export const useChatContext = () => useContext(ChatContext);
@@ -60,7 +65,7 @@ export const ChatProvider = ({
   // Use the Stream Chat hook pattern with memoized parameters
   const chatClientParams = useMemo(
     () => ({
-      apiKey: process.env.NEXT_PUBLIC_STREAM_CHAT_API_KEY!,
+      apiKey: env.NEXT_PUBLIC_STREAM_CHAT_API_KEY,
       tokenOrProvider: userToken,
       userData: { id: userId, name: userName },
     }),

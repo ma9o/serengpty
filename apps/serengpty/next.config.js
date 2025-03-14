@@ -30,10 +30,6 @@ module.exports = {
       })
     );
 
-    if (isServer) {
-      config.externals.push({ 'nodejs-polars': 'commonjs nodejs-polars' });
-    }
-
     return config;
   },
   typescript: {
