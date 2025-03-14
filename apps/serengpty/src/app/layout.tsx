@@ -1,5 +1,4 @@
-//import '../../../../libs/ui-utils/src/global.css';
-
+import { GoogleAnalytics } from '@next/third-parties/google';
 import '@enclaveid/ui-utils/global.css';
 import './styles/stream-chat-custom.css';
 
@@ -32,6 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body className="h-full">{children}</body>
+      <GoogleAnalytics gaId="G-HZ3HJ13R0J" />
     </html>
   );
 }
