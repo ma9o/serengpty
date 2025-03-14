@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '../services/db/prisma';
+import { getPrismaClient } from '../services/db/prisma';
 import { auth } from '../services/auth';
 import { revalidatePath } from 'next/cache';
 import { userProfileSchema, UserProfileFormData } from '../schemas/validation';
@@ -34,7 +34,7 @@ export async function saveUserProfile(
     const userId = session.user.id;
 
     // Check if name is already taken by another user
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await getPrismaClient()!.user.findUnique({
       where: { name: data.username },
       select: { id: true },
     });
@@ -47,7 +47,7 @@ export async function saveUserProfile(
     }
 
     // Update or create the user profile
-    const user = await prisma.user.update({
+    const user = await getPrismaClient()!.user.update({
       where: { id: userId },
       data: {
         name: data.username,

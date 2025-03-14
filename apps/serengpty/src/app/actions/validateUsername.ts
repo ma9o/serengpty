@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '../services/db/prisma';
+import { getPrismaClient } from '../services/db/prisma';
 import { getCurrentUser } from './getCurrentUser';
 import { usernameSchema } from '../schemas/validation';
 
@@ -30,7 +30,7 @@ export async function validateUsername(username: string): Promise<{
     }
 
     // Check if username already exists in the database
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await getPrismaClient()!.user.findUnique({
       where: { name: username },
       select: { id: true },
     });

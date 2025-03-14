@@ -1,10 +1,11 @@
 import NextAuth, { CredentialsSignin } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
-import { prisma } from './db/prisma';
+import { getPrismaClient } from './db/prisma';
 import { PrismaClient } from '@prisma/client';
 import { Adapter } from 'next-auth/adapters';
 import * as bcrypt from 'bcrypt';
+import { env } from '../constants/environment';
 
 // fix: Record to delete does not exist. https://github.com/nextauthjs/next-auth/issues/4495
 function CustomPrismaAdapter(p: PrismaClient): Adapter {
@@ -35,7 +36,7 @@ function CustomPrismaAdapter(p: PrismaClient): Adapter {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: CustomPrismaAdapter(prisma),
+  adapter: env.DATABASE_URL ? CustomPrismaAdapter(getPrismaClient()!) : undefined,
   session: {
     strategy: 'jwt',
   },
@@ -57,7 +58,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         // Find the user by username
-        const user = await prisma.user.findUnique({
+        const user = await getPrismaClient()!.user.findUnique({
           where: {
             name: credentials.username as string,
           },

@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '../services/db/prisma';
+import { getPrismaClient } from '../services/db/prisma';
 import { getCurrentUser } from './getCurrentUser';
 
 export async function getCategoryCounts() {
@@ -10,7 +10,7 @@ export async function getCategoryCounts() {
     return [];
   }
 
-  const categories = await prisma.claimCategory.findMany({
+  const categories = await getPrismaClient()!.claimCategory.findMany({
     where: { userId: user.id },
     include: {
       _count: {

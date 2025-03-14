@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '../services/db/prisma';
+import { getPrismaClient } from '../services/db/prisma';
 import { getCurrentUser } from './getCurrentUser';
 
 // Each user's parallel portion, in minutes
@@ -34,7 +34,7 @@ export async function getOnboardingStatus(): Promise<{
     const userId = user.id;
 
     // 2. Check if user already has userPaths
-    const currentUser = await prisma.user.findUnique({
+    const currentUser = await getPrismaClient()!.user.findUnique({
       where: { id: userId },
       include: { userPaths: true },
     });
@@ -58,7 +58,7 @@ export async function getOnboardingStatus(): Promise<{
     }
 
     // 4. Find all users without userPaths, sorted by creation date
-    const usersInQueue = await prisma.user.findMany({
+    const usersInQueue = await getPrismaClient()!.user.findMany({
       where: {
         userPaths: {
           none: {},
