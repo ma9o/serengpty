@@ -7,6 +7,7 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: env.AUTH_SECRET,
+    secureCookie: !env.IS_DEVELOPMENT,
   });
 
   // If the user is not authenticated and trying to access a protected route
