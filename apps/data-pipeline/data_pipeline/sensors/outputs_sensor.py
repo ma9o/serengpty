@@ -53,7 +53,7 @@ def outputs_sensor(
         map(
             lambda user_id: requests.post(
                 os.environ["API_PIPELINE_ENDPOINT"],
-                json={"userId": user_id},
+                json={"userId": user_id, "secret": os.environ["PIPELINE_SECRET"]},
                 timeout=60,
             ).json(),
             partitions_to_add,
