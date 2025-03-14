@@ -75,7 +75,7 @@
       "outputs": ["{projectRoot}/requirements.txt"],
       "inputs": ["{projectRoot}/poetry.lock"],
       "options": {
-        "command": "poetry export --without dev -f requirements.txt --output requirements.txt --without-hashes",
+        "command": "poetry export --without dev -f requirements.txt --without-hashes | awk '{ print $1 }' FS=';' > requirements.txt",
         "cwd": "apps/data-pipeline"
       }
     }
