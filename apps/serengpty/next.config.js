@@ -20,6 +20,7 @@ const plugins = [
 
 module.exports = {
   ...composePlugins(...plugins)(nextConfig),
+  productionBrowserSourceMaps: true,
   webpack(config, { isServer }) {
     config.plugins.push(
       require('unplugin-icons/webpack').default({
@@ -38,4 +39,4 @@ module.exports = {
   typescript: {
     ignoreBuildErrors: true,
   },
-};
+}; //satisfies import('next').NextConfig;
