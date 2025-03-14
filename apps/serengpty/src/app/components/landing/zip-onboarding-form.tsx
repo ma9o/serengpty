@@ -19,6 +19,7 @@ import { Icon } from '@iconify/react';
 import { validateUsername } from '../../actions/validateUsername';
 import { getUniqueUsername } from '../../actions/getUniqueUsername';
 import { validatePassword } from '../../actions/validatePassword';
+import axios from 'axios';
 
 export function ZipOnboardingForm() {
   const { toast } = useToast();
@@ -41,6 +42,13 @@ export function ZipOnboardingForm() {
   // New states to track signup and upload phases
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [finished, setFinished] = useState(false);
+
+  useEffect(() => {
+    if (finished) {
+      window.location.href = '/onboarding';
+    }
+  }, [finished]);
 
   async function handleFileDrop(files: File[]) {
     const file = files[0];
@@ -175,52 +183,31 @@ export function ZipOnboardingForm() {
         setProgress(0); // Reset progress for upload
 
         const conversationsData = JSON.stringify(cleanedConversations);
-        const encoder = new TextEncoder();
-        const encodedData = encoder.encode(conversationsData);
-        const totalSize = encodedData.length;
-        let uploadedSize = 0;
-
-        const stream = new ReadableStream({
-          start(controller) {
-            const chunkSize = 16384; // 16KB chunks
-            for (let i = 0; i < totalSize; i += chunkSize) {
-              const chunk = encodedData.slice(i, i + chunkSize);
-              controller.enqueue(chunk);
-            }
-            controller.close();
-          },
+        // Create a Blob from the JSON data to upload it in a single request.
+        const blob = new Blob([conversationsData], {
+          type: 'application/json',
         });
 
-        const uploadResponse = await fetch(data.uploadUrl, {
-          method: 'PUT',
+        // Upload data using axios with onUploadProgress for progress tracking.
+        await axios.put(data.uploadUrl, blob, {
           headers: {
             'Content-Type': 'application/json',
             'x-ms-blob-type': 'BlockBlob',
           },
-          body: new Response(stream).body,
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const progressPercent = Math.round(
+                (progressEvent.loaded / progressEvent.total) * 100
+              );
+              setProgress(progressPercent);
+            }
+          },
         });
 
-        const reader = stream.getReader();
-        const processChunk = async () => {
-          const { done, value } = await reader.read();
-          if (done) return;
-          uploadedSize += value.length;
-          const progressPercent = Math.round((uploadedSize / totalSize) * 100);
-          setProgress(progressPercent);
-          return processChunk();
-        };
-
-        await processChunk();
-
-        if (!uploadResponse.ok) {
-          throw new Error('Failed to upload data to storage');
-        }
-
-        setProgress(100); // Ensure completion
+        setProgress(100); // Ensure complete progress update
         setIsUploading(false);
+        setFinished(true);
       }
-
-      window.location.href = '/onboarding';
     } catch (err) {
       console.error(err);
       const errorMessage =
