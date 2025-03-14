@@ -8,6 +8,9 @@
   },
   "tags": [],
   "targets": {
+    "build": {
+      "dependsOn": ["prisma-generate"]
+    },
     "dev": {
       "options": {
         "env": {
