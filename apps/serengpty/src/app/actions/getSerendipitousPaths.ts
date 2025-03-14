@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '../services/auth';
-import { prisma } from '../services/db/prisma';
+import { getPrismaClient } from '../services/db/prisma';
 
 export async function markUserMatchAsViewed(matchId: string) {
   try {
@@ -11,7 +11,7 @@ export async function markUserMatchAsViewed(matchId: string) {
       throw new Error('Authentication required');
     }
 
-    await prisma.usersMatch.update({
+    await getPrismaClient()!.usersMatch.update({
       where: { id: matchId },
       data: { viewed: true },
     });
@@ -33,7 +33,7 @@ export async function getUnviewedMatchesCount() {
 
     const currentUserId = session.user.id;
 
-    const count = await prisma.usersMatch.count({
+    const count = await getPrismaClient()!.usersMatch.count({
       where: {
         users: {
           some: {
@@ -62,7 +62,7 @@ export async function getSerendipitousPaths() {
     const currentUserId = session.user.id;
 
     // Get the current user's sensitiveMatching preference
-    const currentUser = await prisma.user.findUnique({
+    const currentUser = await getPrismaClient()!.user.findUnique({
       where: { id: currentUserId },
       select: { sensitiveMatching: true },
     });
@@ -72,7 +72,7 @@ export async function getSerendipitousPaths() {
     }
 
     // Get all user matches with associated users to check their sensitiveMatching settings
-    const userMatches = await prisma.usersMatch.findMany({
+    const userMatches = await getPrismaClient()!.usersMatch.findMany({
       orderBy: {
         score: 'desc',
       },
@@ -209,7 +209,7 @@ export async function setPathFeedback(pathId: string, score: 1 | -1 | 0) {
     const userId = session.user.id;
 
     // Check if user has already given feedback to this path
-    const existingFeedback = await prisma.pathFeedback.findUnique({
+    const existingFeedback = await getPrismaClient()!.pathFeedback.findUnique({
       where: {
         userId_pathId: {
           userId,
@@ -220,13 +220,13 @@ export async function setPathFeedback(pathId: string, score: 1 | -1 | 0) {
 
     if (existingFeedback) {
       // Update existing feedback
-      return await prisma.pathFeedback.update({
+      return await getPrismaClient()!.pathFeedback.update({
         where: { id: existingFeedback.id },
         data: { score },
       });
     } else {
       // Create new feedback
-      return await prisma.pathFeedback.create({
+      return await getPrismaClient()!.pathFeedback.create({
         data: {
           score,
           user: { connect: { id: userId } },

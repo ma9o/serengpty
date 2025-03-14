@@ -1,4 +1,4 @@
-import { prisma } from './prisma';
+import { getPrismaClient } from './prisma';
 
 export interface ConversationPairClusterRow {
   user_id: string;
@@ -53,7 +53,7 @@ export async function savePipelineResults(
   );
 
   try {
-    await prisma.$transaction(async (tx) => {
+    await getPrismaClient()!.$transaction(async (tx) => {
       // Declare variables at the transaction scope level
       let conversationData: any[] = [];
       const matchGroups: { [key: number]: SerendipityOptimizedRow[] } = {};

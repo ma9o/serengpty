@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as bcrypt from 'bcrypt';
-import { prisma } from '../../../services/db/prisma';
+import { getPrismaClient } from '../../../services/db/prisma';
 import path from 'path';
 import fs from 'fs';
 import { getUniqueUsername } from '../../../actions/getUniqueUsername';
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create anonymous user with password hash and generated name
-    const user = await prisma.user.create({
+    const user = await getPrismaClient()!.user.create({
       data: {
         passwordHash,
         name,

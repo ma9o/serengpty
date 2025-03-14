@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '../services/db/prisma';
+import { getPrismaClient } from '../services/db/prisma';
 import { auth } from '../services/auth';
 import { generateUsername } from 'unique-username-generator';
 import { validateUsername } from './validateUsername';
@@ -39,7 +39,7 @@ export async function getUserProfile() {
     const userId = session.user.id;
 
     // Fetch user data from database
-    const userData = await prisma.user.findUnique({
+    const userData = await getPrismaClient()!.user.findUnique({
       where: { id: userId },
       select: {
         name: true,
