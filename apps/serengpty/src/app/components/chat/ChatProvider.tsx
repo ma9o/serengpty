@@ -65,7 +65,7 @@ export const ChatProvider = ({
   // Use the Stream Chat hook pattern with memoized parameters
   const chatClientParams = useMemo(
     () => ({
-      apiKey: env.NEXT_PUBLIC_STREAM_CHAT_API_KEY,
+      apiKey: env.NEXT_PUBLIC_STREAM_CHAT_API_KEY!,
       tokenOrProvider: userToken,
       userData: { id: userId, name: userName },
     }),

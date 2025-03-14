@@ -2,7 +2,7 @@
 export const HEADER = {
   COMPANY_NAME: 'SerenGPTy',
   DISCORD_LINK: 'https://discord.gg/BftCHbV4TW',
-  GITHUB_LINK: 'https://github.com/enclaveid/serengpty',
+  GITHUB_LINK: 'https://github.com/ma9o/serengpty',
   LOGIN_BUTTON_TEXT: 'Login',
 };
 

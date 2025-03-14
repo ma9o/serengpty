@@ -8,9 +8,6 @@ export const env = {
   // Database
   DATABASE_URL: process.env.DATABASE_URL,
 
-  // Email
-  AZURE_EMAIL_CONNECTION_STRING: process.env.AZURE_EMAIL_CONNECTION_STRING,
-
   // Storage
   AZURE_STORAGE_ACCOUNT_NAME: process.env.AZURE_STORAGE_ACCOUNT_NAME,
   AZURE_STORAGE_ACCOUNT_KEY: process.env.AZURE_STORAGE_ACCOUNT_KEY,
