@@ -18,15 +18,8 @@ import { processZipFile } from '../../utils/clientZipUtils';
 import { Icon } from '@iconify/react';
 import { validateUsername } from '../../actions/validateUsername';
 import { getUniqueUsername } from '../../actions/getUniqueUsername';
-
 import { validatePassword } from '../../actions/validatePassword';
 
-/**
- * ZipOnboardingForm component wraps the ZipDropzone.
- * When a file is dropped, we process it on the client side,
- * generate a password, update UI feedback statuses, and then
- * reveal a sign-up button that will handle the final sign-up with just the cleaned conversations data.
- */
 export function ZipOnboardingForm() {
   const { toast } = useToast();
 
@@ -45,12 +38,14 @@ export function ZipOnboardingForm() {
   const [cleanedConversations, setCleanedConversations] = useState<
     Record<string, unknown>[]
   >([]);
+  // New states to track signup and upload phases
+  const [isSigningUp, setIsSigningUp] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   async function handleFileDrop(files: File[]) {
     const file = files[0];
     if (!file) return;
 
-    // Reset state for a new upload.
     setError('');
     setUsernameError('');
     setPasswordError('');
@@ -63,12 +58,8 @@ export function ZipOnboardingForm() {
     setProviderName(undefined);
 
     try {
-      // Reset progress before starting
-      setProgress(0);
-
-      // Process the zip file on the client side with progress updates
       const result = await processZipFile(file, (progressValue) => {
-        setProgress(progressValue);
+        setProgress(progressValue); // Progress from 0 to 100 for processing
       });
 
       if (!result.success || !result.conversations) {
@@ -88,35 +79,27 @@ export function ZipOnboardingForm() {
     }
   }
 
-  // Add a debounced username validation
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (customUsername) {
         const result = await validateUsername(customUsername);
-        if (!result.isValid) {
-          setUsernameError(result.message || 'Username is invalid');
-        } else {
-          setUsernameError('');
-        }
+        setUsernameError(
+          result.isValid ? '' : result.message || 'Username is invalid'
+        );
       }
     }, 500);
-
     return () => clearTimeout(timer);
   }, [customUsername]);
 
-  // Add a debounced password validation
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (password) {
         const result = await validatePassword(password);
-        if (!result.isValid) {
-          setPasswordError(result.message || 'Password is invalid');
-        } else {
-          setPasswordError('');
-        }
+        setPasswordError(
+          result.isValid ? '' : result.message || 'Password is invalid'
+        );
       }
     }, 500);
-
     return () => clearTimeout(timer);
   }, [password]);
 
@@ -125,16 +108,11 @@ export function ZipOnboardingForm() {
       setUsernameError('Username is required');
       return false;
     }
-
     const result = await validateUsername(username);
-
-    if (!result.isValid) {
-      setUsernameError(result.message || 'Username is invalid');
-      return false;
-    }
-
-    setUsernameError('');
-    return true;
+    setUsernameError(
+      result.isValid ? '' : result.message || 'Username is invalid'
+    );
+    return result.isValid;
   };
 
   const validateUserPassword = async () => {
@@ -142,16 +120,11 @@ export function ZipOnboardingForm() {
       setPasswordError('Password is required');
       return false;
     }
-
     const result = await validatePassword(password);
-
-    if (!result.isValid) {
-      setPasswordError(result.message || 'Password is invalid');
-      return false;
-    }
-
-    setPasswordError('');
-    return true;
+    setPasswordError(
+      result.isValid ? '' : result.message || 'Password is invalid'
+    );
+    return result.isValid;
   };
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -162,55 +135,26 @@ export function ZipOnboardingForm() {
       return;
     }
 
-    // Validate username and password
-    if (!(await validateCustomUsername(customUsername))) {
+    if (
+      !(await validateCustomUsername(customUsername)) ||
+      !(await validateUserPassword())
+    ) {
       return;
     }
 
-    if (!validateUserPassword()) {
-      return;
-    }
+    setProcessing(true);
+    setIsSigningUp(true);
 
     try {
-      setProcessing(true);
-      // Start with a small progress value to show activity
-      setProgress(5);
-
-      // Create FormData with only the cleaned data
       const formData = new FormData();
-      // Only add the cleaned conversations.json data to the form
-      formData.append('conversations', JSON.stringify(cleanedConversations));
       formData.append('password', password);
-
-      // Add username
       formData.append('username', customUsername);
-
-      // Add provider name if available
-      if (providerName) {
-        formData.append('providerName', providerName);
-      }
-
-      // Send the data to our signup API
-      // Simulated upload progress
-      const simulateProgress = () => {
-        setProgress((prev) => {
-          // Increment progress but don't reach 100% until complete
-          const nextProgress = prev + Math.random() * 15;
-          return Math.min(nextProgress, 90);
-        });
-      };
-
-      // Start progress simulation
-      const progressInterval = setInterval(simulateProgress, 500);
+      if (providerName) formData.append('providerName', providerName);
 
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         body: formData,
       });
-
-      // Clear the interval and set to 100% when complete
-      clearInterval(progressInterval);
-      setProgress(100);
 
       const data = await response.json();
 
@@ -219,24 +163,78 @@ export function ZipOnboardingForm() {
           title: 'Error',
           description: data.error || 'Failed to sign up',
         });
+        setProcessing(false);
+        setIsSigningUp(false);
         return;
       }
 
-      // Redirect to the dashboard
+      setIsSigningUp(false);
+
+      if (data.uploadUrl) {
+        setIsUploading(true);
+        setProgress(0); // Reset progress for upload
+
+        const conversationsData = JSON.stringify(cleanedConversations);
+        const encoder = new TextEncoder();
+        const encodedData = encoder.encode(conversationsData);
+        const totalSize = encodedData.length;
+        let uploadedSize = 0;
+
+        const stream = new ReadableStream({
+          start(controller) {
+            const chunkSize = 16384; // 16KB chunks
+            for (let i = 0; i < totalSize; i += chunkSize) {
+              const chunk = encodedData.slice(i, i + chunkSize);
+              controller.enqueue(chunk);
+            }
+            controller.close();
+          },
+        });
+
+        const uploadResponse = await fetch(data.uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-ms-blob-type': 'BlockBlob',
+          },
+          body: new Response(stream).body,
+        });
+
+        const reader = stream.getReader();
+        const processChunk = async () => {
+          const { done, value } = await reader.read();
+          if (done) return;
+          uploadedSize += value.length;
+          const progressPercent = Math.round((uploadedSize / totalSize) * 100);
+          setProgress(progressPercent);
+          return processChunk();
+        };
+
+        await processChunk();
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload data to storage');
+        }
+
+        setProgress(100); // Ensure completion
+        setIsUploading(false);
+      }
+
       window.location.href = '/onboarding';
-    } catch (err: unknown) {
+    } catch (err) {
       console.error(err);
       const errorMessage =
         err instanceof Error
           ? err.message
           : 'An error occurred during sign up.';
-      setError(errorMessage);
+      toast({ title: 'Error', description: errorMessage });
     } finally {
       setProcessing(false);
+      setIsSigningUp(false);
+      setIsUploading(false);
     }
   }
 
-  // Set up the dropzone directly in this component
   const { getRootProps, getInputProps } = useDropzone({
     onDrop: handleFileDrop,
     accept: {
@@ -245,7 +243,6 @@ export function ZipOnboardingForm() {
     },
     multiple: false,
     disabled: processing,
-    // This ensures the dropzone is always ready to accept new files
     noClick: ready,
     noKeyboard: ready,
     noDrag: ready,
@@ -254,12 +251,9 @@ export function ZipOnboardingForm() {
   return (
     <div className="onboarding-form w-full md:w-1/2 flex justify-center px-4 sm:px-0">
       <Toaster />
-
       <form onSubmit={handleSubmit} className="w-full max-w-md">
-        {/* When processing is complete, show the sign-up button */}
         {!ready ? (
           <div>
-            {/* Robot icon message */}
             <div className="mb-2 flex items-center justify-center">
               {error ? (
                 <>
@@ -287,8 +281,6 @@ export function ZipOnboardingForm() {
                 )
               )}
             </div>
-
-            {/* Processing indicator or Dropzone */}
             {processing ? (
               <div className="w-full mb-8 md:mb-0 border-2 border-dashed border-gray-300 p-6 rounded-lg flex flex-col items-center justify-center text-center">
                 <div className="flex flex-col items-center w-full">
@@ -300,19 +292,17 @@ export function ZipOnboardingForm() {
                   />
                   <div className="flex items-center mb-2">
                     <Loader2 className="animate-spin mr-2" size={16} />
-                    <span className="">We&apos;re anonymizing the data...</span>
+                    <span>Processing your archive...</span>
                   </div>
-
-                  {/* Progress bar */}
                   <div className="w-full mt-2 max-w-md">
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
                       <div
                         className="bg-green-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
                         style={{ width: `${progress}%` }}
-                      ></div>
+                      />
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      Processing conversations.json: {progress}%
+                      {progress}%
                     </div>
                   </div>
                 </div>
@@ -323,7 +313,6 @@ export function ZipOnboardingForm() {
                 className="relative w-full md:w-[400px] mx-auto mb-8 md:mb-0 border-2 border-dashed border-gray-300 p-6 rounded-lg flex flex-col items-center justify-center text-center hover:border-green-800 transition-colors cursor-pointer"
               >
                 <input {...getInputProps()} />
-                {/* <FileArchive className="mb-4 text-gray-500" size={32} /> */}
                 <p className="mt-2 text-base text-gray-500">
                   Drop your data export archive here
                 </p>
@@ -345,7 +334,6 @@ export function ZipOnboardingForm() {
                 archive is ready to be uploaded!
               </p>
             </div>
-
             <div className="flex flex-col items-center gap-4 w-full max-w-[470px]">
               <div className="w-full">
                 <label
@@ -369,12 +357,12 @@ export function ZipOnboardingForm() {
                   {customUsername &&
                     (!usernameError ? (
                       <CheckCircle
-                        className={`absolute right-2 top-1/2 -translate-y-1/2 ${'text-green-500'}`}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-green-500"
                         size={16}
                       />
                     ) : (
                       <XCircle
-                        className={`absolute right-2 top-1/2 -translate-y-1/2 ${'text-red-500'}`}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-500"
                         size={16}
                       />
                     ))}
@@ -383,7 +371,6 @@ export function ZipOnboardingForm() {
                   <p className="text-sm text-red-500">{usernameError}</p>
                 )}
               </div>
-
               <div className="w-full">
                 <label
                   htmlFor="password"
@@ -426,22 +413,30 @@ export function ZipOnboardingForm() {
                   <p className="text-sm text-red-500 mb-3">{passwordError}</p>
                 )}
               </div>
-
               {processing ? (
                 <div className="w-full mt-2">
-                  <div className="flex items-center justify-center mb-2">
-                    <Loader2 className="animate-spin mr-2" size={16} />
-                    <span>Uploading your data...</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div
-                      className="bg-green-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
-                      style={{ width: `${progress}%` }}
-                    ></div>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1 text-center">
-                    {progress.toFixed(2)}%
-                  </div>
+                  {isSigningUp ? (
+                    <div className="flex items-center justify-center mb-2">
+                      <Loader2 className="animate-spin mr-2" size={16} />
+                      <span>Creating account...</span>
+                    </div>
+                  ) : isUploading ? (
+                    <div className="flex flex-col items-center w-full">
+                      <div className="flex items-center mb-2">
+                        <Loader2 className="animate-spin mr-2" size={16} />
+                        <span>Uploading data...</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div
+                          className="bg-green-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {progress.toFixed(2)}%
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <Button
@@ -449,9 +444,9 @@ export function ZipOnboardingForm() {
                   className="w-full mt-2"
                   disabled={
                     !!usernameError ||
-                    customUsername === '' ||
+                    !customUsername ||
                     !!passwordError ||
-                    password === ''
+                    !password
                   }
                 >
                   Upload zip and Sign up
