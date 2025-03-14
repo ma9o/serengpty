@@ -458,7 +458,7 @@ export function ProfileForm({ isPreferences = false }: ProfileFormProps) {
                     </FormLabel>
                     <FormDescription className="text-xs sm:text-sm">
                       Enable deeper matches using your more sensitive
-                      conversations
+                      conversations (it&apos;s more fun!)
                     </FormDescription>
                   </div>
                   <FormControl>
