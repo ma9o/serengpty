@@ -9,6 +9,8 @@ import {
 } from '../../services/db/savePipelineResults';
 import { env } from '../../constants/environment';
 
+export const maxDuration = 300;
+
 export async function POST(request: NextRequest) {
   try {
     const { userId, secret } = await request.json();
