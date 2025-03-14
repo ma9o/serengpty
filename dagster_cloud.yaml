@@ -1,0 +1,5 @@
+locations:
+  - location_name: data-pipeline
+    code_source:
+      package_name: data_pipeline
+    working_directory: apps/data-pipeline
