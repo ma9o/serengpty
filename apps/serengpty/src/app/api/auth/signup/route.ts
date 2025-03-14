@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as bcrypt from 'bcrypt';
 import { prisma } from '../../../services/db/prisma';
-import { azureContainerClient } from '../../../services/azure/storage';
 import path from 'path';
 import fs from 'fs';
 import { getUniqueUsername } from '../../../actions/getUniqueUsername';
@@ -10,7 +9,7 @@ import { usernameSchema } from '../../../schemas/validation';
 import { signIn } from '../../../services/auth';
 import { upsertStreamChatUser } from '../../../utils/upsertStreamChatUser';
 import { env } from '../../../constants/environment';
-
+import { getAzureContainerClient } from '../../../services/azure/storage';
 /**
  * Anonymous user signup API endpoint
  * Accepts conversation data and password, creates a user account
@@ -76,7 +75,8 @@ export async function POST(request: NextRequest) {
       const blobName = `api/${user.id}/${providerName}/latest.json`;
 
       // Upload the conversations JSON as a blob
-      const blockBlobClient = azureContainerClient.getBlockBlobClient(blobName);
+      const blockBlobClient =
+        getAzureContainerClient().getBlockBlobClient(blobName);
       await blockBlobClient.upload(conversationsJson, conversationsJson.length);
     } else {
       // In development, save to local filesystem

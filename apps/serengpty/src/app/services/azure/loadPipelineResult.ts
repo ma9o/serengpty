@@ -1,7 +1,7 @@
-import { azureContainerClient } from './storage';
 import path from 'path';
 import fs from 'fs';
 import { env } from '../../constants/environment';
+import { getAzureContainerClient } from './storage';
 
 // Helper function to convert a ReadableStream to a Buffer
 async function streamToBuffer(
@@ -40,7 +40,7 @@ export async function loadPipelineResults(blobName: string): Promise<Buffer> {
     });
   } else {
     // Get a reference to the blob
-    const blobClient = azureContainerClient.getBlobClient(blobName);
+    const blobClient = getAzureContainerClient().getBlobClient(blobName);
 
     // Download the blob content
     const downloadResponse = await blobClient.download();
