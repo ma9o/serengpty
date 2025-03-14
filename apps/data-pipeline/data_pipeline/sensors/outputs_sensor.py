@@ -52,7 +52,7 @@ def outputs_sensor(
     results = list(
         map(
             lambda user_id: requests.post(
-                os.getenv("API_URL") + "/api/pipeline-finished",
+                os.environ["API_PIPELINE_ENDPOINT"],
                 json={"userId": user_id},
                 timeout=60,
             ).json(),
