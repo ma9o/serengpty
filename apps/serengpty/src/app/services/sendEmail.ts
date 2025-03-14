@@ -1,6 +1,7 @@
 import { EmailClient } from '@azure/communication-email';
+import { env } from '../constants/environment';
 
-const emailClient = new EmailClient(process.env.AZURE_EMAIL_CONNECTION_STRING!);
+const emailClient = new EmailClient(env.AZURE_EMAIL_CONNECTION_STRING!);
 const senderAddress =
   'DoNotReply@9996352e-b5cf-4ac3-9058-5a8adb2c225e.azurecomm.net';
 

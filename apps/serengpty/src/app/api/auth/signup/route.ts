@@ -9,6 +9,7 @@ import { validateUsername } from '../../../actions/validateUsername';
 import { usernameSchema } from '../../../schemas/validation';
 import { signIn } from '../../../services/auth';
 import { upsertStreamChatUser } from '../../../utils/upsertStreamChatUser';
+import { env } from '../../../constants/environment';
 
 /**
  * Anonymous user signup API endpoint
@@ -68,11 +69,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Save the conversations.json file to Azure storage or local filesystem
-    // depending on the environment
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    if (isProduction) {
+    if (!env.IS_DEVELOPMENT) {
       // Save to Azure Blob Storage
       // Create a blob name with user id and path that matches the expected structure
       // The path should match what's expected by the parsed_conversations asset

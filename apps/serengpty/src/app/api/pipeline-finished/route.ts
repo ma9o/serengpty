@@ -7,6 +7,7 @@ import {
   UserSimilaritiesRow,
   ConversationPairClusterRow,
 } from '../../services/db/savePipelineResults';
+import { env } from '../../constants/environment';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,8 +20,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (process.env.NODE_ENV != 'development') {
-      if (secret !== process.env.PIPELINE_SECRET) {
+    if (!env.IS_DEVELOPMENT) {
+      if (secret !== env.PIPELINE_SECRET) {
         return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
       }
     }

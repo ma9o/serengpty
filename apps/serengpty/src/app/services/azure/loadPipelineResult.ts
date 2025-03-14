@@ -1,6 +1,7 @@
 import { azureContainerClient } from './storage';
 import path from 'path';
 import fs from 'fs';
+import { env } from '../../constants/environment';
 
 // Helper function to convert a ReadableStream to a Buffer
 async function streamToBuffer(
@@ -19,7 +20,7 @@ async function streamToBuffer(
 }
 
 export async function loadPipelineResults(blobName: string): Promise<Buffer> {
-  if (process.env.NODE_ENV === 'development') {
+  if (env.IS_DEVELOPMENT) {
     const localPath = path.join(
       process.cwd(),
       '..',
@@ -29,10 +30,13 @@ export async function loadPipelineResults(blobName: string): Promise<Buffer> {
     );
 
     return new Promise((resolve, reject) => {
-      fs.readFile(localPath, (err: NodeJS.ErrnoException | null, data: Buffer) => {
-        if (err) reject(err);
-        else resolve(data);
-      });
+      fs.readFile(
+        localPath,
+        (err: NodeJS.ErrnoException | null, data: Buffer) => {
+          if (err) reject(err);
+          else resolve(data);
+        }
+      );
     });
   } else {
     // Get a reference to the blob
