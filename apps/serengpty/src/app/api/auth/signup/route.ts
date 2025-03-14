@@ -1,30 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as bcrypt from 'bcrypt';
 import { getPrismaClient } from '../../../services/db/prisma';
-import path from 'path';
-import fs from 'fs';
 import { getUniqueUsername } from '../../../actions/getUniqueUsername';
 import { validateUsername } from '../../../actions/validateUsername';
 import { usernameSchema } from '../../../schemas/validation';
 import { signIn } from '../../../services/auth';
 import { upsertStreamChatUser } from '../../../utils/upsertStreamChatUser';
-import { env } from '../../../constants/environment';
 import { getAzureContainerClient } from '../../../services/azure/storage';
-/**
- * Anonymous user signup API endpoint
- * Accepts conversation data and password, creates a user account
- */
+import { BlobSASPermissions } from '@azure/storage-blob';
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const password = formData.get('password') as string;
-    const conversationsJson = formData.get('conversations') as string;
     const customUsername = formData.get('username') as string | null;
+    const password = formData.get('password') as string;
     const providerName = formData.get('providerName') as string;
 
-    if (!password || !conversationsJson) {
+    if (!password) {
       return NextResponse.json(
-        { error: 'Password and conversations data are required' },
+        { error: 'Password is required' },
         { status: 400 }
       );
     }
@@ -68,36 +61,27 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!env.IS_DEVELOPMENT) {
-      // Save to Azure Blob Storage
-      // Create a blob name with user id and path that matches the expected structure
-      // The path should match what's expected by the parsed_conversations asset
-      const blobName = `api/${user.id}/${providerName}/latest.json`;
+    let uploadUrl: string | null = null;
 
-      // Upload the conversations JSON as a blob
-      const blockBlobClient =
-        getAzureContainerClient().getBlockBlobClient(blobName);
-      await blockBlobClient.upload(conversationsJson, conversationsJson.length);
-    } else {
-      // In development, save to local filesystem
-      // Create local directory structure that matches the expected structure
-      const localDataDir = path.join(process.cwd(), '../data-pipeline/data');
-      const userDir = path.join(
-        localDataDir,
-        'api',
-        user.id.toString(),
-        providerName
-      );
+    // Generate Azure presigned URL for client-side upload
+    // Create a blob name with user id and path that matches the expected structure
+    const blobName = `api/${user.id}/${providerName}/latest.json`;
 
-      // Create directory if it doesn't exist
-      await fs.promises.mkdir(userDir, { recursive: true });
+    // Get the block blob client and generate presigned URL
+    const blockBlobClient =
+      getAzureContainerClient().getBlockBlobClient(blobName);
 
-      // Write the conversations JSON to file
-      await fs.promises.writeFile(
-        path.join(userDir, 'latest.json'),
-        conversationsJson
-      );
-    }
+    // Generate a SAS token that expires in 15 minutes
+    uploadUrl = await blockBlobClient.generateSasUrl({
+      permissions: BlobSASPermissions.from({
+        read: true,
+        write: true,
+        create: true,
+        delete: true,
+      }),
+      expiresOn: new Date(new Date().valueOf() + 15 * 60 * 1000), // 15 minutes
+      contentType: 'application/json',
+    });
 
     // Create a StreamChat user
     await upsertStreamChatUser(user);
@@ -113,7 +97,8 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'User created successfully',
       userId: user.id,
-      username: user.name, // Include username in the response
+      username: user.name,
+      uploadUrl,
     });
   } catch (error) {
     console.error('Signup error:', error);

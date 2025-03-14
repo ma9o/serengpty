@@ -16,7 +16,7 @@ export async function getChatToken(): Promise<{
       return { token: null, error: 'User not authenticated' };
     }
 
-    if (!env.NEXT_PUBLIC_STREAM_CHAT_API_KEY || !env.STREAM_API_SECRET) {
+    if (!env.NEXT_PUBLIC_STREAM_CHAT_API_KEY || !env.STREAM_CHAT_API_SECRET) {
       console.error('Stream Chat API credentials not configured');
       return { token: null, error: 'Chat service not configured' };
     }
@@ -24,7 +24,7 @@ export async function getChatToken(): Promise<{
     // Initialize Chat client
     const serverClient = StreamChat.getInstance(
       env.NEXT_PUBLIC_STREAM_CHAT_API_KEY,
-      env.STREAM_API_SECRET
+      env.STREAM_CHAT_API_SECRET
     );
 
     // Generate token with server-side client
