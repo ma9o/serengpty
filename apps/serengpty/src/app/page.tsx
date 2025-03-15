@@ -73,7 +73,7 @@ function Hero() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 my-10 sm:my-16 md:my-24">
         <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
           <div className="w-full md:w-1/2 flex flex-col justify-center">
-            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-3 md:mb-4 text-brand">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-3 md:mb-4 text-content-primary">
               {HERO.TITLE}
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6">
@@ -131,11 +131,11 @@ function PrivacySection() {
           {/* Mobile layout - completely restructured for mobile */}
           <div className="flex flex-col gap-8">
             {/* 1. Mobile heading */}
-            <div className="flex flex-row text-brand">
-              <h2 className="text-2xl sm:text-3xl font-bold leading-snug mr-2 opacity-50">
+            <div className="flex flex-row">
+              <h2 className="text-2xl sm:text-3xl font-bold leading-snug mr-2 opacity-50 text-content-primary">
                 {PRIVACY.MAIN_TITLE.FIRST_PART}
               </h2>
-              <h2 className="text-2xl sm:text-3xl font-bold leading-snug">
+              <h2 className="text-2xl sm:text-3xl font-bold leading-snug text-content-primary">
                 {PRIVACY.MAIN_TITLE.SECOND_PART}
               </h2>
             </div>
@@ -223,11 +223,11 @@ function PrivacySection() {
         <div className="hidden md:flex flex-col gap-20">
           {/* Top row - "Your data, Your rules" heading */}
           <div className="flex justify-center">
-            <div className="flex flex-row text-center text-brand">
-              <h2 className="text-4xl lg:text-5xl font-bold leading-snug mr-3 opacity-50">
+            <div className="flex flex-row text-center">
+              <h2 className="text-4xl lg:text-5xl font-bold leading-snug mr-3 opacity-50 text-content-primary">
                 {PRIVACY.MAIN_TITLE.FIRST_PART}
               </h2>
-              <h2 className="text-4xl lg:text-5xl font-bold leading-snug">
+              <h2 className="text-4xl lg:text-5xl font-bold leading-snug text-content-primary">
                 {PRIVACY.MAIN_TITLE.SECOND_PART}
               </h2>
             </div>
@@ -290,7 +290,7 @@ function CollaborativeSection() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
           {/* Left side with text */}
           <div className="w-full md:w-1/2">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-brand">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-content-primary">
               {COLLABORATIVE.TITLE}
             </h2>
             <p className="text-base sm:text-lg text-gray-700">
