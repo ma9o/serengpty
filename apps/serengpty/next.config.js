@@ -1,6 +1,7 @@
 //@ts-check
 
 const { composePlugins, withNx } = require('@nx/next');
+const { withSentryConfig } = require('@sentry/nextjs');
 
 /**
  * @type {import('@nx/next/plugins/with-nx').WithNxOptions}
@@ -11,15 +12,6 @@ const nextConfig = {
     // See: https://github.com/gregberge/svgr
     svgr: false,
   },
-};
-
-const plugins = [
-  // Add more Next.js plugins to this list if needed.
-  withNx,
-];
-
-module.exports = {
-  ...composePlugins(...plugins)(nextConfig),
   productionBrowserSourceMaps: true,
   webpack(config, { isServer }) {
     config.plugins.push(
@@ -35,4 +27,27 @@ module.exports = {
   typescript: {
     ignoreBuildErrors: true,
   },
-}; //satisfies import('next').NextConfig;
+};
+
+const plugins = [
+  // Add more Next.js plugins to this list if needed.
+  withNx,
+];
+
+const sentryWebpackPluginOptions = {
+  org: 'enclaveid',
+  project: 'javascript-nextjs',
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  reactComponentAnnotation: {
+    enabled: true,
+  },
+  tunnelRoute: '/monitoring',
+  disableLogger: true,
+  automaticVercelMonitors: true,
+};
+
+module.exports = withSentryConfig(
+  composePlugins(...plugins)(nextConfig),
+  sentryWebpackPluginOptions
+);

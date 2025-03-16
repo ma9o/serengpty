@@ -60,3 +60,5 @@ apps/data-pipeline/data/*
 
 # .env
 .env
+# Sentry Config File
+.env.sentry-build-plugin
