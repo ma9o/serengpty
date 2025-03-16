@@ -8,7 +8,6 @@ from dagster import (
 
 from data_pipeline.assets import ai_conversations
 from data_pipeline.sensors.inputs_sensor import inputs_sensor
-from data_pipeline.sensors.outputs_sensor import outputs_sensor
 
 from .resources import resources
 
@@ -20,7 +19,7 @@ all_assets = load_assets_from_modules(asset_modules)
 
 defs = Definitions(
     assets=all_assets,
-    sensors=[inputs_sensor, outputs_sensor],
+    sensors=[inputs_sensor],
     resources=resources,
     executor=(multi_or_in_process_executor),
 )

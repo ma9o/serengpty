@@ -104,6 +104,18 @@ CREATE TABLE "VerificationToken" (
 );
 
 -- CreateTable
+CREATE TABLE "PathFeedback" (
+    "id" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "score" INTEGER NOT NULL,
+    "userId" TEXT NOT NULL,
+    "pathId" TEXT NOT NULL,
+
+    CONSTRAINT "PathFeedback_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "_UserToUsersMatch" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL,
@@ -128,9 +140,6 @@ CREATE TABLE "_ConversationToUserPath" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_passwordHash_key" ON "User"("passwordHash");
-
--- CreateIndex
 CREATE UNIQUE INDEX "User_name_key" ON "User"("name");
 
 -- CreateIndex
@@ -138,6 +147,9 @@ CREATE UNIQUE INDEX "UserPath_userId_pathId_key" ON "UserPath"("userId", "pathId
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PathFeedback_userId_pathId_key" ON "PathFeedback"("userId", "pathId");
 
 -- CreateIndex
 CREATE INDEX "_UserToUsersMatch_B_index" ON "_UserToUsersMatch"("B");
@@ -165,6 +177,12 @@ ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId"
 
 -- AddForeignKey
 ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PathFeedback" ADD CONSTRAINT "PathFeedback_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PathFeedback" ADD CONSTRAINT "PathFeedback_pathId_fkey" FOREIGN KEY ("pathId") REFERENCES "SerendipitousPath"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_UserToUsersMatch" ADD CONSTRAINT "_UserToUsersMatch_A_fkey" FOREIGN KEY ("A") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

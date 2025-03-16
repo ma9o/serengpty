@@ -1,5 +1,6 @@
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Any, cast
 
 import psycopg
 from dagster import ConfigurableResource
@@ -11,12 +12,13 @@ class PostgresResource(ConfigurableResource):
     connection_string: str
 
     @contextmanager
-    def get_connection(self) -> Iterator[psycopg.Connection]:
+    def get_connection(self) -> Iterator[psycopg.Connection[dict[str, Any]]]:
         """
         Creates and returns a database connection using psycopg3.
         Returns connection as a context manager that automatically closes when done.
         """
         conn = psycopg.connect(self.connection_string, row_factory=dict_row)  # type: ignore
+        conn = cast(psycopg.Connection[dict[str, Any]], conn)
         try:
             yield conn
         finally:

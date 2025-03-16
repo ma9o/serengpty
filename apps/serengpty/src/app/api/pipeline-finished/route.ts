@@ -1,3 +1,5 @@
+// DEPRECATED
+
 import { NextRequest, NextResponse } from 'next/server';
 import { loadPipelineResults } from '../../services/azure/loadPipelineResult';
 import { readParquet } from '../../services/readParquet';
@@ -8,8 +10,6 @@ import {
   ConversationPairClusterRow,
 } from '../../services/db/savePipelineResults';
 import { env } from '../../constants/environment';
-
-export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   try {
