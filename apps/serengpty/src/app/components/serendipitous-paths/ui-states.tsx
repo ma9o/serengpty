@@ -70,10 +70,12 @@ export function EmptyState() {
       <div className="bg-muted p-8 rounded-xl text-center max-w-md">
         <h3 className="text-xl font-bold mb-2">No Connections Found</h3>
         <p className="text-muted-foreground mb-6">
-          You don&apos;t have any serendipitous connections yet. Keep using the
-          platform to discover people with similar interests.
+          It looks like your data has not yet finished processing. You will be
+          able to see your connections here soon.
         </p>
-        <Button variant="default">Explore Topics</Button>
+        <Button variant="default" asChild>
+          <a href="/onboarding">Finish Onboarding</a>
+        </Button>
       </div>
     </div>
   );

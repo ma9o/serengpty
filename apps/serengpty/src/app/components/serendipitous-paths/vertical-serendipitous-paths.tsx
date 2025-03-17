@@ -16,7 +16,7 @@ import { useUnviewedMatches } from './UnviewedMatchesContext';
 import { UserCard } from './user-card';
 import { PathDetails } from './path-details';
 import { PathFeedback } from './path-feedback';
-import { LoadingState, ErrorState, EmptyState } from './ui-states';
+import { ErrorState, EmptyState } from './ui-states';
 import { UserPathsResponse } from './types';
 import { replaceUserPlaceholders } from './user-placeholder-utils';
 import { useIsMobile } from '@enclaveid/ui/hooks/use-mobile';
@@ -35,17 +35,12 @@ export function VerticalSerendipitousPaths({
   initialData?: UserPathsResponse;
   initialError?: string | null;
 }) {
-  const [loading] = useState(initialData.length === 0 && !initialError);
   const [error] = useState<string | null>(initialError);
   const [data, setData] = useState<UserPathsResponse>(initialData);
   const [selectedMatchIndex, setSelectedMatchIndex] = useState(0);
   const [selectedPathId, setSelectedPathId] = useState<string | null>(null);
   const { decrementCount } = useUnviewedMatches();
   const isMobile = useIsMobile();
-
-  if (loading) {
-    return <LoadingState />;
-  }
 
   if (error) {
     return <ErrorState error={error} />;

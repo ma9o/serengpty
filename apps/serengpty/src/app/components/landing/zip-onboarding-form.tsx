@@ -24,7 +24,9 @@ import axios from 'axios';
 
 export function ZipOnboardingForm() {
   const { toast } = useToast();
-  const [user, setUser] = useState<Awaited<ReturnType<typeof getCurrentUser>> | null>(null);
+  const [user, setUser] = useState<Awaited<
+    ReturnType<typeof getCurrentUser>
+  > | null>(null);
 
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -51,7 +53,7 @@ export function ZipOnboardingForm() {
       window.location.href = '/onboarding';
     }
   }, [finished]);
-  
+
   useEffect(() => {
     const fetchUser = async () => {
       const currentUser = await getCurrentUser();
@@ -261,7 +263,7 @@ export function ZipOnboardingForm() {
             You&apos;ve already uploaded your archive
           </p>
           <p className="text-sm text-gray-500 mt-2">
-            Visit your dashboard to explore conversations
+            Visit your dashboard to explore your connections
           </p>
         </div>
       </div>
