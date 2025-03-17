@@ -267,7 +267,9 @@ def conversation_pair_clusters(
 
         # First add current user's embeddings
         all_embeddings.append(
-            conversations_embeddings.select("conversation_id", "embedding")
+            conversations_embeddings.select(
+                "conversation_id", "embedding"
+            ).with_columns(pl.lit(current_user_id).alias("user_id"))
         )
 
         # Then load embeddings for other users in the result
@@ -276,7 +278,9 @@ def conversation_pair_clusters(
                 user_df, _ = load_user_embeddings(uid)
                 if user_df is not None:
                     all_embeddings.append(
-                        user_df.select("conversation_id", "embedding")
+                        user_df.select("conversation_id", "embedding").with_columns(
+                            pl.lit(uid).alias("user_id")
+                        )
                     )
 
         # Combine all embeddings and join with result
