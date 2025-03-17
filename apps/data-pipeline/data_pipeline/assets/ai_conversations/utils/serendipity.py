@@ -274,7 +274,7 @@ def get_out_df_schema() -> Dict:
         "llm_output": pl.Utf8,
         "user1_path_length": pl.Int32,
         "user2_path_length": pl.Int32,
-        "cluster_id": pl.UInt8,
+        "cluster_id": pl.UInt32,
         "match_group_id": pl.UInt32,
         "category": pl.Utf8,
         "common_indices": pl.List(pl.Int64),
