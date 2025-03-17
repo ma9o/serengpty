@@ -17,6 +17,9 @@ from data_pipeline.partitions import user_partitions_def
 async def cluster_balance_scores(
     context: AssetExecutionContext, cluster_categorizations: pl.DataFrame
 ) -> pl.DataFrame:
+    if cluster_categorizations.is_empty():
+        return pl.DataFrame()
+
     current_user_id = context.partition_key
     df = (
         cluster_categorizations.group_by("cluster_id")
