@@ -185,13 +185,15 @@ def cluster_embeddings(
 
     start_time = time.time()
 
+    n_components = min(dimension_reduction_n_components, merged_embeddings.shape[1] - 2)
+
     if dimension_reduction_method == "pca":
         merged_embeddings = PCA(
-            n_components=dimension_reduction_n_components
+            n_components=n_components,
         ).fit_transform(merged_embeddings)
     elif dimension_reduction_method == "umap":
         merged_embeddings = umap.UMAP(
-            n_components=dimension_reduction_n_components,
+            n_components=n_components,
             verbose=True,
         ).fit_transform(merged_embeddings)
 
