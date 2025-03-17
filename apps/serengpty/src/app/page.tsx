@@ -117,7 +117,7 @@ function Hero() {
         alt="Arrow end"
         width={100}
         height={100}
-        className="absolute bottom-[200px] right-[100px] h-[150px] w-[150px] hidden md:block"
+        className="absolute 2xl:right-[25%] lg:right-[10%] md:right-[5%] bottom-[200px] h-[150px] w-[150px] hidden md:block"
       />
     </section>
   );
