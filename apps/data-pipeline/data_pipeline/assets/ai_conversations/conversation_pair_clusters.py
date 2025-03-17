@@ -39,7 +39,7 @@ CONVERSATION_PAIR_SCHEMA = {
     "summary": pl.Utf8,
     "start_date": pl.Utf8,
     "start_time": pl.Utf8,
-    "cluster_id": pl.UInt8,
+    "cluster_id": pl.UInt32,
 }
 
 
