@@ -141,7 +141,11 @@ def hdbscan_clustering(
 
     membership_vectors = hdbscan.all_points_membership_vectors(clusterer)
 
-    return membership_vectors.argmax(axis=1)
+    # all_points_membership_vectors might return a 1-dimensional array if there is only one cluster
+    if membership_vectors.ndim == 1:
+        return membership_vectors
+    else:
+        return membership_vectors.argmax(axis=1)
 
 
 AGGLOMERATIVE_CLUSTERING_CONFIG = {
