@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from io import StringIO
-from typing import Any, Dict, List
+from typing import Any, LiteralString, cast
 
 import pandas as pd
 import polars as pl
@@ -16,14 +16,15 @@ from data_pipeline.constants.environments import (
     DATA_PROVIDERS,
 )
 from data_pipeline.partitions import user_partitions_def
+from data_pipeline.resources import PostgresResource
 
 
-def _process_openai_conversation(data: List[Dict[str, Any]]) -> pd.DataFrame:
+def _process_openai_conversation(data: list[dict[str, Any]]) -> pd.DataFrame:
     """
     Process conversation data from OpenAI format into a structured DataFrame.
 
     Args:
-        data (List[Dict[str, Any]]): List of conversation data in OpenAI format
+        data (list[dict[str, Any]]): List of conversation data in OpenAI format
     Returns:
         pd.DataFrame: Processed conversation data
     """
@@ -42,7 +43,7 @@ def _process_openai_conversation(data: List[Dict[str, Any]]) -> pd.DataFrame:
             message_lookup[msg_id] = msg
 
         # Process all user messages
-        for msg_id, message in mapping.items():
+        for _msg_id, message in mapping.items():
             # Check if message is from user and has required fields
             if (
                 message.get("message")
@@ -120,12 +121,12 @@ def _process_openai_conversation(data: List[Dict[str, Any]]) -> pd.DataFrame:
     return df_conversations
 
 
-def _process_anthropic_conversation(data: List[Dict[str, Any]]) -> pd.DataFrame:
+def _process_anthropic_conversation(data: list[dict[str, Any]]) -> pd.DataFrame:
     """
     Process conversation data from Anthropic format into a structured DataFrame.
 
     Args:
-        data (List[Dict[str, Any]]): List of conversation data in Anthropic format
+        data (list[dict[str, Any]]): List of conversation data in Anthropic format
     Returns:
         pd.DataFrame: Processed conversation data
     """
@@ -178,12 +179,12 @@ def _process_anthropic_conversation(data: List[Dict[str, Any]]) -> pd.DataFrame:
     return df_conversations
 
 
-def _detect_schema_type(data: List[Dict[str, Any]]) -> str:
+def _detect_schema_type(data: list[dict[str, Any]]) -> str:
     """
     Detect the schema type based on the structure of the data.
 
     Args:
-        data (List[Dict[str, Any]]): The JSON data to analyze
+        data (list[dict[str, Any]]): The JSON data to analyze
     Returns:
         str: Either "openai" or "anthropic"
     """
@@ -209,7 +210,7 @@ def _detect_schema_type(data: List[Dict[str, Any]]) -> str:
     io_manager_key="parquet_io_manager",
 )
 def parsed_conversations(
-    context: AssetExecutionContext, config: Config
+    context: AssetExecutionContext, config: Config, postgres: PostgresResource
 ) -> pl.DataFrame:
     """
     Extracts and structures raw conversation data from JSON files.
@@ -276,4 +277,25 @@ def parsed_conversations(
     processed_df.to_csv(csv_file, index=False)
     csv_file.seek(0)
 
-    return pl.from_pandas(pd.read_csv(csv_file))
+    df = pl.from_pandas(pd.read_csv(csv_file))
+
+    # Query to check if any of these IDs already exist in the database
+    conversation_ids = (
+        df.select(pl.col("conversation_id").unique()).to_series().to_list()
+    )
+
+    formatted_ids = ", ".join(f"'{id}'" for id in conversation_ids)
+
+    result = postgres.execute_query(
+        cast(
+            LiteralString,
+            f'SELECT id FROM "Conversation" WHERE id IN ({formatted_ids})',
+        )
+    )
+
+    if result:
+        raise ValueError(
+            f"Found {len(result)} duplicate conversation IDs for user {context.partition_key}"
+        )
+
+    return df
