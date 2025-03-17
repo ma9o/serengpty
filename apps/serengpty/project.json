@@ -48,10 +48,10 @@
     "prisma-resolve": {
       "executor": "@nx-tools/nx-prisma:resolve"
     },
-    "prisma-post-migrate": {
+    "reset-stream-chat": {
       "executor": "@nx-tools/nx-prisma:seed",
       "options": {
-        "script": "apps/serengpty/prisma/postMigrate.ts"
+        "script": "apps/serengpty/prisma/resetStreamChat.ts"
       }
     },
     "prisma-status": {
@@ -69,8 +69,7 @@
         "cwd": "apps/serengpty",
         "commands": [
           "rm -rf prisma/migrations",
-          "yes | nx run serengpty:prisma-migrate",
-          "cd ../.. && nx run serengpty:prisma-post-migrate"
+          "yes | nx run serengpty:prisma-migrate"
         ],
         "parallel": false
       }
