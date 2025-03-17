@@ -42,6 +42,8 @@ class SerendipityOptimizedConfig(RowLimitConfig):
         "practical": 0.2,
     }
 
+    max_llm_calls_global_budget: int = 200
+
 
 def _extract_conversation_summaries(
     df: pl.DataFrame,
@@ -226,6 +228,8 @@ async def _generate_paths(
     llm: BaseLlmResource,
     logger,
     config: SerendipityOptimizedConfig,
+    budget: dict,
+    llm_call_lock: asyncio.Lock,
 ) -> List[Dict]:
     """
     Generate serendipitous paths using LLM sequentially, balancing by category ratios
@@ -338,6 +342,15 @@ async def _generate_paths(
                 # Cluster can't generate more paths; remove it
                 active_clusters.pop(0)
                 continue
+
+            # Safety check before calling LLM
+            async with llm_call_lock:
+                if budget["remaining"] <= 0:
+                    logger.info(
+                        "LLM call budget reached. Aborting further LLM calls for this match group."
+                    )
+                    break
+                budget["remaining"] -= 1
 
             # Generate path (batch size of 1)
             (
@@ -502,6 +515,10 @@ async def serendipity_optimized(
             match_group_data[mg_id] = {}
         match_group_data[mg_id][cid] = data
 
+    # Initialize LLM call budget and lock
+    budget = {"remaining": config.max_llm_calls_global_budget}
+    llm_call_lock = asyncio.Lock()
+
     # Generate paths in parallel using asyncio (one task per match_group_id)
     paths: List[Dict] = []
     tasks = []
@@ -513,6 +530,8 @@ async def serendipity_optimized(
                 gemini_flash,
                 logger,
                 config,
+                budget,
+                llm_call_lock,
             )
         )
         tasks.append((mg_id, task))
