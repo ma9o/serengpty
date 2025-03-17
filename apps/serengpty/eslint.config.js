@@ -1,3 +1,4 @@
+const playwright = require('eslint-plugin-playwright');
 const { FlatCompat } = require('@eslint/eslintrc');
 const js = require('@eslint/js');
 const { fixupConfigRules } = require('@eslint/compat');
@@ -10,6 +11,8 @@ const compat = new FlatCompat({
 });
 
 module.exports = [
+  playwright.configs['flat/recommended'],
+
   ...fixupConfigRules(compat.extends('next')),
 
   ...fixupConfigRules(compat.extends('next/core-web-vitals')),
@@ -18,5 +21,10 @@ module.exports = [
   ...nx.configs['flat/react-typescript'],
   {
     ignores: ['.next/**/*'],
+  },
+  {
+    files: ['**/*.ts', '**/*.js'],
+    // Override or add rules here
+    rules: {},
   },
 ];
