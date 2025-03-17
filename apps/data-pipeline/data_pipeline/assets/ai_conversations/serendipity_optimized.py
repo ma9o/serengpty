@@ -545,6 +545,8 @@ async def serendipity_optimized(
             logger.error(f"Error processing match group {mg_id}: {e}")
             logger.error(f"Error details: {traceback.format_exc()}")
 
+    context.log.info(f"Remaining LLM budget: {budget['remaining']}")
+
     if not paths:
         return pl.DataFrame(schema=get_out_df_schema())
 
