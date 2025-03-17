@@ -1,14 +1,8 @@
 # SerenGPTy
 
-Find ChatGPT and Claude users who think like you.
+Find ChatGPT and Claude users who think like you
 
-## Docs
-
-- [Architecture](docs/architecture.md)
-- [Verification](docs/verification.md)
-- [Monorepo Structure](docs/monorepo-structure.md)
-
-## Getting started
+## Contributing
 
 Docker, Node.js, Python and Poetry are required for local development. The monorepo is managed with `bun` and Nx; to install them and the project dependencies, run:
 
