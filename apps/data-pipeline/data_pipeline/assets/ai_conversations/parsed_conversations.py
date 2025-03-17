@@ -11,6 +11,9 @@ from dagster import (
     asset,
 )
 
+from data_pipeline.assets.ai_conversations.utils.validate_unique_input_checksum import (
+    validate_unique_input_checksum,
+)
 from data_pipeline.constants.environments import (
     API_STORAGE_DIRECTORY,
     DATA_PROVIDERS,
@@ -249,6 +252,8 @@ def parsed_conversations(
 
     # Get the JSON file for the current user
     json_file = user_dir / path_prefix / "latest.json"
+
+    validate_unique_input_checksum(json_file)
 
     # Load the JSON file directly
     with json_file.fs.open(json_file.path) as f:
