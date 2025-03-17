@@ -18,7 +18,7 @@ async def cluster_balance_scores(
     context: AssetExecutionContext, cluster_categorizations: pl.DataFrame
 ) -> pl.DataFrame:
     if cluster_categorizations.is_empty():
-        return pl.DataFrame()
+        return pl.DataFrame(schema={"balance_score": pl.Float64})
 
     current_user_id = context.partition_key
     df = (

@@ -1,3 +1,4 @@
+import time
 from typing import Literal
 
 import numpy as np
@@ -160,10 +161,6 @@ def conversation_pair_clusters(
             schema={"user_id": pl.Utf8, "similarity": pl.Float32}
         )
 
-    logger.info(
-        f"Processing {len(other_user_ids)} users for conversation clusters with user {current_user_id}"
-    )
-
     # Current user data
     current_user_df = conversations_embeddings.with_row_count("row_idx")
     emb1_list = current_user_df["embedding"].to_list()
@@ -176,8 +173,13 @@ def conversation_pair_clusters(
 
     emb1_array = np.array(emb1_list, dtype=np.float32)
 
+    t0 = time.time()
+
     # Find top-K most similar users using the updated function
     top_users = find_top_k_users(emb1_array, other_user_ids, config.top_k_users)
+
+    context.log.info(f"Time taken to find top-K users: {time.time() - t0} seconds")
+    context.log.info(f"Top {config.top_k_users} users: {top_users}")
 
     # Create user similarities DataFrame
     user_similarities_data = [
@@ -281,7 +283,7 @@ def conversation_pair_clusters(
         if all_embeddings:
             combined_embeddings = pl.concat(all_embeddings)
             result_df = result_df.join(
-                combined_embeddings, on="conversation_id", how="left"
+                combined_embeddings, on=["user_id", "conversation_id"], how="left"
             )
 
     return result_df, user_similarities_df

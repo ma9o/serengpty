@@ -162,23 +162,3 @@ def find_top_k_users(
     # Sort the heap results in descending order
     top_k_users = sorted(top_k_heap, key=lambda x: x[0], reverse=True)
     return [(user_id, similarity) for similarity, user_id in top_k_users]
-
-
-if __name__ == "__main__":
-    import time
-
-    from sklearn.preprocessing import normalize
-
-    start_time = time.time()
-    current_user_embeddings = np.random.rand(4096, 100)
-    current_user_embeddings_norm = normalize(current_user_embeddings, axis=1)
-    user_embeddings = {i: np.random.rand(4096, 100) for i in range(100)}
-    user_embeddings_norm = {
-        i: normalize(embeddings, axis=1) for i, embeddings in user_embeddings.items()
-    }
-    print(f"Time taken to create embeddings: {time.time() - start_time:.3f} seconds")
-
-    start_time = time.time()
-    top_k = find_top_k_users(current_user_embeddings_norm, user_embeddings_norm, 10)
-    print("Top 10 similar users:", top_k)
-    print(f"Time taken to find top k users: {time.time() - start_time:.3f} seconds")
