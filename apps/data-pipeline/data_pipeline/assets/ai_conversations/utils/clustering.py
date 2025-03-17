@@ -185,7 +185,8 @@ def cluster_embeddings(
 
     start_time = time.time()
 
-    n_components = min(dimension_reduction_n_components, merged_embeddings.shape[1] - 2)
+    # Ensure n_components is not greater than the number of embeddings
+    n_components = min(dimension_reduction_n_components, merged_embeddings.shape[0] - 2)
 
     if dimension_reduction_method == "pca":
         merged_embeddings = PCA(
