@@ -19,10 +19,12 @@ import { Icon } from '@iconify/react';
 import { validateUsername } from '../../actions/validateUsername';
 import { getUniqueUsername } from '../../actions/getUniqueUsername';
 import { validatePassword } from '../../actions/validatePassword';
+import { getCurrentUser } from '../../actions/getCurrentUser';
 import axios from 'axios';
 
 export function ZipOnboardingForm() {
   const { toast } = useToast();
+  const [user, setUser] = useState<Awaited<ReturnType<typeof getCurrentUser>> | null>(null);
 
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -49,6 +51,14 @@ export function ZipOnboardingForm() {
       window.location.href = '/onboarding';
     }
   }, [finished]);
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+    };
+    fetchUser();
+  }, []);
 
   async function handleFileDrop(files: File[]) {
     const file = files[0];
@@ -234,6 +244,29 @@ export function ZipOnboardingForm() {
     noKeyboard: ready,
     noDrag: ready,
   });
+
+  // If user is already logged in, show a message
+  if (user) {
+    return (
+      <div className="onboarding-form w-full md:w-1/2 flex justify-center px-4 sm:px-0">
+        <Toaster />
+        <div className="w-full max-w-md border-2 border-dashed border-gray-300 p-6 rounded-lg flex flex-col items-center justify-center text-center">
+          <Icon
+            icon="mage:robot-happy"
+            width="32"
+            height="32"
+            className="text-gray-700 mb-4"
+          />
+          <p className="text-lg font-medium text-gray-700">
+            You&apos;ve already uploaded your archive
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Visit your dashboard to explore conversations
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="onboarding-form w-full md:w-1/2 flex justify-center px-4 sm:px-0">
