@@ -6,6 +6,7 @@ import {
   text,
   varchar,
   vector,
+  uuid,
 } from 'drizzle-orm/pg-core';
 
 export const usersTable = pgTable('users', {
@@ -24,7 +25,7 @@ export const usersTable = pgTable('users', {
 });
 
 export const conversationsTable = pgTable('conversations', {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  id: uuid('id').primaryKey().defaultRandom(),
 
   title: varchar({ length: 255 }).notNull(),
   content: text().notNull(),
