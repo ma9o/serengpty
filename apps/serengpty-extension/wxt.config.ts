@@ -11,7 +11,7 @@ export default defineConfig({
     version: '0.0.1',
     manifest_version: 3,
     action: {
-      default_popup: 'src/popup.html',
+      default_popup: 'popup.html',
     },
     permissions: [],
   },
@@ -19,6 +19,7 @@ export default defineConfig({
   entrypointsDir: 'entrypoints',
   outDir: '../../dist/apps/serengpty-extension',
   vite: () => ({
+    root: __dirname,
     cacheDir: '../../node_modules/.vite/apps/serengpty-extension',
     plugins: [react(), nxViteTsPaths(), nxCopyAssetsPlugin(['*.md'])],
     build: {

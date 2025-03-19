@@ -4,7 +4,6 @@ import "wxt/browser";
 declare module "wxt/browser" {
   export type PublicPath =
     | "/"
-    | "/favicon.ico"
     | "/popup.js"
   type HtmlPublicPath = Extract<PublicPath, `${string}.html`>
   export interface WxtRuntime {
