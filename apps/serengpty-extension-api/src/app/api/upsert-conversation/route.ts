@@ -2,7 +2,7 @@ import { db } from '../../services/db';
 import { eq, not } from 'drizzle-orm';
 import { usersTable, conversationsTable } from '../../services/db/schema';
 import { generateEmbedding } from '../../services/embeddings/generateEmbedding';
-import { cosineDistance } from 'drizzle-orm';
+import { cosineDistance, desc } from 'drizzle-orm';
 
 const topKConversations = 5;
 
@@ -19,41 +19,47 @@ export async function POST(request: Request) {
 
   const embedding = await generateEmbedding(content);
 
-  await db
-    .insert(conversationsTable)
-    .values({
-      id: conversationId,
-      title,
-      content,
-      userId: user.id,
-      embedding,
-    })
-    .onConflictDoUpdate({
-      target: [conversationsTable.id],
-      set: {
+  const mostSimilarConversations = await db.transaction(async (tx) => {
+    // Insert or update the conversation
+    await tx
+      .insert(conversationsTable)
+      .values({
+        id: conversationId,
         title,
         content,
+        userId: user.id,
         embedding,
-        updatedAt: new Date(),
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: [conversationsTable.id],
+        set: {
+          title,
+          content,
+          embedding,
+          updatedAt: new Date(),
+        },
+      });
 
-  const mostSimilarConversations = await db
-    .select({
-      conversationId: conversationsTable.id,
-      title: conversationsTable.title,
-      createdAt: conversationsTable.createdAt,
-      userId: usersTable.id,
-      userName: usersTable.name,
-    })
-    .from(conversationsTable)
-    .innerJoin(usersTable, eq(conversationsTable.userId, usersTable.id))
-    .where(
-      // Exclude the conversation we just inserted
-      not(eq(conversationsTable.id, conversationId))
-    )
-    .orderBy(cosineDistance(conversationsTable.embedding, embedding))
-    .limit(topKConversations);
+    const distance = cosineDistance(conversationsTable.embedding, embedding);
+
+    return await tx
+      .select({
+        id: conversationsTable.id,
+        title: conversationsTable.title,
+        createdAt: conversationsTable.createdAt,
+        distance,
+        userId: usersTable.id,
+        userName: usersTable.name,
+      })
+      .from(conversationsTable)
+      .innerJoin(usersTable, eq(conversationsTable.userId, usersTable.id))
+      .where(
+        // Exclude the conversation we just inserted
+        not(eq(conversationsTable.id, conversationId))
+      )
+      .orderBy(desc(distance))
+      .limit(topKConversations);
+  });
 
   return new Response(JSON.stringify(mostSimilarConversations), {
     status: 201,
