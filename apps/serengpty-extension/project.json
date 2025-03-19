@@ -5,5 +5,31 @@
   "projectType": "application",
   "tags": [],
   "// targets": "to see all targets run: nx show project serengpty-extension --web",
-  "targets": {}
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "wxt dev",
+        "cwd": "apps/serengpty-extension"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "wxt build",
+        "cwd": "apps/serengpty-extension"
+      }
+    },
+    "preview": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "wxt preview",
+        "cwd": "apps/serengpty-extension"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"]
+    }
+  }
 }
