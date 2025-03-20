@@ -7,10 +7,10 @@ import { cosineDistance, desc } from 'drizzle-orm';
 const topKConversations = 5;
 
 export async function POST(request: Request) {
-  const { apiToken, title, content, conversationId } = await request.json();
+  const { userId, title, content, conversationId } = await request.json();
 
   const user = await db.query.usersTable.findFirst({
-    where: eq(usersTable.apiToken, apiToken),
+    where: eq(usersTable.id, userId),
   });
 
   if (!user) {

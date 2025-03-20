@@ -16,7 +16,7 @@ export default defineConfig({
     name: 'Serengpty Extension',
     description: 'Serengpty Extension',
     version: '1.0.0',
-    permissions: ['activeTab', 'storage'],
+    permissions: ['activeTab', 'storage', 'sidePanel'],
   },
   vite: () => ({
     root: __dirname,

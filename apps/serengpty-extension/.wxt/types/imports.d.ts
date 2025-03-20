@@ -2,6 +2,8 @@
 export {}
 declare global {
   const ContentScriptContext: typeof import('wxt/client')['ContentScriptContext']
+  const ExtensionLoginForm: typeof import('/Users/ma9o/Desktop/serengpty/apps/serengpty-extension/src/components/extension-login-form')['ExtensionLoginForm']
+  const ExtensionSignupForm: typeof import('/Users/ma9o/Desktop/serengpty/apps/serengpty-extension/src/components/extension-signup-form')['ExtensionSignupForm']
   const InvalidMatchPattern: typeof import('wxt/sandbox')['InvalidMatchPattern']
   const MatchPattern: typeof import('wxt/sandbox')['MatchPattern']
   const MigrationError: typeof import('wxt/storage')['MigrationError']

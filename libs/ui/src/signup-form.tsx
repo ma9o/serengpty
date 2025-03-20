@@ -82,13 +82,14 @@ export function SignupForm({
           setError(null);
           setProcessing(true);
 
-          // Perform client-side validation if validate functions are provided
           let isValid = true;
 
           if (validateUsername && username) {
             const usernameValidation = await validateUsername(username);
             if (!usernameValidation.isValid) {
-              setUsernameError(usernameValidation.message || 'Invalid username');
+              setUsernameError(
+                usernameValidation.message || 'Invalid username'
+              );
               isValid = false;
             }
           }
@@ -96,7 +97,9 @@ export function SignupForm({
           if (validatePassword && password) {
             const passwordValidation = await validatePassword(password);
             if (!passwordValidation.isValid) {
-              setPasswordError(passwordValidation.message || 'Invalid password');
+              setPasswordError(
+                passwordValidation.message || 'Invalid password'
+              );
               isValid = false;
             }
           }
@@ -129,9 +132,9 @@ export function SignupForm({
               </div>
               <span className="sr-only">SerenGPTy</span>
             </div>
-            <h1 className="text-xl font-bold">Create an Account</h1>
+            <h1 className="text-xl font-bold">Welcome to SerenGPTy</h1>
             <div className="text-center text-sm">
-              Join the community of AI users
+              Find ChatGPT and Claude users who think like you
             </div>
           </div>
           <div className="flex flex-col gap-4">
@@ -148,8 +151,9 @@ export function SignupForm({
                   required
                   autoComplete="username"
                 />
-                {username && validateUsername && (
-                  !usernameError ? (
+                {username &&
+                  validateUsername &&
+                  (!usernameError ? (
                     <CheckCircle
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-green-500"
                       size={16}
@@ -159,8 +163,7 @@ export function SignupForm({
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-red-500"
                       size={16}
                     />
-                  )
-                )}
+                  ))}
               </div>
               {usernameError && (
                 <p className="text-sm text-red-500">{usernameError}</p>
@@ -185,17 +188,19 @@ export function SignupForm({
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="p-1 text-gray-500 hover:text-gray-700 focus:outline-none"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={
+                      showPassword ? 'Hide password' : 'Show password'
+                    }
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
-                  {password && validatePassword && (
-                    !passwordError ? (
+                  {password &&
+                    validatePassword &&
+                    (!passwordError ? (
                       <CheckCircle className="text-green-500" size={16} />
                     ) : (
                       <XCircle className="text-red-500" size={16} />
-                    )
-                  )}
+                    ))}
                 </div>
               </div>
               {passwordError && (
@@ -203,10 +208,14 @@ export function SignupForm({
               )}
             </div>
             {error && <div className="text-sm text-red-500">{error}</div>}
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full"
-              disabled={processing || (validateUsername && !!usernameError) || (validatePassword && !!passwordError)}
+              disabled={
+                processing ||
+                (validateUsername && !!usernameError) ||
+                (validatePassword && !!passwordError)
+              }
             >
               {processing ? 'Creating account...' : 'Sign up'}
             </Button>
@@ -214,8 +223,9 @@ export function SignupForm({
         </div>
       </form>
       <div className="text-balance text-center text-xs text-muted-foreground [&_button]:underline [&_button]:underline-offset-4 hover:[&_button]:text-primary">
-        By clicking continue, you agree to our <button type="button">Terms of Service</button>{' '}
-        and <button type="button">Privacy Policy</button>.
+        By clicking continue, you agree to our{' '}
+        <button type="button">Terms of Service</button> and{' '}
+        <button type="button">Privacy Policy</button>.
       </div>
     </div>
   );

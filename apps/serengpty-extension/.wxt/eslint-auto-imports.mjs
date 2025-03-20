@@ -1,5 +1,7 @@
 const globals = {
   "ContentScriptContext": true,
+  "ExtensionLoginForm": true,
+  "ExtensionSignupForm": true,
   "InvalidMatchPattern": true,
   "MatchPattern": true,
   "MigrationError": true,
