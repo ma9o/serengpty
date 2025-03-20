@@ -11,6 +11,7 @@ export default defineConfig({
   entrypointsDir: 'entrypoints',
   extensionApi: 'chrome',
   modules: ['@wxt-dev/module-react'],
+
   manifest: {
     name: 'Serengpty Extension',
     description: 'Serengpty Extension',
