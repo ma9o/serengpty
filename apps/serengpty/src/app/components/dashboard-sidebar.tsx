@@ -9,7 +9,7 @@ import {
 import { useChatContext } from './chat/ChatProvider';
 import { LogoutButton } from './logout-button';
 import { useUnviewedMatches } from './serendipitous-paths/UnviewedMatchesContext';
-
+import Link from 'next/link';
 export function DashboardSidebar() {
   const { unreadCount } = useChatContext();
   const { unviewedCount } = useUnviewedMatches();
@@ -47,6 +47,10 @@ export function DashboardSidebar() {
   };
 
   return (
-    <AppSidebar LogoutButton={<LogoutButton />} sidebarItems={sidebarItems} />
+    <AppSidebar
+      LogoutButton={<LogoutButton />}
+      sidebarItems={sidebarItems}
+      NavigationComponent={Link}
+    />
   );
 }

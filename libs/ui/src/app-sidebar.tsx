@@ -1,5 +1,4 @@
 import * as React from 'react';
-import Link from 'next/link';
 
 import {
   Sidebar,
@@ -20,6 +19,7 @@ import { Logo } from './logo';
 export function AppSidebar({
   LogoutButton,
   sidebarItems,
+  NavigationComponent,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   LogoutButton: React.ReactNode;
@@ -35,6 +35,7 @@ export function AppSidebar({
       }[];
     }[];
   };
+  NavigationComponent: any;
 }) {
   return (
     <Sidebar {...props}>
@@ -53,10 +54,10 @@ export function AppSidebar({
                 {item.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={item.isActive}>
-                      <Link href={item.url}>
+                      <NavigationComponent href={item.url}>
                         {item.icon}
                         {item.title}
-                      </Link>
+                      </NavigationComponent>
                     </SidebarMenuButton>
                     {item.badge && (
                       <SidebarMenuBadge className="bg-primary text-primary-foreground">

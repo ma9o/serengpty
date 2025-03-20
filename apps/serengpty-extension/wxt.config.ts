@@ -15,10 +15,11 @@ export default defineConfig({
     name: 'Serengpty Extension',
     description: 'Serengpty Extension',
     version: '1.0.0',
-    permissions: ['activeTab'],
+    permissions: ['activeTab', 'storage'],
   },
   vite: () => ({
     root: __dirname,
+
     cacheDir: '../../node_modules/.vite/apps/serengpty-extension',
     plugins: [nxViteTsPaths(), nxCopyAssetsPlugin(['*.md'])],
 
