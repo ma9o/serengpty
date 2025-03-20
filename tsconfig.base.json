@@ -18,7 +18,7 @@
     "baseUrl": ".",
     "paths": {
       "@enclaveid/ui": ["libs/ui/src/index.ts"],
-      "@enclaveid/ui-utils": ["libs/ui-utils/src"],
+      "@enclaveid/ui-utils": ["libs/ui-utils/src/index.ts"],
       "@enclaveid/ui-utils/*": ["libs/ui-utils/src/*"],
       "@enclaveid/ui/*": ["libs/ui/src/*"]
     }

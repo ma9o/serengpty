@@ -21,14 +21,14 @@ export default defineConfig({
     root: __dirname,
     cacheDir: '../../node_modules/.vite/apps/serengpty-extension',
     plugins: [nxViteTsPaths(), nxCopyAssetsPlugin(['*.md'])],
+
     // Uncomment this if you are using workers.
     // worker: {
     //  plugins: [ nxViteTsPaths() ],
     // },
-    resolve: {
-      alias: {
-        '@enclaveid/ui': '../../libs/ui/src',
-        '@enclaveid/ui-utils': '../../libs/ui-utils/src',
+    server: {
+      fs: {
+        cachedChecks: false,
       },
     },
 
