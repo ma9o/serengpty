@@ -1,1 +1,1 @@
-import '../.wxt/wxt.d';
+/// <reference path="../.wxt/wxt.d.ts" />

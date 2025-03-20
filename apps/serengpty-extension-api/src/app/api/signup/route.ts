@@ -1,71 +1,37 @@
 import { NextResponse } from 'next/server';
 import { db } from '../../services/db';
 import { usersTable } from '../../services/db/schema';
+import { generateUniqueUsername } from '@enclaveid/shared-utils';
 import { eq } from 'drizzle-orm';
-import { randomBytes } from 'crypto';
-import { hash } from 'bcrypt';
-import { validateUsername, validatePassword } from '@enclaveid/shared-utils';
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
-    const { name, password } = await request.json();
+    let name = await generateUniqueUsername();
 
-    if (!name || !password) {
-      return NextResponse.json(
-        { error: 'Name and password are required' },
-        { status: 400 }
-      );
+    // Make sure the name is not already taken
+    let existingUser = await db.query.usersTable.findFirst({
+      where: eq(usersTable.name, name),
+    });
+
+    while (existingUser) {
+      name = await generateUniqueUsername();
+      existingUser = await db.query.usersTable.findFirst({
+        where: eq(usersTable.name, name),
+      });
     }
-
-    // Validate username format
-    const usernameValidation = validateUsername(name);
-    if (!usernameValidation.isValid) {
-      return NextResponse.json(
-        { error: usernameValidation.message || 'Invalid username format' },
-        { status: 400 }
-      );
-    }
-
-    // Validate password complexity
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.isValid) {
-      return NextResponse.json(
-        { error: passwordValidation.message || 'Invalid password format' },
-        { status: 400 }
-      );
-    }
-
-    // Check if user already exists
-    const existingUsers = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.name, name));
-
-    if (existingUsers.length > 0) {
-      return NextResponse.json(
-        { error: 'User already exists' },
-        { status: 409 }
-      );
-    }
-
-    // Hash password
-    const passwordHash = await hash(password, 10);
-
-    // Generate API token
-    const apiToken = randomBytes(32).toString('hex');
 
     // Create new user
-    await db
+    const results = await db
       .insert(usersTable)
       .values({
         name,
-        passwordHash,
-        apiToken,
         updatedAt: new Date(),
       })
-      .returning({ id: usersTable.id });
+      .returning({ id: usersTable.id, name: usersTable.name });
 
-    return NextResponse.json({ apiToken });
+    const user = results[0];
+
+    return NextResponse.json({ userId: user.id, name: user.name });
   } catch (error) {
     console.error('Signup error:', error);
     return NextResponse.json(

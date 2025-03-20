@@ -6,6 +6,15 @@
   "tags": [],
   "// targets": "to see all targets run: nx show project serengpty-extension-api --web",
   "targets": {
+    "dev": {
+      "options": {
+        "cwd": "apps/serengpty-extension-api",
+        "command": "next dev --port 3001"
+      },
+      "executor": "nx:run-commands",
+      "configurations": {},
+      "parallelism": true
+    },
     "migrate": {
       "executor": "nx:run-commands",
       "options": {

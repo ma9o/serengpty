@@ -2,8 +2,6 @@
 export {}
 declare global {
   const ContentScriptContext: typeof import('wxt/client')['ContentScriptContext']
-  const ExtensionLoginForm: typeof import('/Users/ma9o/Desktop/serengpty/apps/serengpty-extension/src/components/extension-login-form')['ExtensionLoginForm']
-  const ExtensionSignupForm: typeof import('/Users/ma9o/Desktop/serengpty/apps/serengpty-extension/src/components/extension-signup-form')['ExtensionSignupForm']
   const InvalidMatchPattern: typeof import('wxt/sandbox')['InvalidMatchPattern']
   const MatchPattern: typeof import('wxt/sandbox')['MatchPattern']
   const MigrationError: typeof import('wxt/storage')['MigrationError']
@@ -18,7 +16,13 @@ declare global {
   const defineUnlistedScript: typeof import('wxt/sandbox')['defineUnlistedScript']
   const defineWxtPlugin: typeof import('wxt/sandbox')['defineWxtPlugin']
   const fakeBrowser: typeof import('wxt/testing')['fakeBrowser']
+  const getCurrentUser: typeof import('/Users/ma9o/Desktop/serengpty/apps/serengpty-extension/src/utils/user')['getCurrentUser']
+  const getUserData: typeof import('/Users/ma9o/Desktop/serengpty/apps/serengpty-extension/src/utils/storage')['getUserData']
+  const getUserId: typeof import('/Users/ma9o/Desktop/serengpty/apps/serengpty-extension/src/utils/user')['getUserId']
+  const getUsername: typeof import('/Users/ma9o/Desktop/serengpty/apps/serengpty-extension/src/utils/user')['getUsername']
+  const hasUserData: typeof import('/Users/ma9o/Desktop/serengpty/apps/serengpty-extension/src/utils/storage')['hasUserData']
   const injectScript: typeof import('wxt/client')['injectScript']
+  const saveUserData: typeof import('/Users/ma9o/Desktop/serengpty/apps/serengpty-extension/src/utils/storage')['saveUserData']
   const storage: typeof import('wxt/storage')['storage']
   const useAppConfig: typeof import('wxt/client')['useAppConfig']
   const useCallback: typeof import('react')['useCallback']
@@ -28,4 +32,10 @@ declare global {
   const useReducer: typeof import('react')['useReducer']
   const useRef: typeof import('react')['useRef']
   const useState: typeof import('react')['useState']
+}
+// for type re-export
+declare global {
+  // @ts-ignore
+  export type { UserData } from '/Users/ma9o/Desktop/serengpty/apps/serengpty-extension/src/utils/storage'
+  import('/Users/ma9o/Desktop/serengpty/apps/serengpty-extension/src/utils/storage')
 }

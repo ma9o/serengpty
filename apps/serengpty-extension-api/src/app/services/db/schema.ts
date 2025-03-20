@@ -1,6 +1,5 @@
-import { relations, sql } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
 import {
-  integer,
   pgTable,
   timestamp,
   text,
@@ -11,15 +10,8 @@ import {
 } from 'drizzle-orm/pg-core';
 
 export const usersTable = pgTable('users', {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
-
+  id: uuid('id').primaryKey().defaultRandom(),
   name: varchar({ length: 255 }).notNull(),
-  passwordHash: varchar({ length: 255 }).notNull(),
-
-  apiToken: varchar({ length: 255 }).notNull().unique(),
-  apiTokenExpiresAt: timestamp()
-    .notNull()
-    .default(sql`NOW() + INTERVAL '30 days'`),
 
   createdAt: timestamp().notNull().defaultNow(),
   updatedAt: timestamp().notNull().defaultNow(),
@@ -34,7 +26,7 @@ export const conversationsTable = pgTable(
     content: text().notNull(),
     embedding: halfvec({ dimensions: 3072 }).notNull(),
 
-    userId: integer().references(() => usersTable.id),
+    userId: uuid().references(() => usersTable.id),
 
     createdAt: timestamp().notNull().defaultNow(),
     updatedAt: timestamp().notNull().defaultNow(),
