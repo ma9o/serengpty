@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { LoginForm } from '@enclaveid/ui/login-form';
 
 export function ExtensionLoginForm() {
