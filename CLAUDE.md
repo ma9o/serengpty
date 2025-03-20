@@ -9,6 +9,8 @@
 ## Important Notes
 - Do not run build or dev commands (they can lock ports and resources)
 - Always use lint to check code quality instead of building or running the app
+- WXT extension has global `storage` API available - do NOT implement custom storage helpers
+- The WXT framework's type refs (.wxt/wxt.d.ts) cause lint errors that can be ignored
 
 ## Python Commands
 - Install dependencies: `poetry install`

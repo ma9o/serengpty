@@ -4,71 +4,98 @@ interface UserCredentials {
 }
 
 // Update this to your actual API base URL
-const API_BASE_URL = 'https://api.serengpty.com';
+const API_BASE_URL =
+  process.env.NODE_ENV === 'development'
+    ? 'http://localhost:3000'
+    : 'https://api';
 
 export const authService = {
   async login(credentials: UserCredentials): Promise<string> {
-    const response = await fetch(`${API_BASE_URL}/api/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+        credentials: 'include',
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.error || 'Login failed');
+      if (!response.ok) {
+        const errorMessage = data.error || 'Login failed';
+        console.error('Login error:', errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      if (!data.apiToken) {
+        throw new Error('No API token received');
+      }
+
+      // Store authentication data
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30); // 30 days expiry
+
+      await storage.setItems([
+        { key: 'local:apiToken', value: data.apiToken },
+        { key: 'local:tokenExpiry', value: expiryDate.toISOString() },
+        { key: 'local:username', value: credentials.name },
+      ]);
+
+      return data.apiToken;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('An unexpected error occurred during login');
     }
-
-    if (!data.apiToken) {
-      throw new Error('No API token received');
-    }
-
-    // Store authentication data
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 30); // 30 days expiry
-
-    await storage.setItems([
-      { key: 'local:apiToken', value: data.apiToken },
-      { key: 'local:tokenExpiry', value: expiryDate.toISOString() },
-      { key: 'local:username', value: credentials.name },
-    ]);
-
-    return data.apiToken;
   },
 
   async signup(credentials: UserCredentials): Promise<string> {
-    const response = await fetch(`${API_BASE_URL}/api/signup`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+        credentials: 'include',
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.error || 'Signup failed');
+      if (!response.ok) {
+        // Extract specific error messages if available
+        const errorMessage =
+          data.error ||
+          (data.issues && data.issues[0]?.message) ||
+          'Signup failed';
+        console.error('Signup error:', errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      if (!data.apiToken) {
+        throw new Error('No API token received');
+      }
+
+      // Store authentication data
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30); // 30 days expiry
+
+      await storage.setItems([
+        { key: 'local:apiToken', value: data.apiToken },
+        { key: 'local:tokenExpiry', value: expiryDate.toISOString() },
+        { key: 'local:username', value: credentials.name },
+      ]);
+
+      return data.apiToken;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('An unexpected error occurred during signup');
     }
-
-    if (!data.apiToken) {
-      throw new Error('No API token received');
-    }
-
-    // Store authentication data
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 30); // 30 days expiry
-
-    await storage.setItems([
-      { key: 'local:apiToken', value: data.apiToken },
-      { key: 'local:tokenExpiry', value: expiryDate.toISOString() },
-      { key: 'local:username', value: credentials.name },
-    ]);
-
-    return data.apiToken;
   },
 
   async logout(): Promise<void> {
