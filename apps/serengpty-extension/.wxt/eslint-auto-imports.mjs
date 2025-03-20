@@ -16,7 +16,14 @@ const globals = {
   "fakeBrowser": true,
   "injectScript": true,
   "storage": true,
-  "useAppConfig": true
+  "useAppConfig": true,
+  "useCallback": true,
+  "useContext": true,
+  "useEffect": true,
+  "useMemo": true,
+  "useReducer": true,
+  "useRef": true,
+  "useState": true
 }
 
 export default {

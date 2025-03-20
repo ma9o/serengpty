@@ -66,7 +66,6 @@ apps/data-pipeline/data/*
 vite.config.*.timestamp*
 
 # Browser extension build and dev files
-apps/serengpty-extension/b/
-apps/serengpty-extension/dev/
-apps/serengpty-extension/.output
-apps/serengpty-extension/.wxt
+apps/serengpty-extension/b/*
+apps/serengpty-extension/dev/*
+apps/serengpty-extension/.output/*
