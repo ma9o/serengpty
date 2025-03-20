@@ -2,7 +2,7 @@
 
 import { getPrismaClient } from '../services/db/prisma';
 import { getCurrentUser } from './getCurrentUser';
-import { usernameSchema } from '../schemas/validation';
+import { validateUsername as validateUsernameUtil } from '@enclaveid/shared-utils';
 
 /**
  * Validates if a username is available
@@ -21,12 +21,9 @@ export async function validateUsername(username: string): Promise<{
 
   try {
     // Validate the username format
-    const validationResult = usernameSchema.safeParse(username);
-    if (!validationResult.success) {
-      return {
-        isValid: false,
-        message: validationResult.error.errors[0].message,
-      };
+    const validationResult = validateUsernameUtil(username);
+    if (!validationResult.isValid) {
+      return validationResult;
     }
 
     // Check if username already exists in the database

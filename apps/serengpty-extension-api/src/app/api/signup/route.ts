@@ -4,6 +4,7 @@ import { usersTable } from '../../services/db/schema';
 import { eq } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { hash } from 'bcrypt';
+import { validateUsername, validatePassword } from '@enclaveid/shared-utils';
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +13,24 @@ export async function POST(request: Request) {
     if (!name || !password) {
       return NextResponse.json(
         { error: 'Name and password are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate username format
+    const usernameValidation = validateUsername(name);
+    if (!usernameValidation.isValid) {
+      return NextResponse.json(
+        { error: usernameValidation.message || 'Invalid username format' },
+        { status: 400 }
+      );
+    }
+
+    // Validate password complexity
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return NextResponse.json(
+        { error: passwordValidation.message || 'Invalid password format' },
         { status: 400 }
       );
     }

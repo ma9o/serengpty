@@ -1,6 +1,6 @@
 'use server';
 
-import { passwordSchema } from '../schemas/validation';
+import { validatePassword as validatePasswordUtil } from '@enclaveid/shared-utils';
 
 /**
  * Validates if a password meets complexity requirements
@@ -11,12 +11,9 @@ export async function validatePassword(password: string): Promise<{
 }> {
   try {
     // Validate the password format
-    const validationResult = passwordSchema.safeParse(password);
-    if (!validationResult.success) {
-      return {
-        isValid: false,
-        message: validationResult.error.errors[0].message,
-      };
+    const validationResult = validatePasswordUtil(password);
+    if (!validationResult.isValid) {
+      return validationResult;
     }
 
     return { isValid: true };
