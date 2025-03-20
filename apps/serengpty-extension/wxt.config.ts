@@ -25,6 +25,13 @@ export default defineConfig({
     // worker: {
     //  plugins: [ nxViteTsPaths() ],
     // },
+    resolve: {
+      alias: {
+        '@enclaveid/ui': '../../libs/ui/src',
+        '@enclaveid/ui-utils': '../../libs/ui-utils/src',
+      },
+    },
+
     build: {
       outDir: '../../dist/apps/serengpty-extension',
       emptyOutDir: true,

@@ -1,25 +1,24 @@
-import { useState } from 'react';
-import './App.css';
-
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
-    <>
-      <div></div>
-      <h1>WXT + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+    <div className="w-80 p-4">
+      <h1 className="text-xl font-bold mb-4">Serengpty</h1>
+
+      <div className="p-2 rounded-lg">
+        <div className="flex">
+          <div className="flex-1 p-2 text-center border rounded-l-lg">
+            Discover
+          </div>
+          <div className="flex-1 p-2 text-center border rounded-r-lg">Chat</div>
+        </div>
+
+        <div className="mt-4">
+          <div className="p-2">
+            <h2 className="text-lg font-medium mb-2">Discover Content</h2>
+            <p>Discover new conversations and connections here.</p>
+          </div>
+        </div>
       </div>
-      <p className="read-the-docs">
-        Click on the WXT and React logos to learn more
-      </p>
-    </>
+    </div>
   );
 }
 
