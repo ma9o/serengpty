@@ -2,7 +2,6 @@
 import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import { defineConfig } from 'wxt';
-import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   srcDir: 'src',
@@ -21,7 +20,7 @@ export default defineConfig({
   vite: () => ({
     root: __dirname,
     cacheDir: '../../node_modules/.vite/apps/serengpty-extension',
-    plugins: [react(), nxViteTsPaths(), nxCopyAssetsPlugin(['*.md'])],
+    plugins: [nxViteTsPaths(), nxCopyAssetsPlugin(['*.md'])],
     // Uncomment this if you are using workers.
     // worker: {
     //  plugins: [ nxViteTsPaths() ],
