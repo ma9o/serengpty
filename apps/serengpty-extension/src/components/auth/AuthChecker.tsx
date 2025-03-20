@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AuthForm } from './AuthForm';
+import { authService } from '../../services/auth';
 
 interface AuthCheckerProps {
   children: React.ReactNode;
@@ -12,9 +13,6 @@ export function AuthChecker({ children }: AuthCheckerProps) {
   async function checkAuthentication() {
     try {
       setIsLoading(true);
-
-      // Import auth service
-      const { authService } = await import('../../services/auth');
 
       // Check if user is authenticated
       const isValid = await authService.isAuthenticated();
@@ -43,9 +41,9 @@ export function AuthChecker({ children }: AuthCheckerProps) {
     );
   }
 
-  return isAuthenticated ? 
+  return isAuthenticated ? (
     children
-   : (
+  ) : (
     <AuthForm onAuthenticated={handleAuthenticated} />
   );
 }

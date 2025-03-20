@@ -15,14 +15,12 @@ import {
 } from '@enclaveid/ui';
 import { Input } from '@enclaveid/ui';
 import { useState } from 'react';
+import { usernameSchema, passwordSchema } from '@enclaveid/shared-utils';
+import { authService } from '../../services/auth';
 
 const formSchema = z.object({
-  name: z.string().min(3, {
-    message: 'Username must be at least 3 characters',
-  }),
-  password: z.string().min(8, {
-    message: 'Password must be at least 8 characters',
-  }),
+  name: usernameSchema,
+  password: passwordSchema,
 });
 
 interface AuthFormProps {
@@ -49,9 +47,6 @@ export function AuthForm({ onAuthenticated, className }: AuthFormProps) {
       setIsLoading(true);
       setError(null);
 
-      // Import dynamically to avoid circular dependencies
-      const { authService } = await import('../../services/auth');
-
       if (isSignup) {
         await authService.signup(values);
       } else {
@@ -60,7 +55,8 @@ export function AuthForm({ onAuthenticated, className }: AuthFormProps) {
 
       onAuthenticated();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Authentication failed';
+      const message =
+        err instanceof Error ? err.message : 'Authentication failed';
       setError(message);
     } finally {
       setIsLoading(false);
@@ -125,15 +121,23 @@ export function AuthForm({ onAuthenticated, className }: AuthFormProps) {
                             required
                             {...field}
                             disabled={isLoading}
-                            autoComplete={isSignup ? 'new-password' : 'current-password'}
+                            autoComplete={
+                              isSignup ? 'new-password' : 'current-password'
+                            }
                           />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
                             className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 focus:outline-none"
-                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                            aria-label={
+                              showPassword ? 'Hide password' : 'Show password'
+                            }
                           >
-                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            {showPassword ? (
+                              <EyeOff size={16} />
+                            ) : (
+                              <Eye size={16} />
+                            )}
                           </button>
                         </div>
                       </FormControl>
@@ -180,10 +184,17 @@ export function AuthForm({ onAuthenticated, className }: AuthFormProps) {
           </p>
         )}
       </div>
-      
+
       <div className="text-balance text-center text-xs text-muted-foreground [&_button]:underline [&_button]:underline-offset-4 hover:[&_button]:text-primary">
-        By clicking continue, you agree to our <button type="button" className="font-normal">Terms of Service</button>{' '}
-        and <button type="button" className="font-normal">Privacy Policy</button>.
+        By clicking continue, you agree to our{' '}
+        <button type="button" className="font-normal">
+          Terms of Service
+        </button>{' '}
+        and{' '}
+        <button type="button" className="font-normal">
+          Privacy Policy
+        </button>
+        .
       </div>
     </div>
   );
