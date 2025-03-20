@@ -17,6 +17,7 @@
     "extendedDiagnostics": true,
     "baseUrl": ".",
     "paths": {
+      "@enclaveid/backend": ["libs/backend/src/index.ts"],
       "@enclaveid/ui": ["libs/ui/src/index.ts"],
       "@enclaveid/ui-utils": ["libs/ui-utils/src/index.ts"],
       "@enclaveid/ui-utils/*": ["libs/ui-utils/src/*"],
