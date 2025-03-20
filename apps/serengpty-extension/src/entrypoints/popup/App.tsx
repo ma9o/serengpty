@@ -22,8 +22,7 @@ function MainContent() {
 
 function App() {
   return (
-    <div className="w-80 p-4">
-      <h1 className="text-xl font-bold mb-4">Serengpty</h1>
+    <div className="w-80 h-full flex flex-col">
       <AuthChecker>
         <MainContent />
       </AuthChecker>

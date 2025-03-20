@@ -43,9 +43,9 @@ export function AuthChecker({ children }: AuthCheckerProps) {
     );
   }
 
-  return isAuthenticated ? (
-    <>{children}</>
-  ) : (
+  return isAuthenticated ? 
+    children
+   : (
     <AuthForm onAuthenticated={handleAuthenticated} />
   );
 }
