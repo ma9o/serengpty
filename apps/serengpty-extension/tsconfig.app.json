@@ -2,12 +2,19 @@
   "extends": ["./tsconfig.json"],
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
+    "moduleResolution": "bundler",
     "types": [
       "node",
       "@nx/react/typings/cssmodule.d.ts",
       "@nx/react/typings/image.d.ts",
       "vite/client"
-    ]
+    ],
+    "paths": {
+      "@": ["./src"],
+      "@/*": ["./src/*"],
+      "~": ["./src"],
+      "~/*": ["./src/*"]
+    }
   },
   "exclude": [
     "src/**/*.spec.ts",
@@ -17,7 +24,16 @@
     "src/**/*.spec.js",
     "src/**/*.test.js",
     "src/**/*.spec.jsx",
-    "src/**/*.test.jsx"
+    "src/**/*.test.jsx",
+    "dist",
+    ".wxt/node_modules"
   ],
-  "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"]
+  "include": [
+    "src/**/*.js", 
+    "src/**/*.jsx", 
+    "src/**/*.ts", 
+    "src/**/*.tsx",
+    ".wxt/wxt.d.ts",
+    ".wxt/types/*.d.ts"
+  ]
 }

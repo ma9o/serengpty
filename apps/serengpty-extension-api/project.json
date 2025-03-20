@@ -18,7 +18,14 @@
     "migrate": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "drizzle-kit push",
+        "command": "drizzle-kit migrate --config=drizzle.config.ts",
+        "cwd": "apps/serengpty-extension-api"
+      }
+    },
+    "generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "drizzle-kit generate --config=drizzle.config.ts",
         "cwd": "apps/serengpty-extension-api"
       }
     }

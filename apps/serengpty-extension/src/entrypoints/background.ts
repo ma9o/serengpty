@@ -2,13 +2,11 @@ import { signUp } from '../services/api';
 import { saveUserData, hasUserData } from '../utils/storage';
 
 export default defineBackground(() => {
-  console.log('Extension initialized', { id: browser.runtime.id });
-
   // Handle installation
-  browser.runtime.onInstalled.addListener(async (details: any) => {
-    console.log('Extension installed', details);
-
+  browser.runtime.onInstalled.addListener(async (details) => {
     if (details.reason === 'install') {
+      console.log('Extension installed', details);
+
       try {
         // Check if user data is already stored
         const hasExistingData = await hasUserData();

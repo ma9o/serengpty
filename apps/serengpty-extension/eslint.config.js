@@ -9,4 +9,7 @@ module.exports = [
     // Override or add rules here
     rules: {},
   },
+  {
+    ignores: ['.wxt/**/*', 'src/global.d.ts', 'src/debug-types.ts']
+  }
 ];
