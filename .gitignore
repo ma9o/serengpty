@@ -69,3 +69,6 @@ vite.config.*.timestamp*
 apps/serengpty-extension/b/*
 apps/serengpty-extension/dev/*
 apps/serengpty-extension/.output/*
+
+# Chrome data
+apps/serengpty-extension/.wxt

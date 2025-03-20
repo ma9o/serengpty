@@ -1,5 +1,5 @@
 import { signUp } from '../services/api';
-import { saveUserData, hasUserData } from '../utils/storage';
+import { userDataStorage } from '../utils/storage';
 
 export default defineBackground(() => {
   // Handle installation
@@ -9,14 +9,14 @@ export default defineBackground(() => {
 
       try {
         // Check if user data is already stored
-        const hasExistingData = await hasUserData();
+        const hasExistingData = await userDataStorage.getValue();
 
         if (!hasExistingData) {
           // Perform signup and get user credentials
           const userData = await signUp();
 
           // Save user data to extension storage
-          await saveUserData({
+          await userDataStorage.setValue({
             userId: userData.userId,
             name: userData.name,
           });
