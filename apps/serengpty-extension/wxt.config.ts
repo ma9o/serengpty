@@ -11,6 +11,9 @@ export default defineConfig({
   entrypointsDir: 'entrypoints',
   extensionApi: 'chrome',
   modules: ['@wxt-dev/module-react'],
+  runner: {
+    chromiumArgs: ['--user-data-dir=./.wxt/chrome-data'],
+  },
 
   manifest: {
     name: 'Serengpty Extension',
