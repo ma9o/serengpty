@@ -4,6 +4,7 @@ import { useCurrentConversation } from '../../hooks/useCurrentConversation';
 import { isActivatedConversation } from '../../utils/storage';
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { Dashboard } from '../../components/dashboard/Dashboard';
 
 function App() {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
@@ -29,9 +30,7 @@ function App() {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center">
       {isLoading ? (
-        <div className="w-full h-full flex flex-col items-center justify-center">
-          <Loader2 className="w-10 h-10 animate-spin" />
-        </div>
+        <Loader2 className="w-10 h-10 animate-spin" />
       ) : !isActivated ? (
         <Confirmation
           conversationId={conversationId!}
@@ -41,9 +40,7 @@ function App() {
           }}
         />
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center">
-          {/* TODO: Add a success message */}
-        </div>
+        <Dashboard />
       )}
     </div>
   );
