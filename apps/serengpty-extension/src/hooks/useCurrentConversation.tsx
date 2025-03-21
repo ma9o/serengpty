@@ -5,29 +5,25 @@ export function useCurrentConversation() {
   const [conversationTitle, setConversationTitle] = useState<string | null>(
     null
   );
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleConversationChanged = useCallback(() => {
-    setIsLoading(true);
+    // setTimeout(() => {
+    browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+      if (tabs.length === 0) {
+        return;
+      }
 
-    setTimeout(() => {
-      browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-        if (tabs.length === 0) {
-          return;
-        }
+      const conversationId = tabs[0].url?.split('/').pop();
+      //const conversationTitle = tabs[0].title;
 
-        const conversationId = tabs[0].url?.split('/').pop();
-        const conversationTitle = tabs[0].title; // TODO: necessary?
+      if (!conversationId) {
+        return;
+      }
 
-        if (!conversationId || !conversationTitle) {
-          return;
-        }
-
-        setConversationId(conversationId);
-        setConversationTitle(conversationTitle);
-        setIsLoading(false);
-      });
-    }, 1000); // Wait for the title to load
+      setConversationId(conversationId);
+    });
+    // }, 1000); // Wait for the title to load
   }, []);
 
   useEffect(() => {

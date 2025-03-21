@@ -206,9 +206,7 @@ export const ChatProvider = ({
 
   return (
     <ChatContext.Provider value={contextValue}>
-      <div className={`h-full ${className || ''}`}>
-        <Chat client={client}>{children}</Chat>
-      </div>
+      <Chat client={client}>{children}</Chat>
     </ChatContext.Provider>
   );
 };

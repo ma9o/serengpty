@@ -11,17 +11,15 @@ import { addActivatedConversation } from '../utils/storage';
 export function Confirmation({
   onConfirm,
   conversationId,
-  conversationTitle,
 }: {
   onConfirm?: () => void;
   conversationId: string;
-  conversationTitle: string;
 }) {
   return (
     <Card className="m-8">
       <CardHeader>
         <CardTitle className="text-xl font-bold">
-          Match on "{conversationTitle}" ?
+          Match on "{conversationId}" ?
         </CardTitle>
       </CardHeader>
       <CardContent>

@@ -11,21 +11,18 @@ function App() {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const {
-    conversationId,
-    conversationTitle,
-    isLoading: isLoadingConversation,
-  } = useCurrentConversation();
+  const { conversationId, isLoading: isLoadingConversation } =
+    useCurrentConversation();
 
   useHandleCloseSidepanel();
 
   useEffect(() => {
-    if (conversationId && conversationTitle) {
+    if (conversationId) {
       isActivatedConversation(conversationId).then((isActivated) => {
         setIsActivated(isActivated);
       });
     }
-  }, [conversationId, conversationTitle]);
+  }, [conversationId]);
 
   // Handle unread count changes from ChatProvider
   const handleUnreadCountChange = (count: number) => {
@@ -40,20 +37,19 @@ function App() {
   ) : !isActivated ? (
     <Confirmation
       conversationId={conversationId!}
-      conversationTitle={conversationTitle!}
       onConfirm={() => {
         setIsActivated(true);
       }}
     />
   ) : (
-    <ChatWrapper onUnreadCountChange={handleUnreadCountChange}>
-      <Dashboard unreadCount={unreadCount} />
-    </ChatWrapper>
+    <Dashboard unreadCount={unreadCount} />
   );
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center">
-      {content}
+      <ChatWrapper onUnreadCountChange={handleUnreadCountChange}>
+        {content}
+      </ChatWrapper>
     </div>
   );
 }
