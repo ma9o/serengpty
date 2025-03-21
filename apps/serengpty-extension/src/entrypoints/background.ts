@@ -1,6 +1,6 @@
 import { handleAuthentication } from '../utils/authentication';
 import { handleOpenSidepanel } from '../utils/sidepanel';
-import { updateConversationState } from '../utils/storage';
+import { updateConversationState, isActivatedConversation } from '../utils/storage';
 
 export default defineBackground(() => {
   handleOpenSidepanel();
@@ -12,10 +12,14 @@ export default defineBackground(() => {
     if (message.action === 'conversationContent' && message.conversationId) {
       console.log(`Background: Received content update for ${message.conversationId}`);
       
-      // Update the conversation state for future reference
-      await updateConversationState(message.conversationId, { 
-        contentHash: message.contentHash
-      });
+      // Only update state if conversation is already activated
+      const isActivated = await isActivatedConversation(message.conversationId);
+      if (isActivated) {
+        // Update the conversation state for future reference
+        await updateConversationState(message.conversationId, { 
+          contentHash: message.contentHash
+        });
+      }
       
       // Forward the content update to the sidepanel
       // This triggers UI update with new content
@@ -31,10 +35,14 @@ export default defineBackground(() => {
     if (message.action === 'conversationInitialContent' && message.conversationId) {
       console.log(`Background: Received INITIAL content for ${message.conversationId}`);
       
-      // Update the conversation state for future reference
-      await updateConversationState(message.conversationId, { 
-        contentHash: message.contentHash
-      });
+      // Only update state if conversation is already activated
+      const isActivated = await isActivatedConversation(message.conversationId);
+      if (isActivated) {
+        // Update the conversation state for future reference
+        await updateConversationState(message.conversationId, { 
+          contentHash: message.contentHash
+        });
+      }
       
       // Forward the content update to the sidepanel
       // This triggers UI update with new content

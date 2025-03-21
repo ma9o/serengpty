@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useConversation } from '../../providers';
 
 export function SimilarUsersTab() {
@@ -11,12 +11,40 @@ export function SimilarUsersTab() {
     contentHash,
     processConversation 
   } = useConversation();
+  
+  // Keep track of the current conversation ID to avoid duplicate processing
+  const processingConversationId = useRef<string | null>(null);
+  const processingContentHash = useRef<string | null>(null);
 
-  // Process conversation when component mounts or conversation changes
+  // Process conversation automatically with enhanced deduplication
   useEffect(() => {
-    if (conversationId && messages.length > 0 && !isProcessed) {
-      processConversation();
+    // Basic conditions to skip processing
+    if (!conversationId || messages.length === 0 || isProcessed) {
+      return;
     }
+    
+    // Skip if we're already processing this exact conversation and content
+    const isSameConversation = processingConversationId.current === conversationId;
+    const isSameContent = processingContentHash.current === contentHash;
+    
+    if (isSameConversation && isSameContent) {
+      console.log('Skipping duplicate processing for:', conversationId);
+      return;
+    }
+    
+    // Introduce a small delay to debounce multiple rapid updates
+    // This helps prevent duplicate processing when multiple state changes occur in quick succession
+    const processingTimeout = setTimeout(() => {
+      // Update tracking references
+      processingConversationId.current = conversationId;
+      processingContentHash.current = contentHash;
+      
+      console.log('Processing conversation:', conversationId, 'contentHash:', contentHash);
+      processConversation();
+    }, 100); // 100ms debounce delay
+    
+    // Clean up timeout if effect reruns before it fires
+    return () => clearTimeout(processingTimeout);
   }, [conversationId, messages, contentHash, isProcessed, processConversation]);
 
   if (isLoading) {
@@ -43,6 +71,7 @@ export function SimilarUsersTab() {
     );
   }
 
+  // No similar users found
   if (similarUsers.length === 0) {
     return (
       <div className="p-4 text-center">

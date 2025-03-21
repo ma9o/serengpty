@@ -14,7 +14,13 @@ export function useProcessConversation(
   setIsProcessed: React.Dispatch<React.SetStateAction<boolean>>,
   setSimilarUsers: React.Dispatch<React.SetStateAction<any[]>>
 ) {
+  // Create a ref to track if we're already processing
+  const isProcessingRef = { current: false };
+
   return useCallback(async () => {
+    // Log when processing is initiated with detailed info
+    console.log('Processing initiated for:', conversationId, 'Hash:', contentHash);
+    
     // Basic content validity checks
     if (!conversationId) {
       console.log('No conversation ID, skipping processing');
@@ -32,6 +38,15 @@ export function useProcessConversation(
       console.log('Last message is not from assistant, skipping processing');
       return;
     }
+    
+    // Guard against concurrent processing
+    if (isProcessingRef.current) {
+      console.log('Already processing a conversation, skipping');
+      return;
+    }
+    
+    // Mark as processing
+    isProcessingRef.current = true;
     
     try {
       setIsLoading(true);
@@ -125,6 +140,9 @@ export function useProcessConversation(
       await updateConversationState(conversationId, { status: 'idle' });
     } finally {
       setIsLoading(false);
+      // Reset processing flag
+      isProcessingRef.current = false;
+      console.log('Processing completed for:', conversationId);
     }
   }, [conversationId, messages, contentHash, setContentHash, setIsLoading, setIsProcessed, setSimilarUsers]);
 }
