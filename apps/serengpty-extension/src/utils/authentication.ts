@@ -1,4 +1,5 @@
 import { signUp } from '../services/api';
+import { userDataStorage } from './storage';
 
 export function handleAuthentication() {
   browser.runtime.onInstalled.addListener(async (details) => {

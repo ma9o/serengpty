@@ -3,6 +3,7 @@ import { handleCloseSidepanel } from '../utils/sidepanel';
 
 export function useHandleCloseSidepanel() {
   useEffect(() => {
-    handleCloseSidepanel();
+    const cleanup = handleCloseSidepanel();
+    return cleanup;
   }, []);
 }

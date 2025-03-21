@@ -7,11 +7,9 @@ import { Dashboard } from '../../components/dashboard/Dashboard';
 import { ChatWrapper } from '../../components/ChatWrapper';
 import { Confirmation } from '../../components/Confirmation';
 
-// Inner component that uses the conversation context
-function AppContent() {
+// Inner component that contains the UI content without ChatWrapper
+function AppContentInner({ unreadCount }: { unreadCount: number }) {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
-
   const { conversationId } = useConversation();
 
   useHandleCloseSidepanel();
@@ -29,45 +27,49 @@ function AppContent() {
     }
   }, [conversationId]);
 
+  const isLoading = isActivated === null;
+
+  // The content to render based on activation state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-10 h-10 animate-spin" /> Looking for ChatGPT
+        conversations...
+      </div>
+    );
+  }
+  
+  if (!isActivated) {
+    return (
+      <Confirmation
+        conversationId={conversationId!}
+        onConfirm={() => {
+          setIsActivated(true);
+        }}
+      />
+    );
+  }
+  
+  return <Dashboard unreadCount={unreadCount} />;
+}
+
+// Main app component that wraps everything in providers
+function App() {
+  const [unreadCount, setUnreadCount] = useState(0);
+  
   // Handle unread count changes from ChatProvider
   const handleUnreadCountChange = (count: number) => {
     setUnreadCount(count);
   };
 
-  const isLoading = isActivated === null;
-
-  // The content to render based on activation state
-  const content = isLoading ? (
-    <div className="flex items-center justify-center h-full">
-      <Loader2 className="w-10 h-10 animate-spin" /> Looking for ChatGPT
-      conversations...
-    </div>
-  ) : !isActivated ? (
-    <Confirmation
-      conversationId={conversationId!}
-      onConfirm={() => {
-        setIsActivated(true);
-      }}
-    />
-  ) : (
-    <Dashboard unreadCount={unreadCount} />
-  );
-
   return (
     <div className="w-full h-full flex flex-col items-center justify-center">
-      <ChatWrapper onUnreadCountChange={handleUnreadCountChange}>
-        {content}
-      </ChatWrapper>
+      <ConversationProvider>
+        <ChatWrapper onUnreadCountChange={handleUnreadCountChange}>
+          <AppContentInner unreadCount={unreadCount} />
+        </ChatWrapper>
+      </ConversationProvider>
     </div>
-  );
-}
-
-// Main app component that wraps everything in providers
-function App() {
-  return (
-    <ConversationProvider>
-      <AppContent />
-    </ConversationProvider>
   );
 }
 

@@ -3,7 +3,8 @@ import { handleOpenSidepanel } from '../utils/sidepanel';
 import { updateConversationState, isActivatedConversation } from '../utils/storage';
 
 export default defineBackground(() => {
-  handleOpenSidepanel();
+  // Store cleanup functions to handle them properly
+  const cleanupOpenSidepanel = handleOpenSidepanel();
   handleAuthentication();
 
   // Listen for conversation changes and navigation

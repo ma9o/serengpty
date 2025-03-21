@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState, useCallback } from 'react';
 import { ChatProvider } from '@enclaveid/ui-utils';
 import { ChatNotificationEvent } from '@enclaveid/shared-utils';
 import { getChatToken } from '../services/api';
@@ -10,8 +10,14 @@ interface ChatWrapperProps {
   onUnreadCountChange?: (count: number) => void;
 }
 
-export function ChatWrapper({ children, onUnreadCountChange }: ChatWrapperProps) {
-  const [userData, setUserData] = useState<{ userId: string; name: string } | null>(null);
+export function ChatWrapper({
+  children,
+  onUnreadCountChange,
+}: ChatWrapperProps) {
+  const [userData, setUserData] = useState<{
+    userId: string;
+    name: string;
+  } | null>(null);
   const [chatToken, setChatToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,27 +30,27 @@ export function ChatWrapper({ children, onUnreadCountChange }: ChatWrapperProps)
     async function initialize() {
       try {
         setLoading(true);
-        
+
         // Get user data from storage
         const storedUserData = await userDataStorage.getValue();
-        
+
         if (!storedUserData) {
           setError('User not found');
           setLoading(false);
           return;
         }
-        
+
         setUserData(storedUserData);
-        
+
         // Get chat token for the user
         const tokenResult = await getChatToken(storedUserData.userId);
-        
+
         if (tokenResult.error || !tokenResult.token) {
           setError(tokenResult.error || 'Failed to get chat token');
           setLoading(false);
           return;
         }
-        
+
         setChatToken(tokenResult.token);
       } catch (err) {
         setError('Failed to initialize chat');
@@ -53,23 +59,20 @@ export function ChatWrapper({ children, onUnreadCountChange }: ChatWrapperProps)
         setLoading(false);
       }
     }
-    
+
     initialize();
   }, []);
 
   // Handle new message notification
-  const handleNewMessage = (event: ChatNotificationEvent) => {
-    // Only show notification if the message is from someone else
-    if (userData && event.senderId && event.senderId !== userData.userId) {
-      showChatNotification(event);
-    }
-  };
-
-  // Handle error state for the chat
-  if (error && !loading) {
-    console.warn('Chat initialization error:', error);
-    // We still render children, but chat functionality won't be available
-  }
+  const handleNewMessage = useCallback(
+    (event: ChatNotificationEvent) => {
+      // Only show notification if the message is from someone else
+      if (userData && event.senderId && event.senderId !== userData.userId) {
+        showChatNotification(event);
+      }
+    },
+    [userData]
+  );
 
   // If still loading or missing required data, just render children without chat functionality
   if (loading || !userData || !chatToken || !streamChatApiKey) {
