@@ -5,23 +5,29 @@ export function useCurrentConversation() {
   const [conversationTitle, setConversationTitle] = useState<string | null>(
     null
   );
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleConversationChanged = useCallback(() => {
-    browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-      if (tabs.length === 0) {
-        return;
-      }
+    setIsLoading(true);
 
-      const conversationId = tabs[0].url?.split('/').pop();
-      const conversationTitle = tabs[0].title;
+    setTimeout(() => {
+      browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+        if (tabs.length === 0) {
+          return;
+        }
 
-      if (!conversationId || !conversationTitle) {
-        return;
-      }
+        const conversationId = tabs[0].url?.split('/').pop();
+        const conversationTitle = tabs[0].title; // TODO: necessary?
 
-      setConversationId(conversationId);
-      setConversationTitle(conversationTitle);
-    });
+        if (!conversationId || !conversationTitle) {
+          return;
+        }
+
+        setConversationId(conversationId);
+        setConversationTitle(conversationTitle);
+        setIsLoading(false);
+      });
+    }, 1000); // Wait for the title to load
   }, []);
 
   useEffect(() => {
@@ -36,5 +42,5 @@ export function useCurrentConversation() {
     });
   }, [handleConversationChanged]);
 
-  return { conversationId, conversationTitle };
+  return { conversationId, conversationTitle, isLoading };
 }

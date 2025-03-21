@@ -8,7 +8,11 @@ import { Loader2 } from 'lucide-react';
 function App() {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
 
-  const { conversationId, conversationTitle } = useCurrentConversation();
+  const {
+    conversationId,
+    conversationTitle,
+    isLoading: isLoadingConversation,
+  } = useCurrentConversation();
 
   useHandleCloseSidepanel();
 
@@ -20,9 +24,11 @@ function App() {
     }
   }, [conversationId, conversationTitle]);
 
+  const isLoading = isLoadingConversation || isActivated === null;
+
   return (
     <div className="w-full h-full flex flex-col items-center justify-center">
-      {isActivated === null ? (
+      {isLoading ? (
         <div className="w-full h-full flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 animate-spin" />
         </div>
@@ -30,6 +36,9 @@ function App() {
         <Confirmation
           conversationId={conversationId!}
           conversationTitle={conversationTitle!}
+          onConfirm={() => {
+            setIsActivated(true);
+          }}
         />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center">
