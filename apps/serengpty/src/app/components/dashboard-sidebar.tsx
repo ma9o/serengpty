@@ -6,7 +6,7 @@ import {
   ChatBubbleIcon,
   MixerHorizontalIcon,
 } from '@radix-ui/react-icons';
-import { useChatContext } from './chat/ChatProvider';
+import { useChatContext } from '@enclaveid/ui-utils';
 import { LogoutButton } from './logout-button';
 import { useUnviewedMatches } from './serendipitous-paths/UnviewedMatchesContext';
 import Link from 'next/link';

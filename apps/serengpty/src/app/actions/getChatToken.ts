@@ -1,13 +1,10 @@
 'use server';
 
-import { StreamChat } from 'stream-chat';
+import { StreamChatService, ChatTokenResult } from '@enclaveid/shared-utils';
 import { getCurrentUser } from './getCurrentUser';
 import { env } from '../constants/environment';
 
-export async function getChatToken(): Promise<{
-  token: string | null;
-  error: string | null;
-}> {
+export async function getChatToken(): Promise<ChatTokenResult> {
   try {
     // Get current user from session
     const user = await getCurrentUser();
@@ -21,18 +18,19 @@ export async function getChatToken(): Promise<{
       return { token: null, error: 'Chat service not configured' };
     }
 
-    // Initialize Chat client
-    const serverClient = StreamChat.getInstance(
-      env.NEXT_PUBLIC_STREAM_CHAT_API_KEY,
-      env.STREAM_CHAT_API_SECRET
-    );
+    // Use the shared service to generate token
+    const streamChatService = new StreamChatService({
+      apiKey: env.NEXT_PUBLIC_STREAM_CHAT_API_KEY,
+      apiSecret: env.STREAM_CHAT_API_SECRET
+    });
 
     // Generate token with server-side client
-    const token = serverClient.createToken(user.id);
-
-    return { token: token, error: null };
+    return streamChatService.generateToken(user.id);
   } catch (error) {
     console.error('Error generating chat token:', error);
-    return { token: null, error: 'Failed to generate chat token' };
+    return { 
+      token: null, 
+      error: error instanceof Error ? error.message : 'Failed to generate chat token'
+    };
   }
 }

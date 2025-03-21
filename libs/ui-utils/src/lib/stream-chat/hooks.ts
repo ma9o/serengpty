@@ -1,8 +1,4 @@
-/**
- * Stream Chat Hooks
- * 
- * Custom React hooks for working with Stream Chat functionality.
- */
+'use client';
 import { useCallback, useState } from 'react';
 import { useChatContext } from './context';
 
@@ -12,7 +8,7 @@ import { useChatContext } from './context';
  */
 export const useActiveChannel = () => {
   const { activeChannelId, setActiveChannelId, client } = useChatContext();
-  
+
   /**
    * Create or join a direct message channel with another user
    * @param otherUserId ID of the user to chat with
@@ -21,7 +17,9 @@ export const useActiveChannel = () => {
   const createDirectChannel = useCallback(
     async (otherUserId: string): Promise<string | null> => {
       if (!client || !client.userID) {
-        throw new Error('Chat client not initialized or user not authenticated');
+        throw new Error(
+          'Chat client not initialized or user not authenticated'
+        );
       }
 
       try {
@@ -37,7 +35,7 @@ export const useActiveChannel = () => {
           setActiveChannelId(channel.id);
           return channel.id;
         }
-        
+
         return null;
       } catch (error) {
         console.error('Error creating direct message channel:', error);
@@ -60,7 +58,7 @@ export const useActiveChannel = () => {
  */
 export const useInitialChatText = () => {
   const { initialChatText, setInitialChatText } = useChatContext();
-  
+
   return {
     initialChatText,
     setInitialChatText,
@@ -74,7 +72,7 @@ export const useInitialChatText = () => {
 export const useChatNotifications = () => {
   const { unreadCount, client } = useChatContext();
   const [isChannelActive, setIsChannelActive] = useState<boolean>(false);
-  
+
   /**
    * Mark all messages in a channel as read
    * @param channelId ID of the channel to mark as read
@@ -82,7 +80,7 @@ export const useChatNotifications = () => {
   const markChannelRead = useCallback(
     async (channelId: string) => {
       if (!client) return;
-      
+
       try {
         const channel = client.channel('messaging', channelId);
         await channel.markRead();
@@ -92,7 +90,7 @@ export const useChatNotifications = () => {
     },
     [client]
   );
-  
+
   /**
    * Set whether a channel is currently being viewed by the user
    * @param active Whether the channel is active/visible
@@ -100,7 +98,7 @@ export const useChatNotifications = () => {
   const setChannelActive = useCallback((active: boolean) => {
     setIsChannelActive(active);
   }, []);
-  
+
   return {
     unreadCount,
     isChannelActive,

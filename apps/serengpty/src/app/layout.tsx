@@ -2,7 +2,6 @@ import { GoogleAnalytics } from '@next/third-parties/google';
 import { Analytics } from '@vercel/analytics/react';
 
 import '@enclaveid/ui-utils/global.css';
-import './styles/stream-chat-custom.css';
 
 import type { Metadata } from 'next';
 

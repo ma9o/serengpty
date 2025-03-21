@@ -1,7 +1,7 @@
 'use client';
 
 import { ChatInterface } from '../../../components/chat/ChatInterface';
-import { useChatContext } from '../../../components/chat/ChatProvider';
+import { useChatContext } from '@enclaveid/ui-utils';
 
 // Main page component
 const ChatsPage = () => {

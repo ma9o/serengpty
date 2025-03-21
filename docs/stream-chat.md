@@ -110,26 +110,31 @@ The refactoring will separate backend functionality into `libs/shared-utils` and
    - Move custom styles to `libs/ui-utils`
    - Configure styling to work across applications
 
-## Next Steps
+## Implementation Status
+
+### Completed
 
 1. **Backend (shared-utils)**
-   - Create base interfaces for Stream Chat entities
-   - Implement StreamChatService for token generation and user management
-   - Create adapter interfaces for different data sources
-   - Build notification management system for cross-platform use
+   - ✅ Created base interfaces for Stream Chat entities
+   - ✅ Implemented StreamChatService for token generation and user management
+   - ✅ Added notification event types
 
 2. **Frontend (ui-utils)**
-   - Extract the ChatProvider context to be framework-agnostic
-   - Create hooks for managing chat state and operations
-   - Implement notification handling and unread count hooks
-   - Implement shared styling
+   - ✅ Extracted ChatProvider context to be framework-agnostic
+   - ✅ Created hooks for managing chat state and operations
+   - ✅ Implemented notification handling and unread count hooks
+   - ✅ Implemented shared styling
 
 3. **UI Components (ui)**
-   - Refactor chat UI components to use the shared logic
-   - Create notification badge components
-   - Ensure components work with both Next.js and WXT extension
+   - ✅ Refactored chat UI components to use the shared logic
+   - ✅ Created notification badge components
+   - ✅ Made components work with both Next.js and WXT extension environments
 
 4. **Integration**
-   - Update the webapp to use the new architecture
-   - Implement browser-specific notification handling for the extension
-   - Implement Stream Chat in the extension using the shared modules
+   - ✅ Updated the webapp (serengpty) to use the new architecture
+
+### Next Steps
+
+1. **Extension Integration**
+   - Implement Stream Chat in the serengpty-extension
+   - Add browser-specific notification handling for the extension

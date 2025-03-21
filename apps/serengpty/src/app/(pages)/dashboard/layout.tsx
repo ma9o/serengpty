@@ -6,11 +6,11 @@ import {
 } from '@enclaveid/ui/sidebar';
 import { DashboardBreadcrumb } from '../../components/dashboard-breadcrumb';
 import { UnviewedMatchesProvider } from '../../components/serendipitous-paths/UnviewedMatchesContext';
-import { ChatProvider } from '../../components/chat/ChatProvider';
 import { DashboardSidebar } from '../../components/dashboard-sidebar';
 
 import { getChatToken } from '../../actions/getChatToken';
 import { getCurrentUser } from '../../actions/getCurrentUser';
+import { NextChatProvider } from '../../components/chat/NextChatProvider';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,13 +41,9 @@ export default async function Layout({
   return (
     <div className="h-full overflow-hidden">
       <UnviewedMatchesProvider>
-        <ChatProvider
-          userId={user?.id}
-          userName={user?.name}
-          userToken={streamChatToken.token}
-        >
+        <NextChatProvider user={user} userToken={streamChatToken.token!}>
           <DashboardLayout>{children}</DashboardLayout>
-        </ChatProvider>
+        </NextChatProvider>
       </UnviewedMatchesProvider>
     </div>
   );

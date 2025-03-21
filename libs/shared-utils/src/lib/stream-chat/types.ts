@@ -42,7 +42,7 @@ export interface CreateChannelParams {
 }
 
 /**
- * Notification event data
+ * Chat notification event data that can be used by the UI layer
  */
 export interface ChatNotificationEvent {
   totalUnreadCount?: number;
@@ -50,12 +50,4 @@ export interface ChatNotificationEvent {
   messageText?: string;
   senderId?: string;
   senderName?: string;
-}
-
-/**
- * Stream Chat notification handling interface
- */
-export interface NotificationHandler {
-  handleUnreadCount(count: number): void;
-  handleNewMessage(event: ChatNotificationEvent): void;
 }

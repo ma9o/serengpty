@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Stream Chat Context Provider
  *

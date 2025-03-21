@@ -36,7 +36,9 @@ function CustomPrismaAdapter(p: PrismaClient): Adapter {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: env.DATABASE_URL ? CustomPrismaAdapter(getPrismaClient()!) : undefined,
+  adapter: env.DATABASE_URL
+    ? CustomPrismaAdapter(getPrismaClient()!)
+    : undefined,
   session: {
     strategy: 'jwt',
   },
