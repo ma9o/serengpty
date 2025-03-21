@@ -4,7 +4,7 @@ import { ContentButton } from '../components/ContentButton';
  * Mounts a round button before the selected div using XPath for element selection.
  * The function targets a specific element in the DOM hierarchy under composer-background.
  */
-export function mountButton(conversationId: string): void {
+export function mountButton(): void {
   const composerBackground = document.getElementById('composer-background');
 
   if (!composerBackground) {
@@ -33,5 +33,5 @@ export function mountButton(conversationId: string): void {
   targetElement.parentNode?.insertBefore(reactContainer, targetElement);
 
   const root = createRoot(reactContainer);
-  root.render(<ContentButton conversationId={conversationId} />);
+  root.render(<ContentButton />);
 }

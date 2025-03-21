@@ -11,7 +11,12 @@ export default defineContentScript({
         const conversationId = newUrl.toString().split('/').pop();
 
         if (conversationId) {
-          mountButton(conversationId);
+          await browser.runtime.sendMessage({
+            action: 'conversationChanged',
+            conversationId,
+          });
+
+          mountButton();
         }
       }
     });

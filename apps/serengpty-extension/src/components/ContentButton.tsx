@@ -1,9 +1,11 @@
 import { Button } from '@enclaveid/ui/button';
 
-export function ContentButton({ conversationId }: { conversationId: string }) {
-  const openSidepanel = useCallback(() => {
-    browser.runtime.sendMessage({ action: 'openSidepanel' });
-  }, [conversationId]);
+export function ContentButton() {
+  const openSidepanel = () => {
+    browser.runtime.sendMessage({
+      action: 'openSidepanel',
+    });
+  };
 
   return (
     <Button variant="outline" onClick={openSidepanel}>
