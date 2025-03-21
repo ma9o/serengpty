@@ -43,3 +43,10 @@
 - Monorepo Structure: `docs/monorepo-structure.md`
 - Verification: `docs/verification.md`
 - Stream Chat Implementation: `docs/stream-chat.md`
+
+## Implementation Planning
+- For any significant architectural change, first create a descriptive implementation plan
+- Add plans to `docs/implementation-plans/` with a descriptive filename
+- Plans should include high-level structure and approach without too much code
+- Focus on component relationships, data flow, and state management
+- Include any API changes, new types/interfaces, and potential future enhancements
