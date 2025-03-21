@@ -1,0 +1,30 @@
+/* Stream Chat Custom Styles */
+
+/* Hide the username in chat messages */
+.str-chat__message-simple-name {
+  display: none !important;
+}
+
+/* Custom avatar styles */
+.str-chat__avatar-with-status {
+  position: relative;
+}
+
+/* Notification badge styles */
+.chat-notification-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background-color: #f56565;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 10;
+}
