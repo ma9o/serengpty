@@ -8,13 +8,7 @@
       "@nx/react/typings/cssmodule.d.ts",
       "@nx/react/typings/image.d.ts",
       "vite/client"
-    ],
-    "paths": {
-      "@": ["./src"],
-      "@/*": ["./src/*"],
-      "~": ["./src"],
-      "~/*": ["./src/*"]
-    }
+    ]
   },
   "exclude": [
     "src/**/*.spec.ts",
@@ -29,9 +23,9 @@
     ".wxt/node_modules"
   ],
   "include": [
-    "src/**/*.js", 
-    "src/**/*.jsx", 
-    "src/**/*.ts", 
+    "src/**/*.js",
+    "src/**/*.jsx",
+    "src/**/*.ts",
     "src/**/*.tsx",
     ".wxt/wxt.d.ts",
     ".wxt/types/*.d.ts"

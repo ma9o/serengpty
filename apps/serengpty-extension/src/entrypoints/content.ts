@@ -5,11 +5,14 @@ const watchPattern = new MatchPattern('*://chatgpt.com/c/*');
 export default defineContentScript({
   matches: ['*://chatgpt.com/*'],
   main(ctx) {
-    ctx.addEventListener(window, 'wxt:locationchange', ({ newUrl }) => {
+    // Handle SPA navigation
+    ctx.addEventListener(window, 'wxt:locationchange', async ({ newUrl }) => {
       if (watchPattern.includes(newUrl)) {
-        console.log('Conversation:', newUrl.toString().split('/').pop());
+        const conversationId = newUrl.toString().split('/').pop();
 
-        mountButton();
+        if (conversationId) {
+          mountButton(conversationId);
+        }
       }
     });
   },
