@@ -1,152 +1,135 @@
-# Stream Chat Implementation
+# Stream Chat Architecture
 
-This document details how [Stream Chat](https://getstream.io/chat/) is implemented in the Serengpty application, covering architecture, authentication, UI components, and integration patterns.
+This document outlines how Stream Chat is implemented in the Serengpty project. The goal is to centralize Stream Chat functionality in the `libs/shared-utils` directory, making it agnostic of Prisma and Next.js, to facilitate reuse across applications, particularly in the Serengpty extension.
 
-## Architecture Overview
-
-The Stream Chat implementation follows a clean architecture with:
-
-1. **Client-side Components**: React components that handle UI rendering and user interactions
-2. **Server-side Functions**: Next.js server actions for secure authentication and token generation
-3. **Context Providers**: React context for state management across components
-4. **Service Layer**: Singleton pattern for client initialization and management
-
-## Configuration and Environment Setup
-
-### Required Environment Variables
-
-- `NEXT_PUBLIC_STREAM_CHAT_API_KEY`: Public API key for client-side initialization
-- `STREAM_CHAT_API_SECRET`: Secret key for server-side token generation (never exposed to client)
-
-### Client Initialization
-
-Stream Chat client uses a singleton pattern implemented in `services/streamChat.ts`:
-
-```typescript
-// Singleton pattern ensures only one instance of the Stream Chat client exists
-export const getStreamChatClient = () => {
-  if (!instance) {
-    instance = StreamChat.getInstance(process.env.NEXT_PUBLIC_STREAM_CHAT_API_KEY!);
-  }
-  return instance;
-};
-```
-
-## Authentication Flow
-
-1. **User Registration**:
-   - New users are automatically registered with Stream Chat during signup
-   - User ID in Stream Chat matches the application's user ID for consistency
-
-2. **Token Generation**:
-   - Secure token generation happens server-side in `actions/getChatToken.ts`
-   - Uses Next.js server actions for secure execution with access to environment variables
-   - Includes fallback to development tokens for testing environments
-
-3. **Authentication Context**:
-   - `StreamChatUserContext.tsx` provides authentication state to components
-   - Manages user ID and token availability throughout the application
-
-## Component Structure
+## Current Implementation
 
 ### Core Components
 
-1. **StreamChatUserContext** (`components/chat/StreamChatUserContext.tsx`):
-   - Manages authentication state for Stream Chat
-   - Provides user ID and token to child components
-   - Handles loading and error states
+1. **ChatProvider** - `/apps/serengpty/src/app/components/chat/ChatProvider.tsx`
+   - Creates and manages the Stream Chat client
+   - Provides a context with chat state and functions
+   - Handles authentication with user token
+   - Tracks unread messages count and notifications
+   - Manages active channel and initial chat text
 
-2. **ChatProvider** (`components/chat/ChatProvider.tsx`):
-   - Wraps Stream Chat's provider component
-   - Initializes the client with user credentials
-   - Sets up theme and custom styling
+2. **ChatInterface** - `/apps/serengpty/src/app/components/chat/ChatInterface.tsx`
+   - Renders the Stream Chat UI with custom styling
+   - Implements responsive design for mobile/desktop
+   - Uses custom avatar component with identicons
+   - Manages channel selection and navigation
 
-3. **ChatInterface** (`components/chat/ChatInterface.tsx`):
-   - Main UI component for the chat experience
-   - Integrates ChannelList, Channel, MessageList, and MessageInput components
-   - Handles responsive layout for different screen sizes
+3. **ChatButton** - `/apps/serengpty/src/app/components/chat/ChatButton.tsx`
+   - Creates direct message channels between users
+   - Handles navigation to the chat page with the correct channel
 
-4. **ChatButton** (`components/chat/ChatButton.tsx`):
-   - UI component to initiate new conversations
-   - Handles channel creation logic
+### Server-Side Functions
 
-5. **Custom Components**:
-   - Custom avatar component using identicons 
-   - Styled with application theme using Tailwind CSS
+1. **getChatToken** - `/apps/serengpty/src/app/actions/getChatToken.ts`
+   - Server action that generates Stream Chat tokens
+   - Uses server-side Stream Chat client with API secret
+   - Requires authenticated user
 
-## Usage Patterns
+2. **upsertStreamChatUser** - `/apps/serengpty/src/app/utils/upsertStreamChatUser.ts`
+   - Creates or updates a user in Stream Chat
+   - Maps Prisma User model to Stream Chat user
+   - Uses server-side credentials
 
-### Direct Messaging
+### Configuration & Styling
 
-The implementation primarily focuses on direct messaging between users:
+1. **Environment Variables**
+   - `NEXT_PUBLIC_STREAM_CHAT_API_KEY` - Client-side API key
+   - `STREAM_CHAT_API_SECRET` - Server-side secret
 
-1. **Channel Creation**:
-   - Channels are created for direct messaging in `useStartChat.ts`
-   - Uses a consistent naming convention for channel IDs
-   - Implements logic to prevent duplicate channels
+2. **Custom CSS** - `/apps/serengpty/src/app/styles/stream-chat-custom.css`
+   - Customizes Stream Chat UI appearance
+   - Hides username in chat messages
 
-2. **User Discovery**:
-   - Integrates with the application's user system to find chat partners
-   - Shows online status and user metadata
+### Integration Points
 
-### Notification System
+1. **Dashboard Layout** - `/apps/serengpty/src/app/(pages)/dashboard/layout.tsx`
+   - Initializes ChatProvider at dashboard level
+   - Provides chat token and user info to ChatProvider
 
-Stream Chat notifications are integrated into the application:
+2. **Dashboard Sidebar** - `/apps/serengpty/src/app/components/dashboard-sidebar.tsx`
+   - Displays unread message count from chat context
+   - Links to chat page
 
-1. **Setup**:
-   - Event listeners for notifications in `ChatProvider.tsx`
-   - Updates unread message counts in UI components
+3. **Chat Page** - `/apps/serengpty/src/app/(pages)/dashboard/chats/page.tsx`
+   - Renders the ChatInterface component
+   - Shows loading/error states from chat context
 
-2. **Implementation**:
-   - Global notification counter in navigation
-   - In-app notifications for new messages
-   - Browser notifications (when permitted)
+### Utility Scripts
 
-## Error Handling
+1. **resetStreamChat.ts** - `/apps/serengpty/prisma/resetStreamChat.ts`
+   - Maintenance script to reset Stream Chat data
+   - Deletes users and their conversations
 
-Comprehensive error handling throughout:
+## Refactoring Strategy
 
-1. **Authentication Errors**:
-   - Fallback mechanisms for token retrieval failures
-   - Automatic reconnection attempts
+The refactoring will separate backend functionality into `libs/shared-utils` and frontend components into `libs/ui` and `libs/ui-utils`:
 
-2. **API Errors**:
-   - Proper error handling for Stream API calls
-   - User-friendly error messages
+### Backend (`libs/shared-utils`)
 
-3. **Component Error Boundaries**:
-   - Prevents entire UI from crashing if chat components fail
+1. **Chat Client Service**
+   - Abstract client initialization and token generation
+   - Remove Next.js and Prisma dependencies
+   - Implement server-side methods (upsertUser, createToken)
 
-## Security Considerations
+2. **Chat Data Models**
+   - Define TypeScript interfaces for chat entities
+   - Create data transformation utilities
 
-1. **Token Generation**:
-   - Server-side only, using secure server actions
-   - Short expiration times with automatic renewal
+3. **Adapter Pattern**
+   - Abstract user management between different data sources
+   - Create agnostic interfaces for authentication methods
 
-2. **User Permissions**:
-   - Proper channel permission settings
-   - Limited visibility of users and channels
+4. **Configuration Management**
+   - Environment variable handling
+   - Service configuration
 
-3. **Data Handling**:
-   - No sensitive data stored in local storage
-   - Proper cleanup on logout
+5. **Notification Management**
+   - Platform-agnostic notification interfaces
+   - Methods to handle unread counts and message events
 
-## Future Improvements
+### Frontend (`libs/ui` and `libs/ui-utils`)
 
-Potential enhancements to the current implementation:
+1. **UI Components (`libs/ui`)**
+   - Move ChatInterface component (without business logic)
+   - Create ChatButton component
+   - Other reusable UI pieces (message bubbles, input areas)
+   - Notification indicators and badges
 
-1. **Group Messaging**: Extend beyond direct messaging to support group conversations
-2. **Advanced Features**: Implement reactions, threads, and typing indicators
-3. **Offline Support**: Add better offline capabilities and message queueing
-4. **Custom Message Types**: Support for rich content and custom message formats
-5. **Analytics**: Integration with analytics tools to track engagement
+2. **UI Logic (`libs/ui-utils`)**
+   - Move ChatProvider and context implementation
+   - React hooks for chat functionality
+   - Client-side chat operations
+   - Notification handling hooks and utilities
 
-## Related Code Files
+3. **Style Management**
+   - Move custom styles to `libs/ui-utils`
+   - Configure styling to work across applications
 
-- `src/app/components/chat/StreamChatUserContext.tsx`: Authentication context
-- `src/app/components/chat/ChatProvider.tsx`: Stream Chat provider component
-- `src/app/components/chat/ChatInterface.tsx`: Main UI component
-- `src/app/components/chat/ChatButton.tsx`: Interface for starting new chats
-- `src/app/components/chat/useStartChat.ts`: Hook for channel creation
-- `src/app/actions/getChatToken.ts`: Server action for token generation
-- `src/app/services/streamChat.ts`: Stream Chat client singleton and utilities
+## Next Steps
+
+1. **Backend (shared-utils)**
+   - Create base interfaces for Stream Chat entities
+   - Implement StreamChatService for token generation and user management
+   - Create adapter interfaces for different data sources
+   - Build notification management system for cross-platform use
+
+2. **Frontend (ui-utils)**
+   - Extract the ChatProvider context to be framework-agnostic
+   - Create hooks for managing chat state and operations
+   - Implement notification handling and unread count hooks
+   - Implement shared styling
+
+3. **UI Components (ui)**
+   - Refactor chat UI components to use the shared logic
+   - Create notification badge components
+   - Ensure components work with both Next.js and WXT extension
+
+4. **Integration**
+   - Update the webapp to use the new architecture
+   - Implement browser-specific notification handling for the extension
+   - Implement Stream Chat in the extension using the shared modules
