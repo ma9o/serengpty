@@ -1,18 +1,16 @@
 import { useHandleCloseSidepanel } from '../../hooks/useHandleCloseSidepanel';
-import { Confirmation } from '../../components/Confirmation';
-import { useCurrentConversation } from '../../hooks/useCurrentConversation';
+import { useConversation } from '../../hooks/useConversation';
 import { isActivatedConversation } from '../../utils/storage';
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Dashboard } from '../../components/dashboard/Dashboard';
 import { ChatWrapper } from '../../components/ChatWrapper';
-
+import { Confirmation } from '../../components/Confirmation';
 function App() {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const { conversationId, isLoading: isLoadingConversation } =
-    useCurrentConversation();
+  const { conversationId } = useConversation();
 
   useHandleCloseSidepanel();
 
@@ -29,7 +27,7 @@ function App() {
     setUnreadCount(count);
   };
 
-  const isLoading = isLoadingConversation || isActivated === null;
+  const isLoading = isActivated === null;
 
   // The content to render based on activation state
   const content = isLoading ? (

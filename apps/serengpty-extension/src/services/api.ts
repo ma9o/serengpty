@@ -1,3 +1,5 @@
+import { SimilarUser } from '../utils/storage';
+
 // Using environment variable or default to localhost during development
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -58,36 +60,79 @@ export async function getChatToken(userId: string) {
   }
 }
 
-/**
- * Upsert a ChatGPT conversation
- * @param conversationData The conversation data to send
- * @returns Response data
- */
-export async function upsertConversation(conversationData: {
+export interface UpsertConversationData {
   id: string;
   title: string;
   userId: string;
-}) {
+  content: string; // Stringified messages array
+}
+
+// Keep track of ongoing requests to allow cancellation
+const activeRequests = new Map<string, AbortController>();
+
+/**
+ * Upsert a ChatGPT conversation with advanced request management
+ * @param data The conversation data to send
+ * @returns Similar users based on conversation content
+ */
+export async function upsertConversation(data: UpsertConversationData): Promise<SimilarUser[]> {
   try {
-    const response = await fetch(
-      `${formatApiUrl(API_BASE_URL)}/upsert-conversation`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(conversationData),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to upsert conversation with status: ${response.status}`
-      );
+    // Cancel any existing request for this conversation
+    if (activeRequests.has(data.id)) {
+      console.log(`Cancelling existing request for conversation ${data.id}`);
+      activeRequests.get(data.id)?.abort();
+      activeRequests.delete(data.id);
     }
-
-    return await response.json();
+    
+    // Create a new abort controller for this request
+    const abortController = new AbortController();
+    activeRequests.set(data.id, abortController);
+    
+    // Add timeout of 30 seconds
+    const timeoutId = setTimeout(() => {
+      if (activeRequests.has(data.id)) {
+        console.log(`Request for conversation ${data.id} timed out after 30s`);
+        abortController.abort();
+        activeRequests.delete(data.id);
+      }
+    }, 30000);
+    
+    try {
+      const response = await fetch(
+        `${formatApiUrl(API_BASE_URL)}/upsert-conversation`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+          signal: abortController.signal
+        }
+      );
+  
+      clearTimeout(timeoutId);
+      activeRequests.delete(data.id);
+  
+      if (!response.ok) {
+        throw new Error(
+          `Failed to upsert conversation with status: ${response.status}`
+        );
+      }
+  
+      return await response.json();
+    } finally {
+      clearTimeout(timeoutId);
+      if (activeRequests.get(data.id) === abortController) {
+        activeRequests.delete(data.id);
+      }
+    }
   } catch (error) {
+    // Don't log or rethrow if this was a cancellation
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.log('Request was cancelled');
+      return [];
+    }
+    
     console.error('Error upserting conversation:', error);
     throw error;
   }
