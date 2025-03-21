@@ -1,12 +1,14 @@
 import { useHandleCloseSidepanel } from '../../hooks/useHandleCloseSidepanel';
-import { useConversation } from '../../hooks/useConversation';
+import { ConversationProvider, useConversation } from '../../providers';
 import { isActivatedConversation } from '../../utils/storage';
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Dashboard } from '../../components/dashboard/Dashboard';
 import { ChatWrapper } from '../../components/ChatWrapper';
 import { Confirmation } from '../../components/Confirmation';
-function App() {
+
+// Inner component that uses the conversation context
+function AppContent() {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -16,9 +18,14 @@ function App() {
 
   useEffect(() => {
     if (conversationId) {
+      // When conversation ID changes (navigation or initial load)
+      // Check if this conversation is already activated
       isActivatedConversation(conversationId).then((isActivated) => {
         setIsActivated(isActivated);
       });
+    } else {
+      // Reset state when no conversation is active
+      setIsActivated(null);
     }
   }, [conversationId]);
 
@@ -31,7 +38,10 @@ function App() {
 
   // The content to render based on activation state
   const content = isLoading ? (
-    <Loader2 className="w-10 h-10 animate-spin" />
+    <div className="flex items-center justify-center h-full">
+      <Loader2 className="w-10 h-10 animate-spin" /> Looking for ChatGPT
+      conversations...
+    </div>
   ) : !isActivated ? (
     <Confirmation
       conversationId={conversationId!}
@@ -49,6 +59,15 @@ function App() {
         {content}
       </ChatWrapper>
     </div>
+  );
+}
+
+// Main app component that wraps everything in providers
+function App() {
+  return (
+    <ConversationProvider>
+      <AppContent />
+    </ConversationProvider>
   );
 }
 

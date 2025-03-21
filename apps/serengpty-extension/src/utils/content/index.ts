@@ -1,3 +1,3 @@
-export * from './extractConversation';
-export * from './conversationTracker';
-export * from './hashConversation';
+export { hashConversation } from './hashConversation';
+export { extractConversation } from './extractConversation';
+export type { Message } from './extractConversation';

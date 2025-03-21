@@ -6,6 +6,9 @@ let lastProcessedHash: string | null = null;
 
 /**
  * Tracks changes to the current conversation and notifies the background script.
+ * This function ONLY detects DOM changes and sends content updates.
+ * The decision to upsert is made by ConversationProvider.
+ *
  * @param conversationId The ID of the current conversation
  */
 export function trackConversation(conversationId: string): void {
@@ -13,30 +16,26 @@ export function trackConversation(conversationId: string): void {
 
   // Extract the conversation from the DOM
   const messages = extractConversation();
+  
+  // No content to process
+  if (messages.length === 0) return;
+  
+  // Generate hash for this conversation
+  const currentHash = hashConversation(messages);
 
-  // Only send if we have at least one complete message pair
-  if (messages.length >= 2) {
-    // Check if last message is from assistant (complete pair)
-    const lastMessageIsAssistant =
-      messages[messages.length - 1].role === 'assistant';
+  // Only send if the content has changed (different hash)
+  // This prevents spamming the background script with identical content
+  if (currentHash !== lastProcessedHash) {
+    // Store the new hash
+    lastProcessedHash = currentHash;
 
-    if (lastMessageIsAssistant) {
-      // Generate hash for this conversation
-      const currentHash = hashConversation(messages);
-
-      // Only send if the content has changed (different hash)
-      if (currentHash !== lastProcessedHash) {
-        lastProcessedHash = currentHash;
-
-        // Send message to background script with conversation content
-        browser.runtime.sendMessage({
-          action: 'conversationChanged',
-          conversationId,
-          messages,
-          contentHash: currentHash
-        });
-      }
-    }
+    // Just notify about content change - leave processing decision to the provider
+    browser.runtime.sendMessage({
+      action: 'conversationContent',
+      conversationId,
+      messages,
+      contentHash: currentHash
+    });
   }
 }
 
@@ -46,10 +45,27 @@ export function trackConversation(conversationId: string): void {
  * @returns A function to disconnect the observer
  */
 export function observeConversation(conversationId: string): () => void {
-  // Initial tracking
-  trackConversation(conversationId);
+  // Initial tracking - always send first state regardless of hash
+  const messages = extractConversation();
+  
+  // Reset hash and force an immediate content update
+  lastProcessedHash = null;
+  
+  // Send initial content if available
+  if (messages.length > 0) {
+    const currentHash = hashConversation(messages);
+    lastProcessedHash = currentHash;
+    
+    // Send the initial state (force an update by using a different action)
+    browser.runtime.sendMessage({
+      action: 'conversationInitialContent',
+      conversationId,
+      messages,
+      contentHash: currentHash
+    });
+  }
 
-  // Set up observer for DOM changes
+  // Set up observer for DOM changes (which will check for content changes)
   const observer = new MutationObserver(() => {
     trackConversation(conversationId);
   });

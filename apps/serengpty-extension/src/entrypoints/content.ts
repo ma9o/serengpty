@@ -21,6 +21,12 @@ export default defineContentScript({
         const conversationId = newUrl.toString().split('/').pop();
 
         if (conversationId) {
+          // Send a navigation event immediately when conversation changes
+          browser.runtime.sendMessage({
+            action: 'conversationNavigated',
+            conversationId,
+          });
+          
           // Start observing the new conversation
           activeObserver = observeConversation(conversationId);
           
