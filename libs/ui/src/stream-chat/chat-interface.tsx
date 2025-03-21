@@ -1,10 +1,10 @@
 /**
  * ChatInterface Component
- * 
- * A reusable Stream Chat interface component that can be used 
+ *
+ * A reusable Stream Chat interface component that can be used
  * in both the webapp and extension.
  */
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ChannelFilters } from 'stream-chat';
 import {
   Channel,
@@ -18,7 +18,7 @@ import {
   Window,
 } from 'stream-chat-react';
 import { Menu } from 'lucide-react';
-import { useChatContext } from '@enclaveid/ui-utils/lib/stream-chat';
+import { useChatContext } from '@enclaveid/ui-utils';
 import { Button } from '../button';
 import { Avatar, AvatarImage, AvatarFallback } from '../avatar';
 
@@ -194,10 +194,10 @@ export const ChatInterface = ({
             }
           >
             <Window>
-              <ChannelHeader 
+              <ChannelHeader
                 Avatar={(avatarProps) => (
                   <CustomAvatar {...avatarProps} getIdenticon={getIdenticon} />
-                )} 
+                )}
               />
               <MessageList />
               <MessageInput

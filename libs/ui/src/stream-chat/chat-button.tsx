@@ -1,13 +1,13 @@
 /**
  * ChatButton Component
- * 
+ *
  * Reusable button to initiate chats between users,
  * usable in both web and extension environments.
  */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ChatBubbleIcon } from '@radix-ui/react-icons';
 import { Button } from '../button';
-import { useActiveChannel, useInitialChatText } from '@enclaveid/ui-utils/lib/stream-chat';
+import { useActiveChannel, useInitialChatText } from '@enclaveid/ui-utils';
 
 interface ChatButtonProps {
   otherUserId: string;
@@ -43,15 +43,15 @@ export function ChatButton({
 
     try {
       setIsLoading(true);
-      
+
       // Create a direct message channel
       const channelId = await createDirectChannel(otherUserId);
-      
+
       // Store the initial text if provided
       if (initialText && channelId) {
         setInitialChatText(initialText);
       }
-      
+
       // Notify parent of successful channel creation
       if (channelId && onChannelCreated) {
         onChannelCreated(channelId);

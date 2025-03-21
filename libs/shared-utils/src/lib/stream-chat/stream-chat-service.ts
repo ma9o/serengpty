@@ -1,6 +1,6 @@
 /**
  * Stream Chat Service
- * 
+ *
  * This service handles server-side Stream Chat functionality
  * and is platform-agnostic (no Next.js or Prisma dependencies).
  */
@@ -13,14 +13,14 @@ export class StreamChatService {
 
   constructor(config: StreamChatConfig) {
     this.config = config;
-    
+
     if (!config.apiKey) {
       throw new Error('Stream Chat API key is required');
     }
 
     // Initialize client with API key only if API secret isn't provided
     if (!config.apiSecret) {
-      this.client = new StreamChat(config.apiKey);
+      this.client = StreamChat.getInstance(config.apiKey);
     } else {
       // Initialize server-side client with API key and secret
       this.client = StreamChat.getInstance(config.apiKey, config.apiSecret);
@@ -35,16 +35,16 @@ export class StreamChatService {
   generateToken(userId: string): ChatTokenResult {
     try {
       if (!this.config.apiSecret) {
-        return { 
-          token: null, 
-          error: 'API secret is required to generate tokens' 
+        return {
+          token: null,
+          error: 'API secret is required to generate tokens',
         };
       }
 
       if (!userId) {
-        return { 
-          token: null, 
-          error: 'User ID is required' 
+        return {
+          token: null,
+          error: 'User ID is required',
         };
       }
 
@@ -52,9 +52,9 @@ export class StreamChatService {
       return { token, error: null };
     } catch (error) {
       console.error('Error generating chat token:', error);
-      return { 
-        token: null, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        token: null,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -78,51 +78,6 @@ export class StreamChatService {
       });
     } catch (error) {
       console.error('Error upserting Stream Chat user:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Deactivate a user in Stream Chat
-   * @param userId User ID to deactivate
-   */
-  async deactivateUser(userId: string): Promise<void> {
-    try {
-      if (!this.config.apiSecret) {
-        throw new Error('API secret is required to deactivate users');
-      }
-
-      if (!userId) {
-        throw new Error('User ID is required');
-      }
-
-      await this.client.deactivateUser(userId);
-    } catch (error) {
-      console.error('Error deactivating Stream Chat user:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Delete a user from Stream Chat (hard delete)
-   * @param userId User ID to delete
-   */
-  async deleteUser(userId: string): Promise<void> {
-    try {
-      if (!this.config.apiSecret) {
-        throw new Error('API secret is required to delete users');
-      }
-
-      if (!userId) {
-        throw new Error('User ID is required');
-      }
-
-      await this.client.deleteUser(userId, {
-        conversations: 'hard',
-        messages: 'hard'
-      });
-    } catch (error) {
-      console.error('Error deleting Stream Chat user:', error);
       throw error;
     }
   }

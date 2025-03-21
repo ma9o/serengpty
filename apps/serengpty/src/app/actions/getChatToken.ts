@@ -21,16 +21,19 @@ export async function getChatToken(): Promise<ChatTokenResult> {
     // Use the shared service to generate token
     const streamChatService = new StreamChatService({
       apiKey: env.NEXT_PUBLIC_STREAM_CHAT_API_KEY,
-      apiSecret: env.STREAM_CHAT_API_SECRET
+      apiSecret: env.STREAM_CHAT_API_SECRET,
     });
 
     // Generate token with server-side client
     return streamChatService.generateToken(user.id);
   } catch (error) {
     console.error('Error generating chat token:', error);
-    return { 
-      token: null, 
-      error: error instanceof Error ? error.message : 'Failed to generate chat token'
+    return {
+      token: null,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to generate chat token',
     };
   }
 }

@@ -132,9 +132,5 @@ The refactoring will separate backend functionality into `libs/shared-utils` and
 
 4. **Integration**
    - ✅ Updated the webapp (serengpty) to use the new architecture
-
-### Next Steps
-
-1. **Extension Integration**
-   - Implement Stream Chat in the serengpty-extension
-   - Add browser-specific notification handling for the extension
+   - ✅ Implemented Stream Chat in the serengpty-extension
+   - ✅ Added browser-specific notification handling for the extension
