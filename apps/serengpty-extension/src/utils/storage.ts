@@ -75,7 +75,7 @@ export async function addActivatedConversation(
     await updateConversationState(conversationId, {
       status: 'idle',
       lastProcessed: null,
-      lastContent: null,
+      contentHash: null,
     });
   }
 }
@@ -88,13 +88,6 @@ export async function shouldProcessConversation(
 
   if (!state) return true;
   if (state.status === 'processing') return false;
-
-  // Don't process again if it was processed in the last 5 minutes
-  if (state.lastProcessed) {
-    const lastProcessedTime = new Date(state.lastProcessed).getTime();
-    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-    if (lastProcessedTime > fiveMinutesAgo) return false;
-  }
 
   return true;
 }

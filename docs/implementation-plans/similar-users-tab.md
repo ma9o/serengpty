@@ -422,7 +422,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@enclaveid/ui/card';
 import { Button } from '@enclaveid/ui/button';
 import { Avatar } from '@enclaveid/ui/avatar';
 import { Loader2 } from 'lucide-react';
-import { useCurrentConversation } from '../../hooks/useCurrentConversation';
+import { useConversation } from '../../hooks/useConversation';
 import { useExtractConversation } from '../../hooks/useExtractConversation';
 import { upsertConversation } from '../../services/api';
 import { userDataStorage, updateConversationState, shouldProcessConversation, conversationStatesStorage, SimilarUser } from '../../utils/storage';
@@ -432,7 +432,7 @@ export function SimilarUsersTab() {
   const [similarUsers, setSimilarUsers] = useState<SimilarUser[]>([]);
   const [error, setError] = useState<string | null>(null);
   
-  const { conversationId } = useCurrentConversation();
+  const { conversationId } = useConversation();
   
   const { messages, isProcessing } = useExtractConversation(conversationId);
   
