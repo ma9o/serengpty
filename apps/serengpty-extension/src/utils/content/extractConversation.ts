@@ -90,6 +90,8 @@ export function extractConversation(): Message[] {
       }
     }
 
+    console.log('Extracted messages:', messages.length);
+
     return messages;
   } catch (error) {
     console.error('Error extracting conversation:', error);

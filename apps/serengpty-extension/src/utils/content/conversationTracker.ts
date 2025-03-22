@@ -1,5 +1,9 @@
 import { extractConversation } from './extractConversation';
 import { hashConversation } from './hashConversation';
+import { 
+  dispatchConversationContent, 
+  dispatchConversationInitialContent 
+} from '../messaging/content';
 
 // Keep track of the last processed conversation hash to avoid duplicate messages
 let lastProcessedHash: string | null = null;
@@ -30,12 +34,7 @@ export function trackConversation(conversationId: string): void {
     lastProcessedHash = currentHash;
 
     // Just notify about content change - leave processing decision to the provider
-    browser.runtime.sendMessage({
-      action: 'conversationContent',
-      conversationId,
-      messages,
-      contentHash: currentHash
-    });
+    dispatchConversationContent(conversationId, messages, currentHash);
   }
 }
 
@@ -57,12 +56,7 @@ export function observeConversation(conversationId: string): () => void {
     lastProcessedHash = currentHash;
     
     // Send the initial state (force an update by using a different action)
-    browser.runtime.sendMessage({
-      action: 'conversationInitialContent',
-      conversationId,
-      messages,
-      contentHash: currentHash
-    });
+    dispatchConversationInitialContent(conversationId, messages, currentHash);
   }
 
   // Set up observer for DOM changes (which will check for content changes)

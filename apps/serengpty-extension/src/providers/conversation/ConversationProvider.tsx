@@ -84,9 +84,16 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
   // We'll keep the processing logic confined to the SimilarUsersTab component
   // to avoid duplication and excessive processing
 
-  // Set up listener for conversation change events
+  // Set up listener for conversation change events using the new messaging architecture
   useEffect(() => {
-    browser.runtime.onMessage.addListener(handleMessage);
+    // Set up listener for conversation changes
+    const listener = (message: any) => {
+      if (message.action === 'conversationChanged') {
+        handleMessage(message);
+      }
+    };
+    
+    browser.runtime.onMessage.addListener(listener);
 
     // Check if there's an active conversation on initial load
     browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
@@ -99,7 +106,7 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
     });
 
     return () => {
-      browser.runtime.onMessage.removeListener(handleMessage);
+      browser.runtime.onMessage.removeListener(listener);
     };
   }, [handleMessage]);
 

@@ -1,13 +1,9 @@
-export function ContentButton() {
-  const openSidepanel = () => {
-    browser.runtime.sendMessage({
-      action: 'openSidepanel',
-    });
-  };
+import { dispatchOpenSidepanel } from '../utils/messaging/content';
 
+export function ContentButton() {
   return (
     <button 
-      onClick={openSidepanel}
+      onClick={dispatchOpenSidepanel}
       className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
       title="Find Similar Users"
     >

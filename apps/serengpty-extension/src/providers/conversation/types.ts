@@ -21,6 +21,8 @@ export interface ConversationContextType {
   processConversation: (forceRefresh?: boolean) => Promise<void>;
 }
 
+// We're now using the types from utils/messaging/types.ts instead
+// This is kept for backward compatibility
 export interface ConversationMessageEvent {
   action: string;
   conversationId?: string;

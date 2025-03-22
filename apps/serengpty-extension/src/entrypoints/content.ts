@@ -1,6 +1,7 @@
 import { mountButton } from '../utils/mountButton';
 import { observeConversation } from '../utils/content/conversationTracker';
 import { extractConversationId } from '../utils/extractConversationId';
+import { dispatchConversationNavigated } from '../utils/messaging/content';
 
 const watchPattern = new MatchPattern('*://chatgpt.com/c/*');
 
@@ -23,10 +24,7 @@ export default defineContentScript({
 
         if (conversationId) {
           // Send a navigation event immediately when conversation changes
-          browser.runtime.sendMessage({
-            action: 'conversationNavigated',
-            conversationId,
-          });
+          dispatchConversationNavigated(conversationId);
 
           // Start observing the new conversation
           activeObserver = observeConversation(conversationId);

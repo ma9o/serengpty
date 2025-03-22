@@ -1,9 +1,20 @@
 import { useEffect } from 'react';
-import { handleCloseSidepanel } from '../utils/sidepanel';
 
+/**
+ * Hook to handle closing the sidepanel
+ */
 export function useHandleCloseSidepanel() {
   useEffect(() => {
-    const cleanup = handleCloseSidepanel();
-    return cleanup;
+    const listener = (message: { action: string }) => {
+      if (message.action === 'closeSidePanel') {
+        window.close();
+      }
+    };
+
+    browser.runtime.onMessage.addListener(listener);
+
+    return () => {
+      browser.runtime.onMessage.removeListener(listener);
+    };
   }, []);
 }

@@ -1,4 +1,11 @@
+// Import the handler from the new messaging architecture
+import { handleOpenSidepanel as handleOpenSidepanelFromBackground } from './messaging/background/handleOpenSidepanel';
+
+/**
+ * @deprecated Use the functions from utils/messaging/background instead
+ */
 export function handleOpenSidepanel() {
+  console.warn('Legacy handleOpenSidepanel called. Use the new messaging architecture instead.');
   // Listener for messages from the content script
   const listener = (message: any, sender: any, sendResponse: any) => {
     if (message.action === 'openSidepanel') {
@@ -22,7 +29,11 @@ export function handleOpenSidepanel() {
   };
 }
 
+/**
+ * @deprecated Use the functions from utils/messaging/sidepanel instead
+ */
 export function handleCloseSidepanel() {
+  console.warn('Legacy handleCloseSidepanel called. Use the new messaging architecture instead.');
   const listener = (message: any) => {
     // Might not be as easy if there are multiple side panels open
     if (message.action === 'closeSidePanel') {
