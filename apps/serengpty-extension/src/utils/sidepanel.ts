@@ -13,9 +13,9 @@ export function handleOpenSidepanel() {
       });
     }
   };
-  
+
   browser.runtime.onMessage.addListener(listener);
-  
+
   // Return cleanup function
   return () => {
     browser.runtime.onMessage.removeListener(listener);
@@ -29,9 +29,9 @@ export function handleCloseSidepanel() {
       window.close();
     }
   };
-  
+
   browser.runtime.onMessage.addListener(listener);
-  
+
   // Return cleanup function
   return () => {
     browser.runtime.onMessage.removeListener(listener);

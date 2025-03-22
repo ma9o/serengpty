@@ -6,11 +6,12 @@ import {
   ReactNode,
 } from 'react';
 import { Message } from '../../utils/content';
-import { SimilarUser, isActivatedConversation } from '../../utils/storage';
+import { SimilarUser } from '../../utils/storage';
 import { ConversationContextType, ProcessingMetadata } from './types';
 import { useMessageHandler } from './hooks/useMessageHandler';
 import { useExtractMessages } from './hooks/useExtractMessages';
 import { useProcessConversation } from './useProcessConversation';
+import { extractConversationId } from '../../utils/extractConversationId';
 
 // Create the context with a default value
 const ConversationContext = createContext<ConversationContextType>({
@@ -89,8 +90,8 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
 
     // Check if there's an active conversation on initial load
     browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-      if (tabs.length > 0 && tabs[0].url?.includes('chatgpt.com/c/')) {
-        const id = tabs[0].url.split('/').pop();
+      if (tabs.length > 0 && tabs[0].url) {
+        const id = extractConversationId(tabs[0].url);
         if (id) {
           setConversationId(id);
         }

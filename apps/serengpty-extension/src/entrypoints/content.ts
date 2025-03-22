@@ -1,5 +1,6 @@
 import { mountButton } from '../utils/mountButton';
 import { observeConversation } from '../utils/content/conversationTracker';
+import { extractConversationId } from '../utils/extractConversationId';
 
 const watchPattern = new MatchPattern('*://chatgpt.com/c/*');
 
@@ -18,7 +19,7 @@ export default defineContentScript({
       }
 
       if (watchPattern.includes(newUrl)) {
-        const conversationId = newUrl.toString().split('/').pop();
+        const conversationId = extractConversationId(newUrl);
 
         if (conversationId) {
           // Send a navigation event immediately when conversation changes
@@ -26,10 +27,10 @@ export default defineContentScript({
             action: 'conversationNavigated',
             conversationId,
           });
-          
+
           // Start observing the new conversation
           activeObserver = observeConversation(conversationId);
-          
+
           // Mount the button for the sidepanel
           mountButton();
         }
