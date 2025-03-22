@@ -1,52 +1,68 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useConversation } from '../../providers';
 
 export function SimilarUsersTab() {
-  const { 
-    conversationId, 
-    messages, 
-    isLoading, 
-    isProcessed,
-    similarUsers, 
+  const {
+    conversationId,
+    messages,
+    isLoading,
+    similarUsers,
     contentHash,
-    processConversation 
+    processingMetadata,
+    processConversation,
   } = useConversation();
-  
-  // Keep track of the current conversation ID to avoid duplicate processing
-  const processingConversationId = useRef<string | null>(null);
-  const processingContentHash = useRef<string | null>(null);
 
-  // Process conversation automatically with enhanced deduplication
+  // Process conversation automatically with content-aware processing
   useEffect(() => {
     // Basic conditions to skip processing
-    if (!conversationId || messages.length === 0 || isProcessed) {
+    if (!conversationId || messages.length === 0) {
       return;
     }
-    
-    // Skip if we're already processing this exact conversation and content
-    const isSameConversation = processingConversationId.current === conversationId;
-    const isSameContent = processingContentHash.current === contentHash;
-    
-    if (isSameConversation && isSameContent) {
-      console.log('Skipping duplicate processing for:', conversationId);
+
+    // Skip if already loading
+    if (isLoading) {
       return;
     }
-    
-    // Introduce a small delay to debounce multiple rapid updates
-    // This helps prevent duplicate processing when multiple state changes occur in quick succession
+
+    // Check if content has changed since last processing
+    const contentChanged = contentHash !== processingMetadata.lastProcessedHash;
+
+    // Check only if the content has changed, not whether we have results
+    // This ensures we don't reprocess content that had no similar users
+    if (!contentChanged) {
+      console.log('Content unchanged, skipping processing');
+      return;
+    }
+
+    // Check if last message is from the assistant (complete exchange)
+    const lastMessageIsAssistant =
+      messages[messages.length - 1]?.role === 'assistant';
+    if (!lastMessageIsAssistant) {
+      console.log('Last message not from assistant, waiting for completion');
+      return;
+    }
+
+    // Debounce to avoid processing during active conversation
     const processingTimeout = setTimeout(() => {
-      // Update tracking references
-      processingConversationId.current = conversationId;
-      processingContentHash.current = contentHash;
-      
-      console.log('Processing conversation:', conversationId, 'contentHash:', contentHash);
-      // Always use false for automatic processing (respect cache)
+      console.log(
+        `Processing conversation with ${
+          contentChanged ? 'changed' : 'new'
+        } content:`,
+        conversationId
+      );
       processConversation(false);
-    }, 100); // 100ms debounce delay
-    
-    // Clean up timeout if effect reruns before it fires
+    }, 1000); // 1 second debounce
+
     return () => clearTimeout(processingTimeout);
-  }, [conversationId, messages, contentHash, isProcessed, processConversation]);
+  }, [
+    conversationId,
+    contentHash,
+    messages,
+    isLoading,
+    similarUsers,
+    processingMetadata.lastProcessedHash,
+    processConversation,
+  ]);
 
   if (isLoading) {
     return (
@@ -77,19 +93,33 @@ export function SimilarUsersTab() {
     return (
       <div className="p-4 text-center">
         <p>No similar users found. Try a different conversation.</p>
-        <button 
+        <button
           className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           onClick={() => processConversation(true)}
         >
           Retry
         </button>
+        {processingMetadata.lastProcessedAt && (
+          <p className="text-xs text-gray-500 mt-2">
+            Last processed:{' '}
+            {processingMetadata.lastProcessedAt.toLocaleTimeString()}
+          </p>
+        )}
       </div>
     );
   }
 
   return (
     <div className="p-4 space-y-4">
-      <h3 className="text-lg font-medium">Similar Conversations</h3>
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-medium">Similar Conversations</h3>
+        <button
+          className="text-xs text-blue-500 hover:text-blue-700"
+          onClick={() => processConversation(true)}
+        >
+          Refresh
+        </button>
+      </div>
       {similarUsers.map((user) => (
         <div
           key={user.userId + user.conversationId}
@@ -112,6 +142,12 @@ export function SimilarUsersTab() {
           </p>
         </div>
       ))}
+      {processingMetadata.lastProcessedAt && (
+        <p className="text-xs text-gray-500 text-right">
+          Last updated:{' '}
+          {processingMetadata.lastProcessedAt.toLocaleTimeString()}
+        </p>
+      )}
     </div>
   );
 }

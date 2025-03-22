@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { ConversationMessageEvent } from '../types';
+import { ConversationMessageEvent, ProcessingMetadata } from '../types';
 import { extractConversation, hashConversation } from '../../../utils/content';
 import { conversationStatesStorage } from '../../../utils/storage';
 
@@ -11,9 +11,9 @@ export function useMessageHandler(
   setConversationId: React.Dispatch<React.SetStateAction<string | null>>,
   setMessages: React.Dispatch<React.SetStateAction<any[]>>,
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
-  setIsProcessed: React.Dispatch<React.SetStateAction<boolean>>,
   setSimilarUsers: React.Dispatch<React.SetStateAction<any[]>>,
-  setContentHash: React.Dispatch<React.SetStateAction<string | null>>
+  setContentHash: React.Dispatch<React.SetStateAction<string | null>>,
+  setProcessingMetadata: React.Dispatch<React.SetStateAction<ProcessingMetadata>>
 ) {
   const handleMessage = useCallback(
     async (message: ConversationMessageEvent) => {
@@ -24,7 +24,11 @@ export function useMessageHandler(
           setMessages([]);
           setSimilarUsers([]);
           setContentHash(null);
-          setIsProcessed(false);
+          // Reset processing metadata for new conversation
+          setProcessingMetadata({
+            lastProcessedHash: null,
+            lastProcessedAt: null
+          });
           console.log(`Resetting state for new conversation: ${message.conversationId}`);
         }
         
@@ -50,8 +54,6 @@ export function useMessageHandler(
             const state = states[message.conversationId];
             
             if (state) {
-              setIsProcessed(state.status === 'completed');
-              
               // Set cached similar users if available
               if (state.similarUsers && state.similarUsers.length > 0) {
                 setSimilarUsers(state.similarUsers);
@@ -62,12 +64,30 @@ export function useMessageHandler(
                 setContentHash(state.contentHash);
               }
               
+              // Restore processing metadata from state if available
+              if (state.contentHash && state.lastProcessed) {
+                setProcessingMetadata({
+                  lastProcessedHash: state.contentHash,
+                  lastProcessedAt: new Date(state.lastProcessed)
+                });
+              }
+              
               // Attempt to extract fresh messages from DOM
               const domMessages = extractConversation();
               if (domMessages.length > 0) {
                 setMessages(domMessages);
                 const newHash = hashConversation(domMessages);
-                setContentHash(newHash);
+                
+                // Only update processing state if hash has changed
+                if (newHash !== state.contentHash) {
+                  console.log('Fresh DOM content different from stored content');
+                  setContentHash(newHash);
+                  // Reset processing metadata since content has changed
+                  setProcessingMetadata(prev => ({
+                    ...prev,
+                    lastProcessedHash: null
+                  }));
+                }
               }
             }
           } catch (error) {
@@ -78,7 +98,7 @@ export function useMessageHandler(
         }
       }
     },
-    [conversationId, setConversationId, setMessages, setIsLoading, setIsProcessed, setSimilarUsers, setContentHash]
+    [conversationId, setConversationId, setMessages, setIsLoading, setSimilarUsers, setContentHash, setProcessingMetadata]
   );
 
   return handleMessage;

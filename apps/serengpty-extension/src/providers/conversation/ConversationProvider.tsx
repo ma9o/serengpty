@@ -1,7 +1,13 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from 'react';
 import { Message } from '../../utils/content';
-import { SimilarUser } from '../../utils/storage';
-import { ConversationContextType } from './types';
+import { SimilarUser, isActivatedConversation } from '../../utils/storage';
+import { ConversationContextType, ProcessingMetadata } from './types';
 import { useMessageHandler } from './hooks/useMessageHandler';
 import { useExtractMessages } from './hooks/useExtractMessages';
 import { useProcessConversation } from './useProcessConversation';
@@ -11,11 +17,16 @@ const ConversationContext = createContext<ConversationContextType>({
   conversationId: null,
   messages: [],
   isLoading: false,
-  isProcessed: false,
   similarUsers: [],
   contentHash: null,
-  
-  processConversation: async (forceRefresh?: boolean) => { /* Default empty implementation */ }
+  processingMetadata: {
+    lastProcessedHash: null,
+    lastProcessedAt: null,
+  },
+
+  processConversation: async (forceRefresh?: boolean) => {
+    /* Default empty implementation */
+  },
 });
 
 // Hook to use the conversation context
@@ -30,9 +41,13 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isProcessed, setIsProcessed] = useState(false);
   const [similarUsers, setSimilarUsers] = useState<SimilarUser[]>([]);
   const [contentHash, setContentHash] = useState<string | null>(null);
+  const [processingMetadata, setProcessingMetadata] =
+    useState<ProcessingMetadata>({
+      lastProcessedHash: null,
+      lastProcessedAt: null,
+    });
 
   // Handle messages from background script
   const handleMessage = useMessageHandler(
@@ -40,9 +55,9 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
     setConversationId,
     setMessages,
     setIsLoading,
-    setIsProcessed,
     setSimilarUsers,
-    setContentHash
+    setContentHash,
+    setProcessingMetadata
   );
 
   // Process the current conversation
@@ -52,8 +67,8 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
     contentHash,
     setContentHash,
     setIsLoading,
-    setIsProcessed,
-    setSimilarUsers
+    setSimilarUsers,
+    setProcessingMetadata
   );
 
   // Extract messages from DOM
@@ -61,13 +76,17 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
     conversationId,
     contentHash,
     setMessages,
-    setContentHash
+    setContentHash,
+    setProcessingMetadata
   );
+
+  // We'll keep the processing logic confined to the SimilarUsersTab component
+  // to avoid duplication and excessive processing
 
   // Set up listener for conversation change events
   useEffect(() => {
     browser.runtime.onMessage.addListener(handleMessage);
-    
+
     // Check if there's an active conversation on initial load
     browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
       if (tabs.length > 0 && tabs[0].url?.includes('chatgpt.com/c/')) {
@@ -77,7 +96,7 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
         }
       }
     });
-    
+
     return () => {
       browser.runtime.onMessage.removeListener(handleMessage);
     };
@@ -87,10 +106,10 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
     conversationId,
     messages,
     isLoading,
-    isProcessed,
     similarUsers,
     contentHash,
-    processConversation
+    processingMetadata,
+    processConversation,
   };
 
   return (

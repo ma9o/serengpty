@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { Message, hashConversation } from '../../utils/content';
+import { ProcessingMetadata } from './types';
 import { conversationStatesStorage, updateConversationState, userDataStorage } from '../../utils/storage';
 
 /**
@@ -11,8 +12,8 @@ export function useProcessConversation(
   contentHash: string | null,
   setContentHash: React.Dispatch<React.SetStateAction<string | null>>,
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
-  setIsProcessed: React.Dispatch<React.SetStateAction<boolean>>,
-  setSimilarUsers: React.Dispatch<React.SetStateAction<any[]>>
+  setSimilarUsers: React.Dispatch<React.SetStateAction<any[]>>,
+  setProcessingMetadata: React.Dispatch<React.SetStateAction<ProcessingMetadata>>
 ) {
   // Create a ref to track if we're already processing
   const isProcessingRef = { current: false };
@@ -67,7 +68,11 @@ export function useProcessConversation(
           // We have recent valid results, use them
           console.log('Using cached results (cache is valid and recent)');
           setSimilarUsers(state.similarUsers);
-          setIsProcessed(true);
+          // Important: Update processing metadata even when using cache
+          setProcessingMetadata({
+            lastProcessedHash: contentHash,
+            lastProcessedAt: state.lastProcessed ? new Date(state.lastProcessed) : new Date()
+          });
           return;
         }
       }
@@ -81,9 +86,10 @@ export function useProcessConversation(
       }
       
       // Update processing status
+      const now = new Date();
       await updateConversationState(conversationId, {
         status: 'processing',
-        lastProcessed: new Date().toISOString(),
+        lastProcessed: now.toISOString(),
         contentHash: contentHash || hashConversation(messages)
       });
       
@@ -100,6 +106,9 @@ export function useProcessConversation(
         // Send to API with timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
+        // Log the API call for debugging
+        console.log(`Calling upsert-conversation API for ${conversationId}`);
         
         const response = await fetch(
           `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/upsert-conversation`,
@@ -128,13 +137,21 @@ export function useProcessConversation(
         
         // Update state
         setSimilarUsers(result);
-        setIsProcessed(true);
+        
+        // Update processing metadata with new hash and timestamp
+        setProcessingMetadata({
+          lastProcessedHash: contentHash,
+          lastProcessedAt: now
+        });
         
         // Cache results
         await updateConversationState(conversationId, {
           status: 'completed',
+          contentHash: contentHash,
           similarUsers: result,
         });
+        
+        console.log(`Conversation ${conversationId} successfully processed with hash ${contentHash}`);
       } catch (err) {
         // Handle timeout specifically
         if (err.name === 'AbortError') {
@@ -152,5 +169,5 @@ export function useProcessConversation(
       isProcessingRef.current = false;
       console.log('Processing completed for:', conversationId);
     }
-  }, [conversationId, messages, contentHash, setContentHash, setIsLoading, setIsProcessed, setSimilarUsers]);
+  }, [conversationId, messages, contentHash, setContentHash, setIsLoading, setSimilarUsers, setProcessingMetadata]);
 }
