@@ -17,9 +17,9 @@ export function useProcessConversation(
   // Create a ref to track if we're already processing
   const isProcessingRef = { current: false };
 
-  return useCallback(async () => {
+  return useCallback(async (forceRefresh = false) => {
     // Log when processing is initiated with detailed info
-    console.log('Processing initiated for:', conversationId, 'Hash:', contentHash);
+    console.log('Processing initiated for:', conversationId, 'Hash:', contentHash, 'Force refresh:', forceRefresh);
     
     // Basic content validity checks
     if (!conversationId) {
@@ -51,13 +51,21 @@ export function useProcessConversation(
     try {
       setIsLoading(true);
       
-      // Check if we already have this content processed
-      if (contentHash) {
+      // Check if we already have this content processed and not forcing refresh
+      if (contentHash && !forceRefresh) {
         const states = await conversationStatesStorage.getValue();
         const state = states[conversationId];
         
-        if (state?.contentHash === contentHash && state?.similarUsers) {
-          // We already have results for this content
+        const cacheIsValid = state?.contentHash === contentHash && state?.similarUsers;
+        
+        // Add time-based refresh (30 minutes cache validity)
+        const cacheIsRecent = state?.lastProcessed 
+          ? (new Date().getTime() - new Date(state.lastProcessed).getTime()) < 30 * 60 * 1000 
+          : false;
+        
+        if (cacheIsValid && cacheIsRecent) {
+          // We have recent valid results, use them
+          console.log('Using cached results (cache is valid and recent)');
           setSimilarUsers(state.similarUsers);
           setIsProcessed(true);
           return;

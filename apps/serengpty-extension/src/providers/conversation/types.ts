@@ -12,7 +12,7 @@ export interface ConversationContextType {
   contentHash: string | null;
   
   // Methods
-  processConversation: () => Promise<void>;
+  processConversation: (forceRefresh?: boolean) => Promise<void>;
 }
 
 export interface ConversationMessageEvent {

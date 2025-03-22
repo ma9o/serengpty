@@ -15,7 +15,7 @@ const ConversationContext = createContext<ConversationContextType>({
   similarUsers: [],
   contentHash: null,
   
-  processConversation: async () => {}
+  processConversation: async (forceRefresh?: boolean) => { /* Default empty implementation */ }
 });
 
 // Hook to use the conversation context

@@ -40,7 +40,8 @@ export function SimilarUsersTab() {
       processingContentHash.current = contentHash;
       
       console.log('Processing conversation:', conversationId, 'contentHash:', contentHash);
-      processConversation();
+      // Always use false for automatic processing (respect cache)
+      processConversation(false);
     }, 100); // 100ms debounce delay
     
     // Clean up timeout if effect reruns before it fires
@@ -78,7 +79,7 @@ export function SimilarUsersTab() {
         <p>No similar users found. Try a different conversation.</p>
         <button 
           className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          onClick={() => processConversation()}
+          onClick={() => processConversation(true)}
         >
           Retry
         </button>
