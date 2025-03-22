@@ -27,6 +27,13 @@
         "cwd": "apps/serengpty-extension"
       }
     },
+    "wxt-dev:ephemeral": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "wxt --config=wxt.config.ephemeral.ts",
+        "cwd": "apps/serengpty-extension"
+      }
+    },
     "wxt-zip": {
       "executor": "nx:run-commands",
       "options": {

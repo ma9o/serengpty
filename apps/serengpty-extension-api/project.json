@@ -9,7 +9,7 @@
     "dev": {
       "options": {
         "cwd": "apps/serengpty-extension-api",
-        "command": "next dev --port 3001"
+        "command": "next dev --port 3008"
       },
       "executor": "nx:run-commands",
       "configurations": {},

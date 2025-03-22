@@ -2,7 +2,7 @@ import { SimilarUser } from '../utils/storage';
 
 // Using environment variable or default to localhost during development
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+  import.meta.env.VITE_API_URL || 'http://localhost:3008/api';
 
 // Ensure the URL doesn't end with a trailing slash
 function formatApiUrl(url: string): string {
@@ -75,7 +75,9 @@ const activeRequests = new Map<string, AbortController>();
  * @param data The conversation data to send
  * @returns Similar users based on conversation content
  */
-export async function upsertConversation(data: UpsertConversationData): Promise<SimilarUser[]> {
+export async function upsertConversation(
+  data: UpsertConversationData
+): Promise<SimilarUser[]> {
   try {
     // Cancel any existing request for this conversation
     if (activeRequests.has(data.id)) {
@@ -83,11 +85,11 @@ export async function upsertConversation(data: UpsertConversationData): Promise<
       activeRequests.get(data.id)?.abort();
       activeRequests.delete(data.id);
     }
-    
+
     // Create a new abort controller for this request
     const abortController = new AbortController();
     activeRequests.set(data.id, abortController);
-    
+
     // Add timeout of 30 seconds
     const timeoutId = setTimeout(() => {
       if (activeRequests.has(data.id)) {
@@ -96,7 +98,7 @@ export async function upsertConversation(data: UpsertConversationData): Promise<
         activeRequests.delete(data.id);
       }
     }, 30000);
-    
+
     try {
       const response = await fetch(
         `${formatApiUrl(API_BASE_URL)}/upsert-conversation`,
@@ -106,19 +108,19 @@ export async function upsertConversation(data: UpsertConversationData): Promise<
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(data),
-          signal: abortController.signal
+          signal: abortController.signal,
         }
       );
-  
+
       clearTimeout(timeoutId);
       activeRequests.delete(data.id);
-  
+
       if (!response.ok) {
         throw new Error(
           `Failed to upsert conversation with status: ${response.status}`
         );
       }
-  
+
       return await response.json();
     } finally {
       clearTimeout(timeoutId);
@@ -132,7 +134,7 @@ export async function upsertConversation(data: UpsertConversationData): Promise<
       console.log('Request was cancelled');
       return [];
     }
-    
+
     console.error('Error upserting conversation:', error);
     throw error;
   }
