@@ -41,6 +41,7 @@ export default defineConfig({
       outDir: '../../dist/apps/serengpty-extension',
       emptyOutDir: true,
       reportCompressedSize: true,
+      sourcemap: true,
       commonjsOptions: {
         transformMixedEsModules: true,
       },
