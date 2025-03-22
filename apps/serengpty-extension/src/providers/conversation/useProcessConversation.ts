@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { Message, hashConversation } from '../../utils/content';
 import { ProcessingMetadata } from './types';
 import { conversationStatesStorage, updateConversationState, userDataStorage } from '../../utils/storage';
+import { upsertConversation } from '../../services/api';
 
 /**
  * Hook that returns a callback to process the current conversation
@@ -103,37 +104,16 @@ export function useProcessConversation(
       const contentString = JSON.stringify(messages);
       
       try {
-        // Send to API with timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
-        
         // Log the API call for debugging
         console.log(`Calling upsert-conversation API for ${conversationId}`);
         
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/upsert-conversation`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              id: conversationId,
-              title: `Conversation ${conversationId}`,
-              userId: userData.userId,
-              content: contentString,
-            }),
-            signal: controller.signal
-          }
-        );
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to process conversation: ${response.status}`);
-        }
-        
-        const result = await response.json();
+        // Use the API service function
+        const result = await upsertConversation({
+          id: conversationId,
+          title: `Conversation ${conversationId}`,
+          userId: userData.userId,
+          content: contentString,
+        });
         
         // Update state
         setSimilarUsers(result);
@@ -153,11 +133,7 @@ export function useProcessConversation(
         
         console.log(`Conversation ${conversationId} successfully processed with hash ${contentHash}`);
       } catch (err) {
-        // Handle timeout specifically
-        if (err.name === 'AbortError') {
-          console.error('Request timed out after 30 seconds');
-          throw new Error('Request timed out. Please try again.');
-        }
+        console.error('Error from API service:', err);
         throw err; // Re-throw for outer catch block
       }
     } catch (error) {
