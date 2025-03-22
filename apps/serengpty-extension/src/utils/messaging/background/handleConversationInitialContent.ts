@@ -1,5 +1,5 @@
 import { ConversationInitialContentMessage } from '../types';
-import { updateConversationState, isActivatedConversation } from '../../storage';
+import { isActivatedConversation } from '../../storage';
 import { dispatchConversationChanged } from './dispatchConversationChanged';
 
 /**
@@ -12,12 +12,16 @@ export async function handleConversationInitialContent(
   
   console.log(`Background: Received INITIAL content for ${conversationId}`);
 
-  // Only update state if conversation is already activated
+  // Only initialize new conversations, but don't update contentHash
+  // ContentHash should only be updated after processing, not when content changes
   const isActivated = await isActivatedConversation(conversationId);
   if (isActivated) {
-    await updateConversationState(conversationId, {
-      contentHash: contentHash,
-    });
+    // We don't update contentHash here anymore to avoid interfering with
+    // the cache validation logic in the processing component
+    // This keeps the contentHash as "last processed" rather than "last seen"
+    // await updateConversationState(conversationId, {
+    //   contentHash: contentHash,
+    // });
   }
 
   // Forward to sidepanel

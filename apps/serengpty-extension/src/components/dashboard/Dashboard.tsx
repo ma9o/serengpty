@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@enclaveid/ui/tabs';
 import { Badge } from '@enclaveid/ui/badge';
 import { SimilarUsersTab } from './SimilarUsersTab';
 import { ChatsTab } from './ChatsTab';
+import { useState } from 'react';
 
 interface DashboardProps {
   unreadCount?: number;

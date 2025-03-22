@@ -10,7 +10,7 @@ let lastProcessedHash: string | null = null;
 // Debounce timer for conversation content updates
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 // Debounce delay in milliseconds
-const DEBOUNCE_DELAY = 1000;
+const DEBOUNCE_DELAY = 500;
 
 /**
  * Tracks changes to the current conversation and notifies the background script.
