@@ -2,8 +2,8 @@
 
 import { Avatar, AvatarImage, AvatarFallback } from '@enclaveid/ui/avatar';
 import { cn } from '@enclaveid/ui-utils';
-import { ScoreCircle } from './score-circle';
-import { getIdenticon } from '../../utils/getIdenticon';
+import { ScoreCircle } from '@enclaveid/ui/score-circle';
+import { getIdenticon } from '@enclaveid/shared-utils';
 import { getCountryFlag } from '../../utils/getCountryFlag';
 
 export type User = {

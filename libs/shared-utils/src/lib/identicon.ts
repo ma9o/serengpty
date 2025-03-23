@@ -1,5 +1,3 @@
-'use client';
-
 import { toSvg } from 'jdenticon';
 
 interface IdenticonOptions {
@@ -7,6 +5,12 @@ interface IdenticonOptions {
   hue?: number; // Optional hue value (0-360)
 }
 
+/**
+ * Generate a deterministic identicon SVG for a given unique ID
+ * @param uniqueId - A unique string to generate the identicon from
+ * @param options - Optional configuration for the identicon
+ * @returns A data URL string containing the SVG image
+ */
 export function getIdenticon(
   uniqueId: string,
   options: IdenticonOptions = {}
@@ -40,8 +44,12 @@ export function getIdenticon(
   );
 }
 
-// Generate a consistent hue (0-360) from a string
-function getHueFromString(str: string): number {
+/**
+ * Generate a consistent hue (0-360) from a string
+ * @param str - Input string to convert to a hue value
+ * @returns A number between 0-360 representing a hue
+ */
+export function getHueFromString(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);

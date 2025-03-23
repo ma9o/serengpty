@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useConversation } from '../../providers';
+import { UserCard } from '../UserCard';
 
 export function SimilarUsersTab() {
   const {
@@ -121,23 +122,17 @@ export function SimilarUsersTab() {
         </button>
       </div>
       {similarUsers.map((user) => (
-        <div
-          key={user.userId + user.conversationId}
-          className="border rounded-lg p-4 hover:bg-gray-100 cursor-pointer"
-        >
-          <div className="flex items-center justify-between pb-2">
-            <div className="flex items-center">
-              <div className="h-8 w-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-2">
-                <span>{user.userName.charAt(0)}</span>
-              </div>
-              <h4 className="text-md font-medium">{user.userName}</h4>
-            </div>
-            <span className="text-xs text-gray-500">
-              Similarity: {(user.distance * 100).toFixed(0)}%
-            </span>
-          </div>
-          <p className="text-sm truncate">{user.title}</p>
-          <p className="text-xs text-gray-500 mt-1">
+        <div key={user.userId + user.conversationId}>
+          <UserCard 
+            user={{
+              id: user.userId,
+              name: user.userName,
+              score: 1 - user.distance, // Convert distance to similarity score (0-1)
+            }} 
+            isActive={false}
+          />
+          <p className="text-sm truncate mt-1 ml-14">{user.title}</p>
+          <p className="text-xs text-gray-500 mt-1 ml-14">
             {new Date(user.createdAt).toLocaleDateString()}
           </p>
         </div>
