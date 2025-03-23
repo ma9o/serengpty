@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { Dashboard } from '../../components/dashboard/Dashboard';
 import { ChatWrapper } from '../../components/ChatWrapper';
 import { Confirmation } from '../../components/Confirmation';
+import { Logo } from '@enclaveid/ui/logo';
 
 // Inner component that contains the UI content without ChatWrapper
 function AppContentInner({ unreadCount }: { unreadCount: number }) {
@@ -73,7 +74,11 @@ function App() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center">
+    <div className="w-screen h-screen overflow-hidden flex flex-col items-center justify-top p-4 gap-4">
+      <div className="flex items-center gap-2">
+        <Logo />
+        <span className="text-2xl font-bold">SerenGPTy</span>
+      </div>
       <ConversationProvider>
         <ChatWrapper onUnreadCountChange={handleUnreadCountChange}>
           <AppContentInner unreadCount={unreadCount} />

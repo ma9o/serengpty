@@ -12,7 +12,7 @@ export function mountButton(): void {
     return;
   }
 
-  const xpath = './div[1]/div[2]/div[2]';
+  const xpath = './div[1]/div[2]/div[2]/div[1]';
   const result = document.evaluate(
     xpath,
     composerBackground,

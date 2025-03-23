@@ -21,12 +21,15 @@ export function Dashboard({ unreadCount = 0 }: DashboardProps) {
       defaultValue={tabs.SIMILAR_USERS}
       value={tab}
       onValueChange={setActiveTab}
+      className="w-full h-full"
     >
-      <TabsList>
-        <TabsTrigger value={tabs.SIMILAR_USERS}>Similar Users</TabsTrigger>
+      <TabsList className="w-full">
+        <TabsTrigger value={tabs.SIMILAR_USERS} className="w-full">
+          Similar Users
+        </TabsTrigger>
         <TabsTrigger
           value={tabs.YOUR_CHATS}
-          className="flex items-center gap-1"
+          className="flex items-center gap-1 w-full"
         >
           Your Chats
           {unreadCount > 0 && (

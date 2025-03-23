@@ -4,7 +4,7 @@ export function ContentButton() {
   return (
     <button
       onClick={() => dispatchOpenSidepanel({})}
-      className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+      className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
       title="Find Similar Users"
     >
       <svg
