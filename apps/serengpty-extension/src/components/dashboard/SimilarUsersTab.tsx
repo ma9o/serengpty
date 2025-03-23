@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useConversation } from '../../providers';
-import { Card, CardContent } from '@enclaveid/ui';
+import { Button, Card, CardContent } from '@enclaveid/ui';
 import { ChatButton } from '@enclaveid/ui/stream-chat/chat-button';
 import { getIdenticon } from '@enclaveid/shared-utils';
 import { ScoreCircle } from '@enclaveid/ui/score-circle';
@@ -138,12 +138,13 @@ export function SimilarUsersTab() {
             <span className="font-medium">{title}</span>
           </p>
         </div>
-        <button
-          className="px-3 py-1.5 rounded-md bg-blue-500 text-white text-xs font-medium"
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={() => processConversation(true)}
         >
           Refresh
-        </button>
+        </Button>
       </div>
 
       <div className="space-y-6">
