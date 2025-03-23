@@ -10,7 +10,7 @@ import { Confirmation } from '../../components/Confirmation';
 // Inner component that contains the UI content without ChatWrapper
 function AppContentInner({ unreadCount }: { unreadCount: number }) {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
-  const { conversationId } = useConversation();
+  const { conversationId, title } = useConversation();
 
   useHandleCloseSidepanel();
 
@@ -38,25 +38,35 @@ function AppContentInner({ unreadCount }: { unreadCount: number }) {
       </div>
     );
   }
-  
+
+  if (!conversationId || !title) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-10 h-10 animate-spin" /> Waiting for conversation
+        data...
+      </div>
+    );
+  }
+
   if (!isActivated) {
     return (
       <Confirmation
-        conversationId={conversationId!}
+        conversationId={conversationId}
+        title={title}
         onConfirm={() => {
           setIsActivated(true);
         }}
       />
     );
   }
-  
+
   return <Dashboard unreadCount={unreadCount} />;
 }
 
 // Main app component that wraps everything in providers
 function App() {
   const [unreadCount, setUnreadCount] = useState(0);
-  
+
   // Handle unread count changes from ChatProvider
   const handleUnreadCountChange = (count: number) => {
     setUnreadCount(count);

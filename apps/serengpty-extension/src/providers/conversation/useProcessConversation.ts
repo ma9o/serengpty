@@ -13,6 +13,7 @@ import { upsertConversation } from '../../services/api';
  */
 export function useProcessConversation(
   conversationId: string | null,
+  title: string | null,
   messages: Message[],
   contentHash: string | null,
   setContentHash: React.Dispatch<React.SetStateAction<string | null>>,
@@ -40,6 +41,11 @@ export function useProcessConversation(
       // Basic content validity checks
       if (!conversationId) {
         console.log('No conversation ID, skipping processing');
+        return;
+      }
+
+      if (!title) {
+        console.log('No title, skipping processing');
         return;
       }
 
@@ -79,6 +85,12 @@ export function useProcessConversation(
 
       try {
         setIsLoading(true);
+
+        console.log(
+          `Processing conversation: ${conversationId} with title: ${
+            title || 'not set'
+          }`
+        );
 
         // Check if we already have this content processed and not forcing refresh
         if (contentHash && !forceRefresh) {
@@ -162,7 +174,7 @@ export function useProcessConversation(
           // Use the API service function
           const result = await upsertConversation({
             id: conversationId,
-            title: `Conversation ${conversationId}`,
+            title: title,
             userId: userData.userId,
             content: contentString,
           });
@@ -202,6 +214,7 @@ export function useProcessConversation(
     },
     [
       conversationId,
+      title,
       messages,
       contentHash,
       setContentHash,

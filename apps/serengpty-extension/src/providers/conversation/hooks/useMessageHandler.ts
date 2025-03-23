@@ -11,6 +11,7 @@ import { ConversationChangedMessage } from '../../../utils/messaging/types';
 export function useMessageHandler(
   conversationId: string | null,
   setConversationId: React.Dispatch<React.SetStateAction<string | null>>,
+  setTitle: React.Dispatch<React.SetStateAction<string | null>>,
   setMessages: React.Dispatch<React.SetStateAction<any[]>>,
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
   setSimilarUsers: React.Dispatch<React.SetStateAction<any[]>>,
@@ -25,6 +26,7 @@ export function useMessageHandler(
         setMessages([]);
         setSimilarUsers([]);
         setContentHash(null);
+        setTitle(null);
         // Reset processing metadata for new conversation
         setProcessingMetadata({
           lastProcessedHash: null,
@@ -35,6 +37,12 @@ export function useMessageHandler(
       
       // Set the new conversation ID
       setConversationId(message.conversationId);
+      
+      // Update title if provided
+      if (message.title) {
+        setTitle(message.title);
+        console.log(`Setting conversation title to: "${message.title}"`);
+      }
       
       // Check if we received messages with this event
       if (message.messages && message.messages.length > 0) {
@@ -81,7 +89,7 @@ export function useMessageHandler(
         }
       }
     },
-    [conversationId, setConversationId, setMessages, setIsLoading, setSimilarUsers, setContentHash, setProcessingMetadata]
+    [conversationId, setConversationId, setTitle, setMessages, setIsLoading, setSimilarUsers, setContentHash, setProcessingMetadata]
   );
 
   return handleMessage;

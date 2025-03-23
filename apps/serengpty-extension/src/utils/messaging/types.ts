@@ -23,6 +23,13 @@ export interface ConversationInitialContentMessage extends BaseMessage {
 export interface ConversationNavigatedMessage extends BaseMessage {
   action: 'conversationNavigated';
   conversationId: string;
+  title?: string;
+}
+
+export interface ConversationTitleUpdatedMessage extends BaseMessage {
+  action: 'conversationTitleUpdated';
+  conversationId: string;
+  title: string;
 }
 
 // Content -> Background or Background -> Content Messages
@@ -34,12 +41,17 @@ export interface CloseSidepanelMessage extends BaseMessage {
   action: 'closeSidePanel';
 }
 
+export interface GetSidepanelStateMessage extends BaseMessage {
+  action: 'getSidepanelState';
+}
+
 // Background -> Sidepanel Messages
 export interface ConversationChangedMessage extends BaseMessage {
   action: 'conversationChanged';
   conversationId: string;
   messages?: Message[];
   contentHash?: string;
+  title?: string;
 }
 
 // Union type of all messages
@@ -47,6 +59,8 @@ export type ExtensionMessage =
   | ConversationContentMessage
   | ConversationInitialContentMessage
   | ConversationNavigatedMessage
+  | ConversationTitleUpdatedMessage
   | OpenSidepanelMessage
   | CloseSidepanelMessage
+  | GetSidepanelStateMessage
   | ConversationChangedMessage;

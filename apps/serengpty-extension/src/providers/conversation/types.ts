@@ -11,6 +11,7 @@ export interface ProcessingMetadata {
 export interface ConversationContextType {
   // State
   conversationId: string | null;
+  title: string | null;
   messages: Message[];
   isLoading: boolean;
   similarUsers: SimilarUser[];

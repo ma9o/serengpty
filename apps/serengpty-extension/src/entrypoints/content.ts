@@ -1,5 +1,6 @@
 import { mountButton } from '../utils/mountButton';
 import { observeConversation } from '../utils/content/conversationTracker';
+import { watchConversationTitle } from '../utils/content/watchConversationTitle';
 import { extractConversationId } from '../utils/extractConversationId';
 import { dispatchConversationNavigated } from '../utils/messaging/content';
 
@@ -10,13 +11,19 @@ export default defineContentScript({
   main(ctx) {
     // Track active observers to disconnect them when needed
     let activeObserver: (() => void) | null = null;
+    let activeTitleWatcher: (() => void) | null = null;
 
     // Handle SPA navigation
     ctx.addEventListener(window, 'wxt:locationchange', async ({ newUrl }) => {
-      // Disconnect previous observer if exists
+      // Disconnect previous observers if they exist
       if (activeObserver) {
         activeObserver();
         activeObserver = null;
+      }
+
+      if (activeTitleWatcher) {
+        activeTitleWatcher();
+        activeTitleWatcher = null;
       }
 
       if (watchPattern.includes(newUrl)) {
@@ -29,6 +36,9 @@ export default defineContentScript({
           // Start observing the new conversation
           activeObserver = observeConversation(conversationId);
 
+          // Start watching for the conversation title to change
+          activeTitleWatcher = watchConversationTitle(conversationId);
+
           // Mount the button for the sidepanel
           mountButton();
         }
@@ -39,6 +49,9 @@ export default defineContentScript({
     return () => {
       if (activeObserver) {
         activeObserver();
+      }
+      if (activeTitleWatcher) {
+        activeTitleWatcher();
       }
     };
   },

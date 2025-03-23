@@ -12,6 +12,6 @@ export function dispatchConversationContent(
     action: 'conversationContent',
     conversationId,
     messages,
-    contentHash
+    contentHash,
   });
 }

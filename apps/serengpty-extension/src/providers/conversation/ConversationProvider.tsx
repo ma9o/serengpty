@@ -11,11 +11,12 @@ import { ConversationContextType, ProcessingMetadata } from './types';
 import { useMessageHandler } from './hooks/useMessageHandler';
 import { useExtractMessages } from './hooks/useExtractMessages';
 import { useProcessConversation } from './useProcessConversation';
-import { extractConversationId } from '../../utils/extractConversationId';
+import { setupConversationChangedHandler } from '../../utils/messaging/sidepanel/handleConversationChanged';
 
 // Create the context with a default value
 const ConversationContext = createContext<ConversationContextType>({
   conversationId: null,
+  title: null,
   messages: [],
   isLoading: false,
   similarUsers: [],
@@ -40,6 +41,7 @@ interface ConversationProviderProps {
 export function ConversationProvider({ children }: ConversationProviderProps) {
   // State
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [title, setTitle] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [similarUsers, setSimilarUsers] = useState<SimilarUser[]>([]);
@@ -54,6 +56,7 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
   const handleMessage = useMessageHandler(
     conversationId,
     setConversationId,
+    setTitle,
     setMessages,
     setIsLoading,
     setSimilarUsers,
@@ -64,6 +67,7 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
   // Process the current conversation
   const processConversation = useProcessConversation(
     conversationId,
+    title,
     messages,
     contentHash,
     setContentHash,
@@ -84,34 +88,21 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
   // We'll keep the processing logic confined to the SimilarUsersTab component
   // to avoid duplication and excessive processing
 
-  // Set up listener for conversation change events using the new messaging architecture
+  // Set up listener for conversation change events using the utility function
   useEffect(() => {
-    // Set up listener for conversation changes
-    const listener = (message: any) => {
-      if (message.action === 'conversationChanged') {
-        handleMessage(message);
-      }
-    };
+    // Use the dedicated handler utility from sidepanel messaging
+    const cleanup = setupConversationChangedHandler(handleMessage);
     
-    browser.runtime.onMessage.addListener(listener);
-
-    // Check if there's an active conversation on initial load
-    browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-      if (tabs.length > 0 && tabs[0].url) {
-        const id = extractConversationId(tabs[0].url);
-        if (id) {
-          setConversationId(id);
-        }
-      }
-    });
-
-    return () => {
-      browser.runtime.onMessage.removeListener(listener);
-    };
+    // When the sidepanel opens, check if there's a currently active conversation
+    // by requesting the current state from the background script
+    browser.runtime.sendMessage({ action: 'getSidepanelState' });
+    
+    return cleanup;
   }, [handleMessage]);
 
   const value: ConversationContextType = {
     conversationId,
+    title,
     messages,
     isLoading,
     similarUsers,

@@ -13,9 +13,11 @@ import { useState } from 'react';
 export function Confirmation({
   onConfirm,
   conversationId,
+  title,
 }: {
   onConfirm?: () => void;
   conversationId: string;
+  title: string;
 }) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -44,26 +46,21 @@ export function Confirmation({
     <Card className="m-8">
       <CardHeader>
         <CardTitle className="text-xl font-bold">
-          Match on "{conversationId}" ?
+          Match on "{title}" ?
         </CardTitle>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Would you like to activate this conversation to find similar users?
-          This will allow the extension to process the content of this conversation.
+          This will allow the extension to process the content of this
+          conversation.
         </p>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={handleCancel}
-        >
+        <Button variant="outline" onClick={handleCancel}>
           Cancel
         </Button>
-        <Button
-          onClick={handleConfirm}
-          disabled={isLoading}
-        >
+        <Button onClick={handleConfirm} disabled={isLoading}>
           {isLoading ? 'Activating...' : 'Confirm'}
         </Button>
       </CardFooter>

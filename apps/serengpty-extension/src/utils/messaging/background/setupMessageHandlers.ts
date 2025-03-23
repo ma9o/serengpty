@@ -2,6 +2,8 @@ import { ExtensionMessage } from '../types';
 import { handleConversationContent } from './handleConversationContent';
 import { handleConversationInitialContent } from './handleConversationInitialContent';
 import { handleConversationNavigated } from './handleConversationNavigated';
+import { handleConversationTitleUpdated } from './handleConversationTitleUpdated';
+import { handleGetSidepanelState } from './handleGetSidepanelState';
 import { handleOpenSidepanel } from './handleOpenSidepanel';
 
 /**
@@ -13,6 +15,8 @@ export function setupMessageHandlers(): () => void {
     message: ExtensionMessage,
     sender: browser.runtime.MessageSender
   ) => {
+    console.log('Background: Received message', message);
+
     switch (message.action) {
       case 'conversationContent':
         await handleConversationContent(message);
@@ -22,6 +26,12 @@ export function setupMessageHandlers(): () => void {
         break;
       case 'conversationNavigated':
         handleConversationNavigated(message);
+        break;
+      case 'conversationTitleUpdated':
+        handleConversationTitleUpdated(message);
+        break;
+      case 'getSidepanelState':
+        handleGetSidepanelState(message);
         break;
       case 'openSidepanel':
         handleOpenSidepanel(message, sender);

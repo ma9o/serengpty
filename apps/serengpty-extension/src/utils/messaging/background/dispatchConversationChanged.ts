@@ -6,12 +6,14 @@ import { Message } from '../../content/extractConversation';
 export function dispatchConversationChanged(
   conversationId: string,
   messages?: Message[],
-  contentHash?: string
+  contentHash?: string,
+  title?: string
 ): void {
   browser.runtime.sendMessage({
     action: 'conversationChanged',
     conversationId,
     ...(messages && { messages }),
     ...(contentHash && { contentHash }),
+    ...(title && { title }),
   });
 }
