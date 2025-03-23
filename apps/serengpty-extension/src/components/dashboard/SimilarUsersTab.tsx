@@ -6,7 +6,11 @@ import { getIdenticon } from '@enclaveid/shared-utils';
 import { ScoreCircle } from '@enclaveid/ui/score-circle';
 import { RefreshCcw } from 'lucide-react';
 
-export function SimilarUsersTab() {
+export function SimilarUsersTab({
+  onChatButtonClick,
+}: {
+  onChatButtonClick: (channelId: string) => void;
+}) {
   const {
     conversationId,
     title,
@@ -178,6 +182,9 @@ export function SimilarUsersTab() {
                 size="icon"
                 className="h-8 w-8 flex-shrink-0"
                 onError={(error) => console.error('Chat error:', error)}
+                onChannelCreated={(channelId) => {
+                  onChatButtonClick(channelId);
+                }}
               />
             </div>
             <CardContent className="p-0">

@@ -3,6 +3,7 @@ import { Badge } from '@enclaveid/ui/badge';
 import { SimilarUsersTab } from './SimilarUsersTab';
 import { ChatsTab } from './ChatsTab';
 import { useState } from 'react';
+import { useActiveChannel } from '@enclaveid/ui-utils';
 
 interface DashboardProps {
   unreadCount?: number;
@@ -15,6 +16,15 @@ const tabs = {
 
 export function Dashboard({ unreadCount = 0 }: DashboardProps) {
   const [tab, setActiveTab] = useState(tabs.SIMILAR_USERS);
+  const { setActiveChannelId } = useActiveChannel();
+
+  const onChatButtonClick = useCallback(
+    (channelId: string) => {
+      setActiveTab(tabs.YOUR_CHATS);
+      setActiveChannelId(channelId);
+    },
+    [setActiveChannelId]
+  );
 
   return (
     <Tabs
@@ -47,7 +57,7 @@ export function Dashboard({ unreadCount = 0 }: DashboardProps) {
         forceMount
         hidden={tab !== tabs.SIMILAR_USERS}
       >
-        <SimilarUsersTab />
+        <SimilarUsersTab onChatButtonClick={onChatButtonClick} />
       </TabsContent>
       <TabsContent
         value={tabs.YOUR_CHATS}
