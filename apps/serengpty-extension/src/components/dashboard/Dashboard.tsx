@@ -2,7 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@enclaveid/ui/tabs';
 import { Badge } from '@enclaveid/ui/badge';
 import { SimilarUsersTab } from './SimilarUsersTab';
 import { ChatsTab } from './ChatsTab';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useActiveChannel } from '@enclaveid/ui-utils';
 
 interface DashboardProps {
@@ -16,11 +16,9 @@ const tabs = {
 
 export function Dashboard({ unreadCount = 0 }: DashboardProps) {
   const [tab, setActiveTab] = useState(tabs.SIMILAR_USERS);
-  const { setActiveChannelId, activeChannelId } = useActiveChannel();
-  const [chatKey, setChatKey] = useState(0); // Key for forcing re-render
+  const { setActiveChannelId } = useActiveChannel();
   const pendingChannelId = useRef<string | null>(null);
 
-  // Handler for chat button clicks
   const onChatButtonClick = useCallback(
     (channelId: string) => {
       pendingChannelId.current = channelId;
@@ -29,15 +27,6 @@ export function Dashboard({ unreadCount = 0 }: DashboardProps) {
     },
     [setActiveChannelId]
   );
-
-  // Force re-render of ChatsTab when switching to it with a new channel
-  useEffect(() => {
-    if (tab === tabs.YOUR_CHATS && pendingChannelId.current) {
-      // Force a rerender of the ChatsTab component
-      setChatKey(prev => prev + 1);
-      pendingChannelId.current = null;
-    }
-  }, [tab]);
 
   return (
     <Tabs
@@ -67,17 +56,17 @@ export function Dashboard({ unreadCount = 0 }: DashboardProps) {
       </TabsList>
       <TabsContent
         value={tabs.SIMILAR_USERS}
-        forceMount
+        //forceMount
         hidden={tab !== tabs.SIMILAR_USERS}
       >
         <SimilarUsersTab onChatButtonClick={onChatButtonClick} />
       </TabsContent>
       <TabsContent
         value={tabs.YOUR_CHATS}
-        forceMount
+        //forceMount
         hidden={tab !== tabs.YOUR_CHATS}
       >
-        <ChatsTab key={chatKey} />
+        <ChatsTab />
       </TabsContent>
     </Tabs>
   );
