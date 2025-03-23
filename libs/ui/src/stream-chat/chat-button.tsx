@@ -74,8 +74,11 @@ export function ChatButton({
       disabled={isLoading}
       className={className}
     >
-      <ChatBubbleIcon className="mr-2 h-4 w-4" />
-      {isLoading ? 'Connecting...' : 'Message ' + otherUserName}
+      <ChatBubbleIcon
+        className={size === 'icon' ? 'h-4 w-4' : 'mr-2 h-4 w-4'}
+      />
+      {size !== 'icon' &&
+        (isLoading ? 'Connecting...' : 'Message ' + otherUserName)}
     </Button>
   );
 }

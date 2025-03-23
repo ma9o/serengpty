@@ -1,10 +1,14 @@
 import { useEffect } from 'react';
 import { useConversation } from '../../providers';
-import { UserCard } from '../UserCard';
+import { Card, CardContent } from '@enclaveid/ui';
+import { ChatButton } from '@enclaveid/ui/stream-chat/chat-button';
+import { getIdenticon } from '@enclaveid/shared-utils';
+import { ScoreCircle } from '@enclaveid/ui/score-circle';
 
 export function SimilarUsersTab() {
   const {
     conversationId,
+    title,
     messages,
     isLoading,
     similarUsers,
@@ -110,33 +114,98 @@ export function SimilarUsersTab() {
     );
   }
 
+  // Group conversations by user
+  const userConversations = similarUsers.reduce((acc, userConv) => {
+    if (!acc[userConv.userId]) {
+      acc[userConv.userId] = {
+        userId: userConv.userId,
+        userName: userConv.userName,
+        conversations: [],
+      };
+    }
+    acc[userConv.userId].conversations.push(userConv);
+    return acc;
+  }, {} as Record<string, { userId: string; userName: string; conversations: typeof similarUsers }>);
+
   return (
     <div className="p-4 space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Similar Conversations</h3>
+      <div className="flex justify-between items-center mb-6 px-1">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-800">
+            Also chatting about:
+          </h3>
+          <p className="text-md text-gray-500 line-clamp-1">
+            <span className="font-medium">{title}</span>
+          </p>
+        </div>
         <button
-          className="text-xs text-blue-500 hover:text-blue-700"
+          className="px-3 py-1.5 rounded-md bg-blue-50 text-blue-600 text-xs font-medium"
           onClick={() => processConversation(true)}
         >
           Refresh
         </button>
       </div>
-      {similarUsers.map((user) => (
-        <div key={user.userId + user.conversationId}>
-          <UserCard 
-            user={{
-              id: user.userId,
-              name: user.userName,
-              score: 1 - user.distance, // Convert distance to similarity score (0-1)
-            }} 
-            isActive={false}
-          />
-          <p className="text-sm truncate mt-1 ml-14">{user.title}</p>
-          <p className="text-xs text-gray-500 mt-1 ml-14">
-            {new Date(user.createdAt).toLocaleDateString()}
-          </p>
-        </div>
-      ))}
+
+      <div className="space-y-6">
+        {Object.values(userConversations).map((userData) => (
+          <Card key={userData.userId} className="overflow-hidden">
+            <div className="flex px-6 py-4 items-center border-b gap-3">
+              <div className="h-10 w-10 rounded-full overflow-hidden">
+                <img
+                  src={getIdenticon(userData.userName)}
+                  alt={userData.userName}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <div className="font-medium truncate">{userData.userName}</div>
+                <div className="text-xs text-gray-500">
+                  {userData.conversations.length} similar conversation
+                  {userData.conversations.length !== 1 ? 's' : ''}
+                </div>
+              </div>
+              <ChatButton
+                otherUserId={userData.userId}
+                otherUserName={userData.userName}
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 flex-shrink-0"
+                onError={(error) => console.error('Chat error:', error)}
+              />
+            </div>
+            <CardContent className="p-0">
+              <div className="divide-y">
+                {userData.conversations.map((conversation) => (
+                  <div
+                    key={conversation.conversationId}
+                    className="px-6 py-3 flex items-center justify-between gap-4"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">
+                        {conversation.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-gray-500">
+                          {new Date(
+                            conversation.createdAt
+                          ).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <ScoreCircle
+                        percentage={1 - conversation.distance}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {processingMetadata.lastProcessedAt && (
         <p className="text-xs text-gray-500 text-right">
           Last updated:{' '}
