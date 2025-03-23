@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { useConversation } from '../../providers';
-import { Button, Card, CardContent } from '@enclaveid/ui';
+import { Card, CardContent } from '@enclaveid/ui';
 import { ChatButton } from '@enclaveid/ui/stream-chat/chat-button';
 import { getIdenticon } from '@enclaveid/shared-utils';
 import { ScoreCircle } from '@enclaveid/ui/score-circle';
+import { RefreshCcw } from 'lucide-react';
 
 export function SimilarUsersTab() {
   const {
@@ -129,8 +130,8 @@ export function SimilarUsersTab() {
 
   return (
     <div className="p-4 space-y-4">
-      <div className="flex justify-between items-center mb-6 px-1">
-        <div>
+      <div className="flex flex-col justify-between items-center mb-4 px-1 gap-2">
+        <div className="w-full">
           <h3 className="text-sm font-semibold text-gray-800">
             Also chatting about:
           </h3>
@@ -138,13 +139,18 @@ export function SimilarUsersTab() {
             <span className="font-medium">{title}</span>
           </p>
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => processConversation(true)}
-        >
-          Refresh
-        </Button>
+        <div className="w-full flex flex-row items-center gap-2 justify-start">
+          <RefreshCcw
+            className="h-6 w-6 cursor-pointer bg-white border border-gray-200 rounded-md p-1"
+            onClick={() => processConversation(true)}
+          />
+          {processingMetadata.lastProcessedAt && (
+            <p className="text-xs text-gray-500 text-right">
+              Last updated at:{' '}
+              {processingMetadata.lastProcessedAt.toLocaleTimeString()}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -206,13 +212,6 @@ export function SimilarUsersTab() {
           </Card>
         ))}
       </div>
-
-      {processingMetadata.lastProcessedAt && (
-        <p className="text-xs text-gray-500 text-right">
-          Last updated:{' '}
-          {processingMetadata.lastProcessedAt.toLocaleTimeString()}
-        </p>
-      )}
     </div>
   );
 }
