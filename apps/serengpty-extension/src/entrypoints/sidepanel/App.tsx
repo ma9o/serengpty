@@ -74,7 +74,7 @@ function App() {
   };
 
   return (
-    <div className="w-screen h-screen overflow-hidden flex flex-col items-center justify-top p-4 gap-4">
+    <div className="w-screen h-screen overflow-y flex flex-col items-center justify-top p-4 gap-4">
       <div className="flex items-center gap-2">
         <Logo />
         <span className="text-2xl font-bold">SerenGPTy</span>

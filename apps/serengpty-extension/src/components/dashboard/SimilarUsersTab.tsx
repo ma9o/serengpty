@@ -153,7 +153,7 @@ export function SimilarUsersTab() {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-3">
         {Object.values(userConversations).map((userData) => (
           <Card key={userData.userId} className="overflow-hidden">
             <div className="flex px-6 py-4 items-center border-b gap-3">
