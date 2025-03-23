@@ -10,11 +10,11 @@ import {
   Channel,
   ChannelHeader,
   ChannelList,
+  ChannelListMessenger,
   DefaultStreamChatGenerics,
   MessageInput,
   MessageList,
   Thread,
-  useMobileNavigation,
   Window,
 } from 'stream-chat-react';
 import { Menu } from 'lucide-react';
@@ -93,9 +93,6 @@ export const ChatInterface = ({
     initialChatText
   );
 
-  // Use the mobile navigation hook
-  useMobileNavigation(channelListRef, navOpen, () => setNavOpen(false));
-
   // Check for channel ID in URL on client side
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -154,12 +151,14 @@ export const ChatInterface = ({
         {/* Mobile menu button */}
         {isMobile && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="absolute top-2 right-2 z-50"
-            onClick={() => setNavOpen(!navOpen)}
+            className="absolute top-2 right-2 z-50 shadow-md bg-white"
+            onClick={() => {
+              setNavOpen(!navOpen);
+            }}
           >
-            <Menu className="h-10 w-10" />
+            <Menu className="h-6 w-6" />
           </Button>
         )}
 
@@ -169,11 +168,26 @@ export const ChatInterface = ({
           className={`${
             isMobile
               ? navOpen
-                ? 'absolute top-0 left-0 h-full z-40 bg-background shadow-xl'
+                ? 'absolute top-0 left-0 h-full z-40 bg-background shadow-xl w-64'
                 : 'hidden'
-              : 'relative'
-          } w-64 border-r dark:border-gray-800 overflow-y-auto`}
+              : 'relative w-64'
+          } border-r dark:border-gray-800 overflow-y-auto`}
         >
+          {isMobile && navOpen && (
+            <div className="p-2 flex justify-between items-center border-b">
+              <span className="m-2 text-lg font-semibold">Chats</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => {
+                  setNavOpen(false);
+                }}
+              >
+                ✕
+              </Button>
+            </div>
+          )}
           <ChannelList
             customActiveChannel={activeChannel}
             filters={filters}
@@ -182,6 +196,13 @@ export const ChatInterface = ({
             Avatar={(avatarProps) => (
               <CustomAvatar {...avatarProps} getIdenticon={getIdenticon} />
             )}
+            List={(props) => {
+              return (
+                <div onClick={() => setNavOpen(false)}>
+                  <ChannelListMessenger {...props} />
+                </div>
+              );
+            }}
           />
         </div>
 
