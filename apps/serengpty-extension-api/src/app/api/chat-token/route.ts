@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     }
 
     // Generate token
-    const tokenResult = getStreamChatService().then((service) =>
+    const tokenResult = await getStreamChatService().then((service) =>
       service.generateToken(user.id)
     );
 
