@@ -1,5 +1,5 @@
 import { db } from '../../services/db';
-import { eq, not } from 'drizzle-orm';
+import { and, eq, not } from 'drizzle-orm';
 import { usersTable, conversationsTable } from '../../services/db/schema';
 import { generateEmbedding } from '../../services/embeddings/generateEmbedding';
 import { cosineDistance, desc } from 'drizzle-orm';
@@ -55,7 +55,11 @@ export async function POST(request: Request) {
       .innerJoin(usersTable, eq(conversationsTable.userId, usersTable.id))
       .where(
         // Exclude the conversation we just inserted
-        not(eq(conversationsTable.id, conversationId))
+        // and the user's own conversations
+        and(
+          not(eq(conversationsTable.id, conversationId)),
+          not(eq(usersTable.id, userId))
+        )
       )
       .orderBy(desc(distance))
       .limit(topKConversations);
