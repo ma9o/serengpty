@@ -1,4 +1,5 @@
 import { ExtensionMessage } from '../types';
+import { backgroundLogger } from '../../logger';
 import { handleConversationContent } from './handleConversationContent';
 import { handleConversationInitialContent } from './handleConversationInitialContent';
 import { handleConversationNavigated } from './handleConversationNavigated';
@@ -15,7 +16,7 @@ export function setupMessageHandlers(): () => void {
     message: ExtensionMessage,
     sender: browser.runtime.MessageSender
   ) => {
-    console.log('Background: Received message', message);
+    backgroundLogger.event(message.action, `Received ${message.action} message`, message);
 
     switch (message.action) {
       case 'conversationContent':

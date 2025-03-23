@@ -1,19 +1,30 @@
 import { OpenSidepanelMessage } from '../types';
+import { backgroundLogger } from '../../logger';
+import { createMessageHandler } from '../factory';
 
 /**
  * Handles requests to open the sidepanel
  */
-export function handleOpenSidepanel(
-  message: OpenSidepanelMessage,
-  sender: browser.runtime.MessageSender
-): void {
-  if (!sender.tab?.id || !sender.tab?.windowId) {
-    console.error('No tab or window id found');
-    return;
-  }
+export const handleOpenSidepanel = createMessageHandler<OpenSidepanelMessage>(
+  (message, sender) => {
+    if (!sender?.tab?.id || !sender.tab?.windowId) {
+      backgroundLogger.error('Cannot open sidepanel', {
+        error: new Error('No tab or window id found')
+      });
+      return;
+    }
 
-  browser.sidePanel.open({
-    tabId: sender.tab.id,
-    windowId: sender.tab.windowId,
-  });
-}
+    backgroundLogger.info('Opening sidepanel', {
+      data: {
+        tabId: sender.tab.id,
+        windowId: sender.tab.windowId
+      }
+    });
+
+    browser.sidePanel.open({
+      tabId: sender.tab.id,
+      windowId: sender.tab.windowId,
+    });
+  },
+  'background'
+);

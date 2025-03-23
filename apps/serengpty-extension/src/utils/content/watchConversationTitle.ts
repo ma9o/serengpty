@@ -1,4 +1,5 @@
 import { dispatchConversationTitleUpdated } from '../messaging/content';
+import { contentLogger } from '../logger';
 
 const CHATGPT_DEFAULT_TITLE = 'ChatGPT';
 const POLL_INTERVAL_MS = 500;
@@ -24,7 +25,12 @@ export function watchConversationTitle(conversationId: string): () => void {
     // If title is still default and we've reached max attempts, stop polling
     if (currentTitle === CHATGPT_DEFAULT_TITLE) {
       if (++attempts >= MAX_POLL_ATTEMPTS) {
-        console.log(`Failed to find conversation title after ${MAX_POLL_ATTEMPTS} attempts, stopping watcher`);
+        contentLogger.warn(`Failed to find conversation title`, {
+          data: { 
+            conversationId,
+            attempts: MAX_POLL_ATTEMPTS
+          }
+        });
         clearInterval(intervalId!);
         intervalId = null;
         return;
@@ -39,16 +45,30 @@ export function watchConversationTitle(conversationId: string): () => void {
       
       // Send update if title is different from last sent
       if (currentTitle !== lastSentTitle) {
-        console.log(`Conversation title changed: "${currentTitle}"`);
+        contentLogger.info(`Conversation title changed`, {
+          data: { 
+            conversationId, 
+            title: currentTitle
+          }
+        });
         lastSentTitle = currentTitle;
-        dispatchConversationTitleUpdated(conversationId, currentTitle);
+        dispatchConversationTitleUpdated({
+          conversationId, 
+          title: currentTitle
+        });
       }
     } else {
       // Title is stable (same as last check)
       stabilityCounter++;
       
       if (stabilityCounter >= STABILITY_COUNT) {
-        console.log(`Conversation title "${currentTitle}" stable for ${STABILITY_COUNT} checks, stopping watcher`);
+        contentLogger.info(`Conversation title stable, stopping watcher`, {
+          data: { 
+            conversationId, 
+            title: currentTitle, 
+            checks: STABILITY_COUNT
+          }
+        });
         clearInterval(intervalId!);
         intervalId = null;
         return;
@@ -64,8 +84,16 @@ export function watchConversationTitle(conversationId: string): () => void {
   if (initialTitle !== CHATGPT_DEFAULT_TITLE) {
     lastCheckedTitle = initialTitle;
     lastSentTitle = initialTitle;
-    dispatchConversationTitleUpdated(conversationId, initialTitle);
-    console.log(`Initial title already set: "${initialTitle}"`);
+    dispatchConversationTitleUpdated({
+      conversationId, 
+      title: initialTitle
+    });
+    contentLogger.info(`Initial title already set`, {
+      data: { 
+        conversationId, 
+        title: initialTitle
+      }
+    });
     // Start stability counter at 1 since we already have one stable check
     stabilityCounter = 1;
   }
@@ -77,6 +105,9 @@ export function watchConversationTitle(conversationId: string): () => void {
     if (intervalId !== null) {
       clearInterval(intervalId);
       intervalId = null;
+      contentLogger.debug(`Stopped title watcher`, {
+        data: { conversationId }
+      });
     }
   };
 }

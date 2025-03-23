@@ -1,4 +1,6 @@
 import { Message } from '../../content/extractConversation';
+import { dispatchMessage } from '../dispatchMessage';
+import { ConversationContentMessage } from '../types';
 
 /**
  * Dispatches a message indicating conversation content has changed
@@ -8,10 +10,12 @@ export function dispatchConversationContent(
   messages: Message[],
   contentHash: string
 ): void {
-  browser.runtime.sendMessage({
+  const message: ConversationContentMessage = {
     action: 'conversationContent',
     conversationId,
     messages,
     contentHash,
-  });
+  };
+  
+  dispatchMessage(message, 'content', 'runtime');
 }

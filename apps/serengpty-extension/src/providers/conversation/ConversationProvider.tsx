@@ -12,6 +12,7 @@ import { useMessageHandler } from './hooks/useMessageHandler';
 import { useExtractMessages } from './hooks/useExtractMessages';
 import { useProcessConversation } from './useProcessConversation';
 import { setupConversationChangedHandler } from '../../utils/messaging/sidepanel/handleConversationChanged';
+import { dispatchGetSidepanelState } from '../../utils/messaging/sidepanel';
 
 // Create the context with a default value
 const ConversationContext = createContext<ConversationContextType>({
@@ -95,7 +96,7 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
     
     // When the sidepanel opens, check if there's a currently active conversation
     // by requesting the current state from the background script
-    browser.runtime.sendMessage({ action: 'getSidepanelState' });
+    dispatchGetSidepanelState({});
     
     return cleanup;
   }, [handleMessage]);

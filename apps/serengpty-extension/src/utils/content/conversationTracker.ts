@@ -4,6 +4,7 @@ import {
   dispatchConversationContent,
   dispatchConversationInitialContent,
 } from '../messaging/content';
+import { contentLogger } from '../logger';
 
 // Keep track of the last processed conversation hash to avoid duplicate messages
 let lastProcessedHash: string | null = null;
@@ -37,6 +38,14 @@ export function trackConversation(conversationId: string): void {
   if (currentHash !== lastProcessedHash) {
     // Store the new hash
     lastProcessedHash = currentHash;
+    
+    contentLogger.info('Conversation content changed', {
+      data: {
+        conversationId,
+        messagesCount: messages.length,
+        contentHash: currentHash
+      }
+    });
 
     // Clear any existing timer
     if (debounceTimer !== null) {
@@ -46,7 +55,11 @@ export function trackConversation(conversationId: string): void {
     // Set a new debounce timer
     debounceTimer = setTimeout(() => {
       // Just notify about content change - leave processing decision to the provider
-      dispatchConversationContent(conversationId, messages, currentHash);
+      dispatchConversationContent({
+        conversationId, 
+        messages, 
+        contentHash: currentHash
+      });
       debounceTimer = null;
     }, DEBOUNCE_DELAY);
   }
@@ -69,8 +82,20 @@ export function observeConversation(conversationId: string): () => void {
     const currentHash = hashConversation(messages);
     lastProcessedHash = currentHash;
 
+    contentLogger.info('Initial conversation content detected', {
+      data: {
+        conversationId,
+        messagesCount: messages.length,
+        contentHash: currentHash
+      }
+    });
+
     // Send the initial state (force an update by using a different action)
-    dispatchConversationInitialContent(conversationId, messages, currentHash);
+    dispatchConversationInitialContent({
+      conversationId, 
+      messages, 
+      contentHash: currentHash
+    });
   }
 
   // Set up observer for DOM changes (which will check for content changes)
@@ -85,11 +110,21 @@ export function observeConversation(conversationId: string): () => void {
       childList: true,
       subtree: true,
     });
+    contentLogger.info('Started observing conversation container', {
+      data: { conversationId }
+    });
+  } else {
+    contentLogger.warn('Could not find conversation container to observe', {
+      data: { conversationId }
+    });
   }
 
   // Return function to disconnect observer and clear any pending debounce
   return () => {
     observer.disconnect();
+    contentLogger.info('Stopped observing conversation container', {
+      data: { conversationId }
+    });
 
     // Clear any pending debounce timer
     if (debounceTimer !== null) {

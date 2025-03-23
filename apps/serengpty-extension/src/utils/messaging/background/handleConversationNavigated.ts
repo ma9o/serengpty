@@ -1,20 +1,28 @@
 import { ConversationNavigatedMessage } from '../types';
-import { dispatchConversationChanged } from './dispatchConversationChanged';
+import { dispatchConversationChanged } from './';
 import { updateCurrentConversationState } from './handleGetSidepanelState';
+import { backgroundLogger } from '../../logger';
+import { createMessageHandler } from '../factory';
 
 /**
  * Handles conversation navigation events from content script
  */
-export function handleConversationNavigated(
-  message: ConversationNavigatedMessage
-): void {
-  const { conversationId, title } = message;
-  
-  console.log(`Background: User navigated to conversation ${conversationId}`);
+export const handleConversationNavigated = createMessageHandler<ConversationNavigatedMessage>(
+  (message) => {
+    const { conversationId, title } = message;
+    
+    backgroundLogger.info(`User navigated to conversation`, {
+      data: { conversationId, title }
+    });
 
-  // Update cached state
-  updateCurrentConversationState(conversationId, title);
+    // Update cached state
+    updateCurrentConversationState(conversationId, title);
 
-  // Forward to sidepanel without messages (UI will fetch current state)
-  dispatchConversationChanged(conversationId, undefined, undefined, title);
-}
+    // Forward to sidepanel without messages (UI will fetch current state)
+    dispatchConversationChanged({
+      conversationId, 
+      title
+    });
+  },
+  'background'
+);

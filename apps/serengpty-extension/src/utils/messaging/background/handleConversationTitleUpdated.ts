@@ -1,20 +1,28 @@
 import { ConversationTitleUpdatedMessage } from '../types';
-import { dispatchConversationChanged } from './dispatchConversationChanged';
+import { dispatchConversationChanged } from './';
 import { updateCurrentConversationState } from './handleGetSidepanelState';
+import { backgroundLogger } from '../../logger';
+import { createMessageHandler } from '../factory';
 
 /**
  * Handles conversation title update events from content script
  */
-export function handleConversationTitleUpdated(
-  message: ConversationTitleUpdatedMessage
-): void {
-  const { conversationId, title } = message;
-  
-  console.log(`Background: Conversation ${conversationId} title updated to "${title}"`);
+export const handleConversationTitleUpdated = createMessageHandler<ConversationTitleUpdatedMessage>(
+  (message) => {
+    const { conversationId, title } = message;
+    
+    backgroundLogger.info(`Conversation title updated`, {
+      data: { conversationId, title }
+    });
 
-  // Update cached state
-  updateCurrentConversationState(conversationId, title);
+    // Update cached state
+    updateCurrentConversationState(conversationId, title);
 
-  // Forward to sidepanel with title information
-  dispatchConversationChanged(conversationId, undefined, undefined, title);
-}
+    // Forward to sidepanel with title information
+    dispatchConversationChanged({
+      conversationId, 
+      title
+    });
+  },
+  'background'
+);

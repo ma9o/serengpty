@@ -1,4 +1,5 @@
-import { ConversationChangedMessage } from '../types';
+import { ConversationChangedMessage, ExtensionMessage } from '../types';
+import { sidepanelLogger } from '../../logger';
 
 /**
  * Handler type for conversation changed events
@@ -13,15 +14,18 @@ export type ConversationChangedHandler = (message: ConversationChangedMessage) =
 export function setupConversationChangedHandler(
   handler: ConversationChangedHandler
 ): () => void {
-  const listener = (message: any) => {
+  const listener = (message: ExtensionMessage) => {
     if (message.action === 'conversationChanged') {
+      sidepanelLogger.event('conversationChanged', 'Handling conversation change', message);
       handler(message as ConversationChangedMessage);
     }
   };
 
   browser.runtime.onMessage.addListener(listener);
+  sidepanelLogger.debug('Registered conversation changed handler');
 
   return () => {
     browser.runtime.onMessage.removeListener(listener);
+    sidepanelLogger.debug('Unregistered conversation changed handler');
   };
 }
