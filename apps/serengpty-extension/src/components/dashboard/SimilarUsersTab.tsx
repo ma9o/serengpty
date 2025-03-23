@@ -132,12 +132,12 @@ export function SimilarUsersTab() {
     <div className="p-4 space-y-4">
       <div className="flex flex-col justify-between items-center mb-4 px-1 gap-2">
         <div className="w-full">
-          <h3 className="text-sm font-semibold text-gray-800">
-            Also chatting about:
-          </h3>
           <p className="text-md text-gray-500 line-clamp-1">
-            <span className="font-medium">{title}</span>
+            Also chatting about:
           </p>
+          <h3 className="text-sm font-semibold text-gray-800">
+            <span className="font-medium">{title}</span>
+          </h3>
         </div>
         <div className="w-full flex flex-row items-center gap-2 justify-start">
           <RefreshCcw
