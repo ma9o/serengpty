@@ -3,6 +3,7 @@ import { db } from '../../services/db';
 import { usersTable } from '../../services/db/schema';
 import { generateUniqueUsername } from '@enclaveid/shared-utils';
 import { eq } from 'drizzle-orm';
+import { getStreamChatService } from '../../services/streamChat';
 
 export async function POST() {
   try {
@@ -30,6 +31,15 @@ export async function POST() {
       .returning({ id: usersTable.id, name: usersTable.name });
 
     const user = results[0];
+
+    // Create the user in Stream Chat
+    await getStreamChatService().then((service) =>
+      service.upsertUser({
+        id: user.id,
+        name: user.name,
+        role: 'user',
+      })
+    );
 
     return NextResponse.json({ userId: user.id, name: user.name });
   } catch (error) {

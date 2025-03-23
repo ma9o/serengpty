@@ -1,7 +1,7 @@
 import { db } from '../../services/db';
 import { and, eq, not } from 'drizzle-orm';
 import { usersTable, conversationsTable } from '../../services/db/schema';
-import { generateEmbedding } from '../../services/embeddings/generateEmbedding';
+import { generateEmbedding } from '../../services/generateEmbedding';
 import { cosineDistance, desc } from 'drizzle-orm';
 
 const topKConversations = 5;

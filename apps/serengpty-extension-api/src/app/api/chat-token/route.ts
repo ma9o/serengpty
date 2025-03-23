@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { StreamChatService } from '@enclaveid/shared-utils';
 import { db } from '../../services/db';
 import { usersTable } from '../../services/db/schema';
 import { eq } from 'drizzle-orm';
+import { getStreamChatService } from '../../services/streamChat';
 
 export async function POST(request: Request) {
   try {
@@ -25,21 +25,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Create Stream Chat service
-    const streamChatService = new StreamChatService({
-      apiKey: process.env.VITE_STREAM_CHAT_API_KEY!,
-      apiSecret: process.env.STREAM_CHAT_API_SECRET,
-    });
-
-    // Make sure the user exists in Stream Chat
-    await streamChatService.upsertUser({
-      id: user.id,
-      name: user.name,
-      role: 'user',
-    });
-
     // Generate token
-    const tokenResult = streamChatService.generateToken(user.id);
+    const tokenResult = getStreamChatService().then((service) =>
+      service.generateToken(user.id)
+    );
 
     return NextResponse.json(tokenResult);
   } catch (error) {

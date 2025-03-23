@@ -139,7 +139,7 @@ export function SimilarUsersTab() {
           </p>
         </div>
         <button
-          className="px-3 py-1.5 rounded-md bg-blue-50 text-blue-600 text-xs font-medium"
+          className="px-3 py-1.5 rounded-md bg-blue-500 text-white text-xs font-medium"
           onClick={() => processConversation(true)}
         >
           Refresh
