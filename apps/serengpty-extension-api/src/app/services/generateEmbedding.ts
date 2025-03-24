@@ -1,7 +1,6 @@
 import { PredictionServiceClient, helpers } from '@google-cloud/aiplatform';
 
-const apiEndpoint = 'us-central1-aiplatform.googleapis.com';
-const clientOptions = { apiEndpoint: apiEndpoint };
+const clientOptions = { apiEndpoint: 'us-central1-aiplatform.googleapis.com' };
 const location = 'us-central1';
 const project = 'enclaveid';
 const model = 'text-embedding-large-exp-03-07';
