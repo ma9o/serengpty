@@ -148,19 +148,25 @@ export function SimilarUsersTab({
   if (similarUsers.length === 0) {
     return (
       <div className="p-4 text-center">
-        <p>No similar users found. Try a different conversation.</p>
-        <button
-          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          onClick={() => processConversation(true)}
-        >
-          Retry
-        </button>
-        {processingMetadata.lastProcessedAt && (
-          <p className="text-xs text-gray-500 mt-2">
-            Last processed:{' '}
-            {processingMetadata.lastProcessedAt.toLocaleTimeString()}
-          </p>
-        )}
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          You're quite unique!
+          <br />
+          No one else thought about this, yet.
+          <br />
+          Come back later or try another conversation.
+        </p>
+        <div className="flex flex-row items-center gap-2 w-full justify-center mt-4">
+          <RefreshCcw
+            className="h-6 w-6 cursor-pointer bg-white border border-gray-200 rounded-md p-1"
+            onClick={() => processConversation(true)}
+          />
+          {processingMetadata.lastProcessedAt && (
+            <p className="text-xs text-gray-500">
+              Last processed:{' '}
+              {processingMetadata.lastProcessedAt.toLocaleTimeString()}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
