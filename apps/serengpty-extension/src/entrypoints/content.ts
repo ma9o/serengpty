@@ -4,6 +4,7 @@ import { watchConversationTitle } from '../utils/content/watchConversationTitle'
 import { extractConversationId } from '../utils/extractConversationId';
 import { dispatchConversationNavigated } from '../utils/messaging/content';
 import { contentLogger } from '../utils/logger';
+import { setupMessageHandlers } from '../utils/messaging/content/setupMessageHandlers';
 
 const watchPattern = new MatchPattern('*://chatgpt.com/c/*');
 
@@ -17,6 +18,9 @@ export default defineContentScript({
     // Track active observers to disconnect them when needed
     let activeObserver: (() => void) | null = null;
     let activeTitleWatcher: (() => void) | null = null;
+
+    // Set up message handlers
+    const cleanupMessageHandlers = setupMessageHandlers();
 
     // Handle SPA navigation
     ctx.addEventListener(window, 'wxt:locationchange', async ({ newUrl }) => {
@@ -64,6 +68,9 @@ export default defineContentScript({
       if (activeTitleWatcher) {
         activeTitleWatcher();
       }
+      
+      // Clean up message handlers
+      cleanupMessageHandlers();
     };
   },
 });

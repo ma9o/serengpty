@@ -45,6 +45,13 @@ export interface GetSidepanelStateMessage extends BaseMessage {
   action: 'getSidepanelState';
 }
 
+// Background -> Content Messages
+export interface RequestContentExtractionMessage extends BaseMessage {
+  action: 'requestContentExtraction';
+  conversationId: string;
+  source: 'background';
+}
+
 // Background -> Sidepanel Messages
 export interface ConversationChangedMessage extends BaseMessage {
   action: 'conversationChanged';
@@ -63,4 +70,5 @@ export type ExtensionMessage =
   | OpenSidepanelMessage
   | CloseSidepanelMessage
   | GetSidepanelStateMessage
+  | RequestContentExtractionMessage
   | ConversationChangedMessage;

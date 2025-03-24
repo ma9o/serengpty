@@ -7,7 +7,6 @@ import {
 } from '@enclaveid/ui/card';
 import { Button } from '@enclaveid/ui/button';
 import { addActivatedConversation } from '../utils/storage';
-import { dispatchCloseSidepanel } from '../utils/messaging/sidepanel';
 import { useState } from 'react';
 
 export function Confirmation({
@@ -38,10 +37,6 @@ export function Confirmation({
     }
   };
 
-  const handleCancel = () => {
-    dispatchCloseSidepanel();
-  };
-
   return (
     <Card className="m-8">
       <CardHeader>
@@ -56,10 +51,7 @@ export function Confirmation({
           conversation.
         </p>
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={handleCancel}>
-          Cancel
-        </Button>
+      <CardFooter className="flex items-center justify-center">
         <Button onClick={handleConfirm} disabled={isLoading}>
           {isLoading ? 'Activating...' : 'Confirm'}
         </Button>

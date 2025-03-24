@@ -33,6 +33,9 @@ export default defineConfig({
         gzipSize: true, // Show gzip size
         brotliSize: true, // Show brotli size
         sourcemap: false, // Use source maps
+        openOptions: {
+          background: true,
+        },
       }),
     ],
 

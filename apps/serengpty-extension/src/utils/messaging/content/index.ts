@@ -7,6 +7,10 @@ import {
   OpenSidepanelMessage
 } from '../types';
 
+// Export handlers
+export * from './handleRequestContentExtraction';
+export * from './setupMessageHandlers';
+
 // Export direct message dispatchers
 export const dispatchConversationContent = createMessageDispatcher<ConversationContentMessage>(
   'conversationContent', 'content', 'runtime'

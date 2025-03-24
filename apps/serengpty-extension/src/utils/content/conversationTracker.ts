@@ -14,6 +14,54 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 const DEBOUNCE_DELAY = 500;
 
 /**
+ * Forces immediate extraction and dispatch of conversation content
+ * Used when responding to explicit requests for content from background script
+ * 
+ * @param conversationId The ID of the conversation to extract content for
+ */
+export function forceContentExtraction(conversationId: string): void {
+  if (!conversationId) return;
+  
+  // Extract the conversation from the DOM
+  const messages = extractConversation();
+  
+  // No content to process
+  if (messages.length === 0) {
+    contentLogger.warn('Force extraction found no messages', {
+      data: { conversationId }
+    });
+    return;
+  }
+  
+  // Generate hash for this conversation
+  const currentHash = hashConversation(messages);
+  
+  // Update last processed hash
+  lastProcessedHash = currentHash;
+  
+  contentLogger.info('Force extracting conversation content', {
+    data: {
+      conversationId,
+      messagesCount: messages.length,
+      contentHash: currentHash
+    }
+  });
+  
+  // Clear any existing debounce timer
+  if (debounceTimer !== null) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+  
+  // Send the content immediately (no debounce)
+  dispatchConversationInitialContent({
+    conversationId,
+    messages,
+    contentHash: currentHash
+  });
+}
+
+/**
  * Tracks changes to the current conversation and notifies the background script.
  * This function ONLY detects DOM changes and sends content updates.
  * The decision to upsert is made by ConversationProvider.
