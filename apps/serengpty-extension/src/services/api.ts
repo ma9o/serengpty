@@ -1,7 +1,7 @@
 import { SimilarUser } from '../utils/storage';
 
 // Using environment variable or default to localhost during development
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:3008/api';
 
 // Ensure the URL doesn't end with a trailing slash

@@ -1,10 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useConversation } from '../../providers';
 import { Card, CardContent } from '@enclaveid/ui';
 import { ChatButton } from '@enclaveid/ui/stream-chat/chat-button';
 import { getIdenticon } from '@enclaveid/shared-utils';
 import { ScoreCircle } from '@enclaveid/ui/score-circle';
-import { RefreshCcw } from 'lucide-react';
+import { RefreshCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { SummaryButton } from '../SummaryButton';
+import Markdown from 'react-markdown';
 
 export function SimilarUsersTab({
   onChatButtonClick,
@@ -21,6 +23,44 @@ export function SimilarUsersTab({
     processingMetadata,
     processConversation,
   } = useConversation();
+
+  // Add state to track completions and open accordions
+  const [completions, setCompletions] = useState<Record<string, string>>({});
+  const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>(
+    {}
+  );
+
+  // Toggle accordion function
+  const toggleAccordion = (convId: string) => {
+    setOpenAccordions((prev) => ({
+      ...prev,
+      [convId]: !prev[convId],
+    }));
+  };
+
+  // Create a stable completion handler with useCallback
+  const handleCompletion = useCallback(
+    (conversationId: string, completion: string) => {
+      setCompletions((prev) => ({
+        ...prev,
+        [conversationId]: completion,
+      }));
+
+      // Auto-open accordion when summary starts streaming
+      // Use functional update to avoid needing the openAccordions dependency
+      setOpenAccordions((prev) => {
+        // Only update if not already open
+        if (!prev[conversationId]) {
+          return {
+            ...prev,
+            [conversationId]: true,
+          };
+        }
+        return prev;
+      });
+    },
+    [] // No dependencies needed with functional updates
+  );
 
   // Process conversation automatically with content-aware processing
   useEffect(() => {
@@ -54,10 +94,10 @@ export function SimilarUsersTab({
 
     // Determine if this is initial processing or an update
     const isInitialProcessing = !processingMetadata.lastProcessedHash;
-    
+
     // Use 0ms timeout for initial processing, 1000ms debounce for updates
     const debounceTime = isInitialProcessing ? 0 : 1000;
-    
+
     const processingTimeout = setTimeout(() => {
       console.log(
         `Processing conversation with ${
@@ -196,28 +236,59 @@ export function SimilarUsersTab({
             <CardContent className="p-0">
               <div className="divide-y">
                 {userData.conversations.map((conversation) => (
-                  <div
-                    key={conversation.conversationId}
-                    className="px-6 py-3 flex items-center justify-between gap-4"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">
-                        {conversation.title}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-gray-500">
-                          {new Date(
-                            conversation.createdAt
-                          ).toLocaleDateString()}
-                        </span>
+                  <div key={conversation.id} className="px-6 py-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">
+                          {conversation.title}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-gray-500">
+                            Initiated on{' '}
+                            {new Date(
+                              conversation.createdAt
+                            ).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-start gap-2 mt-1">
+                          <SummaryButton
+                            currentConversationId={conversationId || undefined}
+                            otherConversationId={conversation.id}
+                            setCompletion={(completion) => {
+                              handleCompletion(conversation.id, completion);
+                            }}
+                          />
+
+                          {/* Accordion toggle button */}
+                          {completions[conversation.id] && (
+                            <button
+                              onClick={() => toggleAccordion(conversation.id)}
+                              className="text-gray-500 hover:text-gray-700"
+                            >
+                              {openAccordions[conversation.id] ? (
+                                <ChevronUp size={16} />
+                              ) : (
+                                <ChevronDown size={16} />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <ScoreCircle
+                          percentage={1 - conversation.distance}
+                          size="sm"
+                        />
                       </div>
                     </div>
-                    <div className="flex-shrink-0">
-                      <ScoreCircle
-                        percentage={1 - conversation.distance}
-                        size="sm"
-                      />
-                    </div>
+
+                    {/* Accordion content */}
+                    {completions[conversation.id] &&
+                      openAccordions[conversation.id] && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-md text-sm">
+                          <Markdown>{completions[conversation.id]}</Markdown>
+                        </div>
+                      )}
                   </div>
                 ))}
               </div>

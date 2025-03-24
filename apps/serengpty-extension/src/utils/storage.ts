@@ -17,7 +17,7 @@ export const userPreferencesStorage = storage.defineItem<UserPreferences>(
 export interface SimilarUser {
   userId: string;
   userName: string;
-  conversationId: string;
+  id: string;
   title: string;
   distance: number;
   createdAt: string;
