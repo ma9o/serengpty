@@ -40,15 +40,19 @@ export function Confirmation({
   return (
     <Card className="m-8">
       <CardHeader>
-        <CardTitle className="text-xl font-bold">
-          Match on "{title}" ?
+        <CardTitle className="text-lg font-bold text-gray-500">
+          Find others chatting on:
         </CardTitle>
+        <CardTitle className="text-xl font-bold">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Would you like to activate this conversation to find similar users?
-          This will allow the extension to process the content of this
-          conversation.
+          If you confirm, we'll show you which other ChatGPT users are chatting
+          on the same topic.
+          <br />
+          <br />
+          Don't worry too much about it being uncomfortable: accounts are
+          anonymous and the raw content is never shown verbatim.
         </p>
       </CardContent>
       <CardFooter className="flex items-center justify-center">
