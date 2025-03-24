@@ -10,54 +10,56 @@ import { contentLogger } from '../logger';
 let lastProcessedHash: string | null = null;
 // Debounce timer for conversation content updates
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-// Debounce delay in milliseconds
-const DEBOUNCE_DELAY = 500;
+// Stability tracking - time when the hash was last changed
+let lastHashChangeTime = 0;
+// Stability threshold in milliseconds (1 second)
+const STABILITY_THRESHOLD = 1000;
 
 /**
  * Forces immediate extraction and dispatch of conversation content
  * Used when responding to explicit requests for content from background script
- * 
+ *
  * @param conversationId The ID of the conversation to extract content for
  */
 export function forceContentExtraction(conversationId: string): void {
   if (!conversationId) return;
-  
+
   // Extract the conversation from the DOM
   const messages = extractConversation();
-  
+
   // No content to process
   if (messages.length === 0) {
     contentLogger.warn('Force extraction found no messages', {
-      data: { conversationId }
+      data: { conversationId },
     });
     return;
   }
-  
+
   // Generate hash for this conversation
   const currentHash = hashConversation(messages);
-  
+
   // Update last processed hash
   lastProcessedHash = currentHash;
-  
+
   contentLogger.info('Force extracting conversation content', {
     data: {
       conversationId,
       messagesCount: messages.length,
-      contentHash: currentHash
-    }
+      contentHash: currentHash,
+    },
   });
-  
+
   // Clear any existing debounce timer
   if (debounceTimer !== null) {
     clearTimeout(debounceTimer);
     debounceTimer = null;
   }
-  
+
   // Send the content immediately (no debounce)
   dispatchConversationInitialContent({
     conversationId,
     messages,
-    contentHash: currentHash
+    contentHash: currentHash,
   });
 }
 
@@ -86,13 +88,16 @@ export function trackConversation(conversationId: string): void {
   if (currentHash !== lastProcessedHash) {
     // Store the new hash
     lastProcessedHash = currentHash;
-    
+
+    // Update the time when the hash last changed
+    lastHashChangeTime = Date.now();
+
     contentLogger.info('Conversation content changed', {
       data: {
         conversationId,
         messagesCount: messages.length,
-        contentHash: currentHash
-      }
+        contentHash: currentHash,
+      },
     });
 
     // Clear any existing timer
@@ -102,14 +107,40 @@ export function trackConversation(conversationId: string): void {
 
     // Set a new debounce timer
     debounceTimer = setTimeout(() => {
-      // Just notify about content change - leave processing decision to the provider
-      dispatchConversationContent({
-        conversationId, 
-        messages, 
-        contentHash: currentHash
-      });
+      // Check if hash has been stable for STABILITY_THRESHOLD
+      const timeElapsed = Date.now() - lastHashChangeTime;
+
+      if (timeElapsed >= STABILITY_THRESHOLD) {
+        contentLogger.info(
+          'Conversation hash stabilized, dispatching content',
+          {
+            data: {
+              conversationId,
+              messagesCount: messages.length,
+              contentHash: currentHash,
+              stableFor: `${timeElapsed}ms`,
+            },
+          }
+        );
+
+        // Just notify about content change - leave processing decision to the provider
+        dispatchConversationContent({
+          conversationId,
+          messages,
+          contentHash: currentHash,
+        });
+      } else {
+        contentLogger.info('Skipping dispatch, hash not stable yet', {
+          data: {
+            conversationId,
+            timeElapsed: `${timeElapsed}ms`,
+            requiredStability: `${STABILITY_THRESHOLD}ms`,
+          },
+        });
+      }
+
       debounceTimer = null;
-    }, DEBOUNCE_DELAY);
+    }, STABILITY_THRESHOLD);
   }
 }
 
@@ -134,15 +165,15 @@ export function observeConversation(conversationId: string): () => void {
       data: {
         conversationId,
         messagesCount: messages.length,
-        contentHash: currentHash
-      }
+        contentHash: currentHash,
+      },
     });
 
     // Send the initial state (force an update by using a different action)
     dispatchConversationInitialContent({
-      conversationId, 
-      messages, 
-      contentHash: currentHash
+      conversationId,
+      messages,
+      contentHash: currentHash,
     });
   }
 
@@ -159,11 +190,11 @@ export function observeConversation(conversationId: string): () => void {
       subtree: true,
     });
     contentLogger.info('Started observing conversation container', {
-      data: { conversationId }
+      data: { conversationId },
     });
   } else {
     contentLogger.warn('Could not find conversation container to observe', {
-      data: { conversationId }
+      data: { conversationId },
     });
   }
 
@@ -171,7 +202,7 @@ export function observeConversation(conversationId: string): () => void {
   return () => {
     observer.disconnect();
     contentLogger.info('Stopped observing conversation container', {
-      data: { conversationId }
+      data: { conversationId },
     });
 
     // Clear any pending debounce timer
