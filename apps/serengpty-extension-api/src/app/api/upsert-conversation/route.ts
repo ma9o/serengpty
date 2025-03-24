@@ -4,8 +4,8 @@ import { usersTable, conversationsTable } from '../../services/db/schema';
 import { generateEmbedding } from '../../services/generateEmbedding';
 import { cosineDistance } from 'drizzle-orm';
 
-const topKConversations = 5;
-const maxDistance = process.env.NODE_ENV === 'production' ? 0.2 : 1;
+const TOP_K_CONVERSATIONS = 5;
+const MAX_DISTANCE = 0.2; //process.env.NODE_ENV === 'production' ? 0.2 : 1;
 
 export async function POST(request: Request) {
   const { userId, title, content, id: conversationId } = await request.json();
@@ -75,11 +75,11 @@ export async function POST(request: Request) {
         and(
           not(eq(conversationsTable.id, conversationId)),
           not(eq(usersTable.id, userId)),
-          lte(distance, maxDistance)
+          lte(distance, MAX_DISTANCE)
         )
       )
       .orderBy(asc(distance))
-      .limit(topKConversations);
+      .limit(TOP_K_CONVERSATIONS);
 
     return result;
   });

@@ -1,6 +1,5 @@
 // wxt.config.ephemeral.ts
 // This config can be also used for e2e tests that dont need to persist data
-import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import { defineConfig } from 'wxt';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -26,7 +25,7 @@ export default defineConfig({
     cacheDir: '../../node_modules/.vite/apps/serengpty-extension',
     plugins: [
       nxViteTsPaths(),
-      nxCopyAssetsPlugin(['*.md']),
+      // nxCopyAssetsPlugin(['*.md']),
       visualizer({
         filename: '../../dist/apps/serengpty-extension/stats.html', // Output file name
         gzipSize: true, // Show gzip size
