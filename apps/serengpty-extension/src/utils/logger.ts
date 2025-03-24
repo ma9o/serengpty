@@ -16,12 +16,19 @@ interface LogOptions {
  */
 export function createLogger(context: LogContext) {
   const prefix = `[serengpty:${context}]`;
+  const isProd = import.meta.env.MODE === 'production';
   
   const formatAction = (action?: string): string => {
     return action ? ` ${action}` : '';
   };
 
   const log = (level: LogLevel, message: string, options: LogOptions = {}) => {
+    // Skip debug logs in production
+    if (isProd && level === 'debug') return;
+    
+    // Skip info logs in production unless they are events
+    if (isProd && level === 'info' && !options.action) return;
+    
     const { action, data, error } = options;
     
     // Format: [serengpty:context] ACTION: Message
