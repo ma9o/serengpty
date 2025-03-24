@@ -1,8 +1,8 @@
 import { db } from '../../services/db';
-import { and, eq, not } from 'drizzle-orm';
+import { and, asc, eq, not } from 'drizzle-orm';
 import { usersTable, conversationsTable } from '../../services/db/schema';
 import { generateEmbedding } from '../../services/generateEmbedding';
-import { cosineDistance, desc } from 'drizzle-orm';
+import { cosineDistance } from 'drizzle-orm';
 
 const topKConversations = 5;
 
@@ -17,7 +17,22 @@ export async function POST(request: Request) {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  const embedding = await generateEmbedding(content);
+  // If the conversation content is the same as the existing conversation,
+  // we don't need to insert or update it
+  const existingConversation = await db.query.conversationsTable.findFirst({
+    where: eq(conversationsTable.id, conversationId),
+  });
+
+  let embedding: number[];
+  if (
+    existingConversation &&
+    existingConversation.content === content &&
+    existingConversation.embedding
+  ) {
+    embedding = existingConversation.embedding;
+  } else {
+    embedding = await generateEmbedding(content);
+  }
 
   const mostSimilarConversations = await db.transaction(async (tx) => {
     // Insert or update the conversation
@@ -42,7 +57,7 @@ export async function POST(request: Request) {
 
     const distance = cosineDistance(conversationsTable.embedding, embedding);
 
-    return await tx
+    const result = await tx
       .select({
         id: conversationsTable.id,
         title: conversationsTable.title,
@@ -61,8 +76,10 @@ export async function POST(request: Request) {
           not(eq(usersTable.id, userId))
         )
       )
-      .orderBy(desc(distance))
+      .orderBy(asc(distance))
       .limit(topKConversations);
+
+    return result;
   });
 
   return new Response(JSON.stringify(mostSimilarConversations), {
