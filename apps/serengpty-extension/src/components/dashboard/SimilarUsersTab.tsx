@@ -52,16 +52,22 @@ export function SimilarUsersTab({
       return;
     }
 
-    // Debounce to avoid processing during active conversation
+    // Determine if this is initial processing or an update
+    const isInitialProcessing = !processingMetadata.lastProcessedHash;
+    
+    // Use 0ms timeout for initial processing, 1000ms debounce for updates
+    const debounceTime = isInitialProcessing ? 0 : 1000;
+    
     const processingTimeout = setTimeout(() => {
       console.log(
         `Processing conversation with ${
           contentChanged ? 'changed' : 'new'
         } content:`,
-        conversationId
+        conversationId,
+        isInitialProcessing ? '(initial)' : '(update)'
       );
       processConversation(false);
-    }, 1000); // 1 second debounce
+    }, debounceTime); // 0ms for initial, 1 second debounce for updates
 
     return () => clearTimeout(processingTimeout);
   }, [
