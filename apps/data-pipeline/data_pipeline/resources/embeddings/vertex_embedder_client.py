@@ -141,7 +141,7 @@ class VertexEmbedderClient(BaseEmbedderClient):
     async def get_embeddings(
         self,
         texts: list[str],
-        api_batch_size: int = 30,
+        api_batch_size: int = 1,  # This doesnt matter because under the hood the client limits to 1 request anyway
         gpu_batch_size: int = 1,
     ) -> tuple[float, list[list[float]]]:
         """
