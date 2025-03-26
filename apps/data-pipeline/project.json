@@ -14,8 +14,9 @@
     "lock": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "poetry lock --no-update",
-        "cwd": "apps/data-pipeline"
+        "command": "poetry lock",
+        "cwd": "apps/data-pipeline",
+        "args": ""
       }
     },
     "add": {

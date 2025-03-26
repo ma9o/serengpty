@@ -2,6 +2,7 @@ from dagster import EnvVar
 from dagster_polars import PolarsParquetIOManager
 
 from data_pipeline.constants.environments import DAGSTER_STORAGE_DIRECTORY
+from data_pipeline.resources.azure_queue_resource import AzureQueueResource
 from data_pipeline.resources.batch_embedder_resource import BatchEmbedderResource
 from data_pipeline.resources.batch_inference.llms.claude import claude_resource
 from data_pipeline.resources.batch_inference.llms.deepseek_r1 import (
@@ -41,4 +42,9 @@ resources = {
         extension=".snappy", base_dir=str(DAGSTER_STORAGE_DIRECTORY)
     ),
     "postgres": PostgresResource(connection_string=EnvVar("DATABASE_URL")),
+    "azure_queue": AzureQueueResource(
+        account_name=EnvVar("AZURE_STORAGE_ACCOUNT_NAME"),
+        account_key=EnvVar("AZURE_STORAGE_ACCOUNT_KEY"),
+        queue_name="gemini-embedding-tasks",
+    ),
 }

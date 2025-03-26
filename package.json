@@ -125,7 +125,7 @@
     "@nx/web": "20.2.2",
     "@nx/workspace": "20.2.2",
     "@nxazure/func": "^1.3.5",
-    "@nxlv/python": "^20.0.1",
+    "@nxlv/python": "^20.12.0",
     "@playwright/test": "^1.36.0",
     "@swc-node/register": "~1.9.1",
     "@swc/cli": "~0.3.12",
