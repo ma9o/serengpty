@@ -52,6 +52,8 @@ pytest-html = "3.2.0"
 dagster-webserver = "^1.10.4"
 python-dotenv = "^1.0.1"
 
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8"
 
 [build-system]
 requires = ["poetry-core"]
