@@ -72,3 +72,6 @@ apps/serengpty-extension/.output/*
 
 # Chrome data
 apps/serengpty-extension/.wxt/*
+
+# Ignore any repomix-output.xml in any directory
+**/repomix-output.xml
