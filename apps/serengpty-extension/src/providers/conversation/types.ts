@@ -5,6 +5,7 @@ import { SimilarUser } from '../../utils/storage';
 export interface ProcessingMetadata {
   lastProcessedHash: string | null;
   lastProcessedAt: Date | null;
+  error?: string | null; // Optional: Add error message to metadata
 }
 
 // Define context types
@@ -20,6 +21,9 @@ export interface ConversationContextType {
   
   // Methods
   processConversation: (forceRefresh?: boolean) => Promise<void>;
+  // Error handling
+  processingError?: string | null;
+  clearProcessingError: () => void;
 }
 
 // We're now using the types from utils/messaging/types.ts instead

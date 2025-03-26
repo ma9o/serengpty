@@ -25,10 +25,13 @@ export interface SimilarUser {
 
 export interface ConversationState {
   id: string;
-  status: 'idle' | 'processing' | 'completed';
+  // Add 'error' to the status possibilities
+  status: 'idle' | 'processing' | 'completed' | 'error';
   lastProcessed: string | null; // ISO timestamp
   contentHash: string | null; // Hash of messages for content comparison
   similarUsers?: SimilarUser[]; // Cache similar users
+  // Add an optional error message field
+  error?: string | null;
 }
 
 export const conversationStatesStorage = storage.defineItem<
@@ -37,7 +40,7 @@ export const conversationStatesStorage = storage.defineItem<
 
 export async function updateConversationState(
   conversationId: string,
-  updates: Partial<ConversationState>
+  updates: Partial<Omit<ConversationState, 'id'>> // Use Omit to prevent overwriting ID
 ): Promise<ConversationState> {
   const states = await conversationStatesStorage.getValue();
   const currentState = states[conversationId] || {
@@ -45,13 +48,22 @@ export async function updateConversationState(
     status: 'idle',
     lastProcessed: null,
     contentHash: null,
+    error: null, // Initialize error field
   };
 
-  const updatedState = { ...currentState, ...updates };
+  // Ensure we don't accidentally remove existing fields if not provided in updates
+  const updatedState: ConversationState = {
+    ...currentState,
+    ...updates,
+  };
+
   await conversationStatesStorage.setValue({
     ...states,
     [conversationId]: updatedState,
   });
+
+  // Log the state update for debugging
+  console.log(`[Storage] Updated state for ${conversationId}:`, updatedState);
 
   return updatedState;
 }
@@ -81,13 +93,29 @@ export async function addActivatedConversation(
 }
 
 export async function shouldProcessConversation(
-  conversationId: string
+  conversationId: string,
+  currentContentHash: string | null // Add current hash to check against
 ): Promise<boolean> {
   const states = await conversationStatesStorage.getValue();
   const state = states[conversationId];
 
-  if (!state) return true;
+  if (!state) return true; // Never processed before
+
+  // Don't process if currently processing
   if (state.status === 'processing') return false;
 
+  // Don't process if the last attempt for THIS hash resulted in an error
+  if (state.status === 'error' && state.contentHash === currentContentHash) {
+      console.log(`[Storage] Skipping processing for ${conversationId} - hash ${currentContentHash} previously failed.`);
+      return false;
+  }
+
+  // Don't process if the content hash is the same as the last successfully completed one
+  if (state.status === 'completed' && state.contentHash === currentContentHash) {
+      console.log(`[Storage] Skipping processing for ${conversationId} - hash ${currentContentHash} already completed.`);
+      return false;
+  }
+
+  // Otherwise, okay to process (idle, or completed but hash changed, or error but hash changed)
   return true;
 }

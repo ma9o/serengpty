@@ -6,12 +6,19 @@ import { Loader2 } from 'lucide-react';
 import { Dashboard } from '../../components/dashboard/Dashboard';
 import { ChatWrapper } from '../../components/ChatWrapper';
 import { Confirmation } from '../../components/Confirmation';
+import { ErrorBanner } from '../../components/ErrorBanner';
 import { Logo } from '@enclaveid/ui/logo';
 
 // Inner component that contains the UI content without ChatWrapper
 function AppContentInner({ unreadCount }: { unreadCount: number }) {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
-  const { conversationId, title } = useConversation();
+  const { 
+    conversationId, 
+    title, 
+    processingError, 
+    processConversation,
+    clearProcessingError
+  } = useConversation();
 
   useHandleCloseSidepanel();
 
@@ -29,6 +36,37 @@ function AppContentInner({ unreadCount }: { unreadCount: number }) {
   }, [conversationId]);
 
   const isLoading = isActivated === null;
+
+  // If there's a processing error, display the error banner instead of normal content
+  if (processingError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-4">
+        <div className="w-full max-w-md">
+          <ErrorBanner 
+            message={`Failed to process conversation data: ${processingError}`}
+            onRetry={() => {
+              // Force refresh when retrying
+              if (conversationId) {
+                // Clear the error first, then force refresh
+                clearProcessingError();
+                processConversation(true);
+              }
+            }}
+            onDismiss={() => {
+              // Allow user to dismiss the error
+              clearProcessingError();
+            }}
+          />
+          <div className="p-4 text-center mt-4">
+            <p className="text-sm text-gray-500">
+              We encountered an error while processing your conversation. 
+              Please try again or come back later.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // The content to render based on activation state
   if (isLoading) {

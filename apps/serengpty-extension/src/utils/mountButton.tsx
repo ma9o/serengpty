@@ -2,17 +2,19 @@ import { createRoot } from 'react-dom/client';
 import { ContentButton } from '../components/ContentButton';
 /**
  * Mounts a round button before the selected div using XPath for element selection.
- * The function targets a specific element in the DOM hierarchy under composer-background.
+ * The function targets a specific element in the DOM hierarchy
  */
 export function mountButton(): void {
-  const composerBackground = document.getElementById('composer-background');
+  const composerBackground = document.querySelector(
+    '[data-type="unified-composer"]'
+  );
 
   if (!composerBackground) {
-    console.error('Root element with ID "composer-background" not found');
+    console.error('Root element not found');
     return;
   }
 
-  const xpath = './div[1]/div[2]/div[2]/div[1]';
+  const xpath = './div[1]/div[1]/div[2]/div[1]/div[2]/div[1]';
   const result = document.evaluate(
     xpath,
     composerBackground,

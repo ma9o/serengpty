@@ -16,7 +16,8 @@ export function useMessageHandler(
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
   setSimilarUsers: React.Dispatch<React.SetStateAction<any[]>>,
   setContentHash: React.Dispatch<React.SetStateAction<string | null>>,
-  setProcessingMetadata: React.Dispatch<React.SetStateAction<ProcessingMetadata>>
+  setProcessingMetadata: React.Dispatch<React.SetStateAction<ProcessingMetadata>>,
+  setProcessingError: React.Dispatch<React.SetStateAction<string | null>>
 ) {
   const handleMessage = useCallback(
     async (message: ConversationChangedMessage) => {
@@ -30,8 +31,10 @@ export function useMessageHandler(
         // Reset processing metadata for new conversation
         setProcessingMetadata({
           lastProcessedHash: null,
-          lastProcessedAt: null
+          lastProcessedAt: null,
+          error: null
         });
+        setProcessingError(null);
         console.log(`Resetting state for new conversation: ${message.conversationId}`);
       }
       
@@ -78,8 +81,15 @@ export function useMessageHandler(
             if (state.contentHash && state.lastProcessed) {
               setProcessingMetadata({
                 lastProcessedHash: state.contentHash,
-                lastProcessedAt: new Date(state.lastProcessed)
+                lastProcessedAt: new Date(state.lastProcessed),
+                error: state.error || null
               });
+              // Also set the processing error in the context
+              if (state.error) {
+                setProcessingError(state.error);
+              } else {
+                setProcessingError(null);
+              }
             }
           }
         } catch (error) {
@@ -89,7 +99,7 @@ export function useMessageHandler(
         }
       }
     },
-    [conversationId, setConversationId, setTitle, setMessages, setIsLoading, setSimilarUsers, setContentHash, setProcessingMetadata]
+    [conversationId, setConversationId, setTitle, setMessages, setIsLoading, setSimilarUsers, setContentHash, setProcessingMetadata, setProcessingError]
   );
 
   return handleMessage;

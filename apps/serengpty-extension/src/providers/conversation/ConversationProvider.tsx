@@ -25,9 +25,13 @@ const ConversationContext = createContext<ConversationContextType>({
   processingMetadata: {
     lastProcessedHash: null,
     lastProcessedAt: null,
+    error: null,
   },
-
+  processingError: null,
   processConversation: async (forceRefresh?: boolean) => {
+    /* Default empty implementation */
+  },
+  clearProcessingError: () => {
     /* Default empty implementation */
   },
 });
@@ -47,10 +51,12 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [similarUsers, setSimilarUsers] = useState<SimilarUser[]>([]);
   const [contentHash, setContentHash] = useState<string | null>(null);
+  const [processingError, setProcessingError] = useState<string | null>(null);
   const [processingMetadata, setProcessingMetadata] =
     useState<ProcessingMetadata>({
       lastProcessedHash: null,
       lastProcessedAt: null,
+      error: null,
     });
 
   // Handle messages from background script
@@ -62,7 +68,8 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
     setIsLoading,
     setSimilarUsers,
     setContentHash,
-    setProcessingMetadata
+    setProcessingMetadata,
+    setProcessingError
   );
 
   // Process the current conversation
@@ -74,7 +81,8 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
     setContentHash,
     setIsLoading,
     setSimilarUsers,
-    setProcessingMetadata
+    setProcessingMetadata,
+    setProcessingError
   );
 
   // Extract messages from DOM
@@ -101,6 +109,16 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
     return cleanup;
   }, [handleMessage]);
 
+  // Add a function to clear the processing error
+  const clearProcessingError = useCallback(() => {
+    setProcessingError(null);
+    // Also clear the error in the metadata if it exists
+    setProcessingMetadata(prev => ({
+      ...prev,
+      error: null
+    }));
+  }, [setProcessingError, setProcessingMetadata]);
+
   const value: ConversationContextType = {
     conversationId,
     title,
@@ -109,7 +127,9 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
     similarUsers,
     contentHash,
     processingMetadata,
+    processingError,
     processConversation,
+    clearProcessingError,
   };
 
   return (

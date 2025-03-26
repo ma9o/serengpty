@@ -1,16 +1,15 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react'; // Import useRef
 import { Message, hashConversation } from '../../utils/content';
 import { ProcessingMetadata } from './types';
 import {
   conversationStatesStorage,
   updateConversationState,
   userDataStorage,
+  shouldProcessConversation, // Import the updated check
 } from '../../utils/storage';
 import { upsertConversation } from '../../services/api';
+import { sidepanelLogger as logger } from '../../utils/logger'; // Use logger
 
-/**
- * Hook that returns a callback to process the current conversation
- */
 export function useProcessConversation(
   conversationId: string | null,
   title: string | null,
@@ -21,206 +20,160 @@ export function useProcessConversation(
   setSimilarUsers: React.Dispatch<React.SetStateAction<any[]>>,
   setProcessingMetadata: React.Dispatch<
     React.SetStateAction<ProcessingMetadata>
-  >
+  >,
+  setProcessingError: React.Dispatch<React.SetStateAction<string | null>>
 ) {
-  // Create a ref to track if we're already processing
-  const isProcessingRef = { current: false };
+  const isProcessingRef = useRef(false); // Use useRef to prevent race conditions
 
   return useCallback(
     async (forceRefresh = false) => {
-      // Log when processing is initiated with detailed info
-      console.log(
-        'Processing initiated for:',
-        conversationId,
-        'Hash:',
-        contentHash,
-        'Force refresh:',
-        forceRefresh
-      );
+      logger.info('Process conversation triggered', {
+          data: { conversationId, contentHash, forceRefresh, isProcessing: isProcessingRef.current }
+      });
 
-      // Basic content validity checks
-      if (!conversationId) {
-        console.log('No conversation ID, skipping processing');
+      // --- Start: Improved Pre-checks ---
+      if (!conversationId || !title || messages.length < 2) {
+        logger.debug('Skipping processing: Missing ID, title, or sufficient messages.');
         return;
       }
 
-      if (!title) {
-        console.log('No title, skipping processing');
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage?.role !== 'assistant' || !lastMessage?.content || lastMessage.content.length <= 1) {
+        logger.debug('Skipping processing: Last message incomplete.');
         return;
       }
 
-      if (messages.length < 2) {
-        console.log(
-          'Not enough messages to process (need at least 2)',
-          messages.length
-        );
-        return;
+      // Ensure contentHash is calculated if null
+      const currentHash = contentHash ?? hashConversation(messages);
+      if (!contentHash) {
+        logger.debug('Content hash was null, calculated new hash:', { data: { currentHash } });
+        setContentHash(currentHash); // Update local state immediately
+      }
+      if (!currentHash) {
+         logger.error('Skipping processing: Failed to get or calculate content hash.');
+         return;
       }
 
-      // Ensure last message is from assistant (complete pair)
-      const lastMessageIsAssistant =
-        messages[messages.length - 1].role === 'assistant';
-      if (!lastMessageIsAssistant) {
-        console.log('Last message is not from assistant, skipping processing');
-        return;
-      }
-
-      const lastAssistantMessageHasContent =
-        messages[messages.length - 1].content.length > 1; // HACK: there is some kind of start character
-      if (!lastAssistantMessageHasContent) {
-        console.log(
-          'Last assistant message has no content, skipping processing'
-        );
-        return;
-      }
-
-      // Guard against concurrent processing
       if (isProcessingRef.current) {
-        console.log('Already processing a conversation, skipping');
+        logger.warn('Skipping processing: Another process is already running.');
         return;
       }
 
-      // Mark as processing
+      // Check persistent state using shouldProcessConversation
+      const shouldProcess = await shouldProcessConversation(conversationId, currentHash);
+      if (!shouldProcess && !forceRefresh) {
+        logger.info(`Skipping processing for ${conversationId}: Hash ${currentHash} already processed or errored.`);
+        // Ensure loading state is false if we skip
+        setIsLoading(false);
+        return;
+      }
+      // --- End: Improved Pre-checks ---
+
       isProcessingRef.current = true;
+      setIsLoading(true);
+      const processingStartTime = new Date();
+      logger.info(`Starting processing for ${conversationId}`, { data: { hash: currentHash, forceRefresh } });
 
       try {
-        setIsLoading(true);
-
-        console.log(
-          `Processing conversation: ${conversationId} with title: ${
-            title || 'not set'
-          }`
-        );
-
-        // Check if we already have this content processed and not forcing refresh
-        if (contentHash && !forceRefresh) {
-          const states = await conversationStatesStorage.getValue();
-          const state = states[conversationId];
-
-          console.log(
-            'State hash:',
-            state?.contentHash,
-            'Current hash:',
-            contentHash,
-            'Messages:',
-            messages
-          );
-
-          const cacheIsValid =
-            state?.contentHash === contentHash && state?.similarUsers;
-
-          // Add time-based refresh (30 minutes cache validity)
-          const cacheIsRecent = state?.lastProcessed
-            ? new Date().getTime() - new Date(state.lastProcessed).getTime() <
-              30 * 60 * 1000
-            : false;
-
-          console.log('Cache validation:', {
-            cacheIsValid,
-            cacheIsRecent,
-            hashMatch: state?.contentHash === contentHash,
-            hasSimilarUsers: !!state?.similarUsers,
-            lastProcessedTime: state?.lastProcessed
-              ? new Date(state?.lastProcessed).toISOString()
-              : 'never',
-          });
-
-          if (cacheIsValid && cacheIsRecent) {
-            // We have recent valid results, use them
-            console.log('Using cached results (cache is valid and recent)');
-            setSimilarUsers(state.similarUsers);
-            // Important: Update processing metadata even when using cache
-            setProcessingMetadata({
-              lastProcessedHash: contentHash,
-              lastProcessedAt: state.lastProcessed
-                ? new Date(state.lastProcessed)
-                : new Date(),
-            });
-            return;
-          }
-        }
-
-        // Mark as processing
-        // Only proceed if we have a valid hash
-        if (!contentHash) {
-          console.warn('No content hash available, generating new one');
-          const newHash = hashConversation(messages);
-          setContentHash(newHash);
-        }
-
-        // Update processing status
-        // Important: Do NOT update contentHash here before processing completes
-        // This prevents premature cache hits
-        const now = new Date();
+        // Update persistent state to 'processing' *before* API call
         await updateConversationState(conversationId, {
           status: 'processing',
-          lastProcessed: now.toISOString(),
-          // No contentHash update here - only after successful processing
+          lastProcessed: processingStartTime.toISOString(),
+          contentHash: currentHash, // Store the hash we are attempting to process
+          error: null // Clear previous error
         });
 
-        // Get user data
+        // Update local metadata immediately (reflects the attempt)
+        setProcessingMetadata({
+            lastProcessedHash: currentHash,
+            lastProcessedAt: processingStartTime
+        });
+
         const userData = await userDataStorage.getValue();
         if (!userData?.userId) {
           throw new Error('User not authenticated');
         }
 
-        // Create API payload
         const contentString = JSON.stringify(messages);
 
-        try {
-          // Log the API call for debugging
-          console.log(`Calling upsert-conversation API for ${conversationId}`);
+        // --- API Call ---
+        logger.debug(`Calling upsertConversation API for ${conversationId}`);
+        const result = await upsertConversation({
+          id: conversationId,
+          title: title,
+          userId: userData.userId,
+          content: contentString,
+        });
+        // --- Success ---
+        logger.info(`Processing successful for ${conversationId}`, { data: { hash: currentHash, resultsCount: result.length } });
 
-          // Use the API service function
-          const result = await upsertConversation({
-            id: conversationId,
-            title: title,
-            userId: userData.userId,
-            content: contentString,
-          });
+        setSimilarUsers(result);
 
-          // Update state
-          setSimilarUsers(result);
+        // Update persistent state to 'completed' on success
+        await updateConversationState(conversationId, {
+          status: 'completed',
+          similarUsers: result,
+          contentHash: currentHash, // Confirm the hash that succeeded
+          lastProcessed: processingStartTime.toISOString(), // Keep the start time
+          error: null
+        });
 
-          // Update processing metadata with new hash and timestamp
-          setProcessingMetadata({
-            lastProcessedHash: contentHash,
-            lastProcessedAt: now,
-          });
+         // Update local metadata on success (already set, but confirms hash)
+         setProcessingMetadata({
+            lastProcessedHash: currentHash,
+            lastProcessedAt: processingStartTime,
+            error: null
+        });
+        
+        // Clear any previous error
+        setProcessingError(null);
 
-          // Cache results
-          await updateConversationState(conversationId, {
-            status: 'completed',
-            contentHash: contentHash,
-            similarUsers: result,
-          });
+      } catch (error: any) {
+        // --- Failure ---
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error(`Processing failed for ${conversationId}`, {
+            error, data: { hash: currentHash }
+        });
 
-          console.log(
-            `Conversation ${conversationId} successfully processed with hash ${contentHash}`
-          );
-        } catch (err) {
-          console.error('Error from API service:', err);
-          throw err; // Re-throw for outer catch block
-        }
-      } catch (error) {
-        console.error('Error processing conversation:', error);
-        await updateConversationState(conversationId, { status: 'idle' });
+        // Update persistent state to 'error' on failure
+        await updateConversationState(conversationId, {
+          status: 'error',
+          error: errorMessage,
+          contentHash: currentHash, // Store the hash that failed
+          lastProcessed: processingStartTime.toISOString(), // Keep the attempt time
+        });
+
+         // Update local metadata to reflect error
+         setProcessingMetadata({
+            lastProcessedHash: currentHash, // Still record the hash that was attempted
+            lastProcessedAt: processingStartTime,
+            error: errorMessage
+        });
+        
+        // Update the processing error in the context for display
+        setProcessingError(errorMessage);
+
+        // Optionally clear similar users on error, or keep stale data? Clearing is safer.
+        setSimilarUsers([]);
+
       } finally {
+        // --- Cleanup ---
         setIsLoading(false);
-        // Reset processing flag
         isProcessingRef.current = false;
-        console.log('Processing completed for:', conversationId);
+        logger.info(`Processing finished for ${conversationId}`, { data: { hash: currentHash } });
       }
     },
     [
       conversationId,
       title,
-      messages,
+      messages, // Be cautious if messages is very large/changes frequently
       contentHash,
       setContentHash,
       setIsLoading,
       setSimilarUsers,
       setProcessingMetadata,
+      setProcessingError,
+      // No dependencies on state itself (like isLoading) to prevent loops
     ]
   );
 }
