@@ -21,6 +21,7 @@ export interface SimilarUser {
   title: string;
   distance: number;
   createdAt: string;
+  meetsThreshold: boolean; // Add flag indicating if meets threshold
 }
 
 export interface ConversationState {

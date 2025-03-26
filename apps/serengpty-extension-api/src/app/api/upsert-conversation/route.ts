@@ -66,6 +66,7 @@ export async function POST(request: Request) {
         distance,
         userId: usersTable.id,
         userName: usersTable.name,
+        meetsThreshold: lte(distance, MAX_DISTANCE) // Add boolean flag indicating if meets threshold
       })
       .from(conversationsTable)
       .innerJoin(usersTable, eq(conversationsTable.userId, usersTable.id))
@@ -74,8 +75,8 @@ export async function POST(request: Request) {
         // and the user's own conversations
         and(
           not(eq(conversationsTable.id, conversationId)),
-          not(eq(usersTable.id, userId)),
-          lte(distance, MAX_DISTANCE)
+          not(eq(usersTable.id, userId))
+          // Removed the distance filter: lte(distance, MAX_DISTANCE)
         )
       )
       .orderBy(asc(distance))

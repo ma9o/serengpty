@@ -53,8 +53,8 @@ export function ScoreCircle({
   const strokeDashoffset = circumference - percentage * circumference;
 
   const getColor = (percent: number) => {
-    if (percent < 0.33) return '#FF6B6B';
-    if (percent < 0.66) return '#FFD93D';
+    if (percent < 0.6) return '#FF6B6B';
+    if (percent < 0.8) return '#FFD93D';
     return '#6BCB77';
   };
 

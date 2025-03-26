@@ -184,6 +184,11 @@ export function SimilarUsersTab({
     return acc;
   }, {} as Record<string, { userId: string; userName: string; conversations: typeof similarUsers }>);
 
+  // Check if any of the similar users meet the threshold
+  const hasAboveThresholdMatches = similarUsers.some(
+    (user) => user.meetsThreshold
+  );
+
   return (
     <div className="p-4 space-y-4">
       <div className="flex flex-col justify-between items-center mb-4 px-1 gap-2">
@@ -208,6 +213,14 @@ export function SimilarUsersTab({
           )}
         </div>
       </div>
+
+      {!isLoading && similarUsers.length > 0 && !hasAboveThresholdMatches && (
+        <div className="px-4 pb-2 text-sm text-orange-600 text-center border-b mb-3">
+          No good matches found.
+          <br />
+          Closest conversations below threshold:
+        </div>
+      )}
 
       <div className="space-y-3">
         {Object.values(userConversations).map((userData) => (
@@ -243,7 +256,7 @@ export function SimilarUsersTab({
               <div className="divide-y">
                 {userData.conversations.map((conversation) => (
                   <div key={conversation.id} className="px-6 py-3">
-                    <div className="flex items-center justify-between gap-2">
+                    <div className={`flex items-center justify-between gap-2`}>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">
                           {conversation.title}
