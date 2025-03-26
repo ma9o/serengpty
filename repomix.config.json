@@ -20,13 +20,7 @@
   "ignore": {
     "useGitignore": true,
     "useDefaultPatterns": true,
-    "customPatterns": [
-      "**/*.md",
-      "**/*.svg",
-      "**/*.ipynb",
-      "**/*.lock",
-      "**/*.lockb"
-    ]
+    "customPatterns": ["**/*.md", "**/*.svg", "**/*.lock", "**/*.lockb"]
   },
   "security": {
     "enableSecurityCheck": true
