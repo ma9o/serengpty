@@ -10,7 +10,7 @@
     "compress": false,
     "topFilesLength": 5,
     "showLineNumbers": false,
-    "copyToClipboard": false,
+    "copyToClipboard": true,
     "git": {
       "sortByChanges": true,
       "sortByChangesMaxCommits": 100
@@ -20,7 +20,13 @@
   "ignore": {
     "useGitignore": true,
     "useDefaultPatterns": true,
-    "customPatterns": []
+    "customPatterns": [
+      "**/*.md",
+      "**/*.svg",
+      "**/*.ipynb",
+      "**/*.lock",
+      "**/*.lockb"
+    ]
   },
   "security": {
     "enableSecurityCheck": true
