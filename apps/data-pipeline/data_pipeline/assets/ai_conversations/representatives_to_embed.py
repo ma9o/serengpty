@@ -81,8 +81,8 @@ def representatives_to_embed(
             closest_idx_in_cluster = I[0][0]
 
         # Select representative conversation
-        representative_row = cluster_df[closest_idx_in_cluster]
-        conversation_id = representative_row["conversation_id"][0]
+        representative_row = cluster_df.row(closest_idx_in_cluster, named=True)
+        conversation_id = representative_row["conversation_id"]
         representative_candidates.append(conversation_id)
 
     # Filter and format the output
