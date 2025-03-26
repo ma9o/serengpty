@@ -1,12 +1,14 @@
 generator client {
-  provider      = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
   // One for local dev, one for nodejs docker
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  binaryTargets   = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
 }
 
 model User {
@@ -41,6 +43,8 @@ model Conversation {
   title    String
   summary  String
   datetime DateTime
+
+  embedding Unsupported("halfvec(3072)")?
 
   serendipitousPaths SerendipitousPath[]
   userPaths          UserPath[]

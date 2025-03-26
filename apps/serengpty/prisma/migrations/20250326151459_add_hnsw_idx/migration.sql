@@ -1,0 +1,1 @@
+CREATE INDEX "embeddingIndex" ON "Conversation" USING hnsw ("embedding" halfvec_cosine_ops);
