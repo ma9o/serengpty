@@ -5,6 +5,9 @@ import baseConfig from './wxt.config.ephemeral';
 export default defineConfig({
   ...baseConfig,
   runner: {
-    chromiumArgs: ['--user-data-dir=./.wxt/chrome-data'],
+    chromiumArgs: [
+      '--user-data-dir=./.wxt/chrome-data',
+      '--disable-extensions-http-throttling',
+    ],
   },
 });

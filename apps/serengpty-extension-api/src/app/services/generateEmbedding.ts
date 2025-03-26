@@ -1,6 +1,6 @@
 import { PredictionServiceClient, helpers } from '@google-cloud/aiplatform';
-
-const clientOptions = { apiEndpoint: 'us-central1-aiplatform.googleapis.com' };
+import parseJson from 'parse-json';
+const apiEndpoint = 'us-central1-aiplatform.googleapis.com';
 const location = 'us-central1';
 const project = 'enclaveid';
 const model = 'text-embedding-large-exp-03-07';
@@ -15,7 +15,14 @@ export async function generateEmbedding(content: string): Promise<number[]> {
     parameters: helpers.toValue({ outputDimensionality }),
   };
 
-  const client = new PredictionServiceClient(clientOptions);
+  // Escape \n in the service account JSON
+  const escapedJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON!.replace(
+    /\n/g,
+    '\\n'
+  );
+  const credentials = parseJson(escapedJson);
+
+  const client = new PredictionServiceClient({ apiEndpoint, credentials });
 
   const [response] = await client.predict(request);
 
