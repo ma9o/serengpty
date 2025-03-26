@@ -13,13 +13,13 @@ REPRESENTATIVE_COUNT_TARGET = 300
 @asset(
     partitions_def=user_partitions_def,
     ins={
-        "conversation_embeddings": AssetIn(key="conversation_embeddings"),
+        "conversations_embeddings": AssetIn(key="conversations_embeddings"),
     },
     io_manager_key="parquet_io_manager",
 )
 def representatives_to_embed(
     context: AssetExecutionContext,
-    conversation_embeddings: pl.DataFrame,
+    conversations_embeddings: pl.DataFrame,
 ) -> pl.DataFrame:
     """
     Selects up to 300 representative conversations per user by performing agglomerative clustering
@@ -27,12 +27,12 @@ def representatives_to_embed(
     Outputs a DataFrame with (conversation_id, text_to_embed).
     """
     # Extract embeddings as a numpy array
-    embeddings = np.array(conversation_embeddings["embedding"].to_list())
-    n_conversations = len(conversation_embeddings)
+    embeddings = np.array(conversations_embeddings["embedding"].to_list())
+    n_conversations = len(conversations_embeddings)
 
     # If conversations are ≤ target, return all, ensuring required columns
     if n_conversations <= REPRESENTATIVE_COUNT_TARGET:
-        return conversation_embeddings.select(
+        return conversations_embeddings.select(
             ["conversation_id", "datetime_conversations"]
         ).rename({"datetime_conversations": "text_to_embed"})
 
@@ -43,14 +43,14 @@ def representatives_to_embed(
     cluster_labels = clustering.fit_predict(embeddings)
 
     # Add cluster labels to the DataFrame
-    conversation_embeddings = conversation_embeddings.with_columns(
+    conversations_embeddings = conversations_embeddings.with_columns(
         pl.Series("cluster_id", cluster_labels)
     )
 
     representative_candidates = []
 
     # Process each cluster
-    for cluster_id, cluster_df in conversation_embeddings.group_by("cluster_id"):
+    for cluster_id, cluster_df in conversations_embeddings.group_by("cluster_id"):
         embeddings_list = cluster_df["embedding"].to_list()
         embeddings_array = np.array(embeddings_list)
 
@@ -87,7 +87,7 @@ def representatives_to_embed(
 
     # Filter and format the output
     return (
-        conversation_embeddings.filter(
+        conversations_embeddings.filter(
             pl.col("conversation_id").is_in(representative_candidates)
         )
         .select(["conversation_id", "datetime_conversations"])

@@ -259,7 +259,7 @@ def conversation_pair_clusters(
         result_df = create_empty_result()
 
     # TODO: messy
-    # Join back with conversation_embeddings to add the embedding column
+    # Join back with conversations_embeddings to add the embedding column
     if len(result_df) > 0:
         # We need embeddings for all user_ids in the result
         unique_user_ids = result_df["user_id"].unique().to_list()
