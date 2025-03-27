@@ -6,18 +6,18 @@ import { db, usersTable } from '@enclaveid/db';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId } = body;
+    const { apiKey } = body;
 
-    if (!userId) {
+    if (!apiKey) {
       return NextResponse.json(
-        { error: 'userId is required' },
+        { error: 'apiKey is required' },
         { status: 400 }
       );
     }
 
     // Verify the user exists in our database
     const user = await db.query.usersTable.findFirst({
-      where: eq(usersTable.id, userId),
+      where: eq(usersTable.extensionApiKey, apiKey),
     });
 
     if (!user) {
