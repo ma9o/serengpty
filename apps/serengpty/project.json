@@ -7,5 +7,12 @@
     "@enclaveid/ui-utils": "*"
   },
   "tags": [],
-  "targets": {}
+  "targets": {
+    "dev": {
+      "executor": "@nx/next:dev",
+      "options": {
+        "port": 3000
+      }
+    }
+  }
 }

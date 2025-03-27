@@ -42,6 +42,7 @@ export default defineConfig({
       fs: {
         cachedChecks: false,
       },
+      port: 3002,
     },
 
     build: {
