@@ -5,7 +5,7 @@ let streamChatService: StreamChatService;
 export async function getStreamChatService() {
   if (!streamChatService) {
     streamChatService = new StreamChatService({
-      apiKey: process.env.VITE_STREAM_CHAT_API_KEY!,
+      apiKey: process.env.NEXT_PUBLIC_STREAM_CHAT_API_KEY!,
       apiSecret: process.env.STREAM_CHAT_API_SECRET!,
     });
   }
