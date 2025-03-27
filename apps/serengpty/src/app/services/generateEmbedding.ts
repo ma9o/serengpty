@@ -1,5 +1,6 @@
 import { PredictionServiceClient, helpers } from '@google-cloud/aiplatform';
 import parseJson from 'parse-json';
+
 const apiEndpoint = 'us-central1-aiplatform.googleapis.com';
 const location = 'us-central1';
 const project = 'enclaveid';

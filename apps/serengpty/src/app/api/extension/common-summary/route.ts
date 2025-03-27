@@ -1,7 +1,7 @@
 import { streamText } from 'ai';
 import { db, conversationsTable, usersTable } from '@enclaveid/db';
 import { eq, and } from 'drizzle-orm';
-import { azureAi } from '../../services/azureAi';
+import { azureAi } from '../../../services/azure/azureAi';
 
 export async function POST(req: Request) {
   const { apiKey, currentConversationId, otherConversationId } =

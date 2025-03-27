@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { db, usersTable } from '@enclaveid/db';
 import { generateUniqueUsername } from '@enclaveid/shared-utils';
 import { eq } from 'drizzle-orm';
-import { getStreamChatService } from '../../services/streamChat';
 import bcrypt from 'bcrypt';
+import { upsertStreamChatUser } from '../../../utils/upsertStreamChatUser';
 
 export async function POST() {
   try {
@@ -30,20 +30,17 @@ export async function POST() {
         name,
         passwordHash: await bcrypt.hash(randomPassword, 10), // Set random password hash that can be changed later
       })
-      .returning({ id: usersTable.id, name: usersTable.name });
+      .returning();
 
     const user = results[0];
 
-    // Create the user in Stream Chat
-    await getStreamChatService().then((service) =>
-      service.upsertUser({
-        id: user.id,
-        name: user.name,
-        role: 'user',
-      })
-    );
+    await upsertStreamChatUser(user);
 
-    return NextResponse.json({ userId: user.id, name: user.name });
+    return NextResponse.json({
+      userId: user.id,
+      name: user.name,
+      apiKey: user.extensionApiKey,
+    });
   } catch (error) {
     console.error('Signup error:', error);
     return NextResponse.json(

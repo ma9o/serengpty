@@ -1,6 +1,6 @@
 import { db, usersTable, conversationsTable } from '@enclaveid/db';
 import { and, asc, eq, lte, not } from 'drizzle-orm';
-import { generateEmbedding } from '../../services/generateEmbedding';
+import { generateEmbedding } from '../../../services/generateEmbedding';
 import { cosineDistance } from 'drizzle-orm';
 
 const TOP_K_CONVERSATIONS = 5;

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
-import { getStreamChatService } from '../../services/streamChat';
+import { getStreamChatService } from '../../../services/streamChat';
 import { db, usersTable } from '@enclaveid/db';
 
 export async function POST(request: Request) {
