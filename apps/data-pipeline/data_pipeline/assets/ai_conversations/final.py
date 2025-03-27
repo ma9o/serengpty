@@ -26,11 +26,11 @@ def final(
 ) -> None:
     """
     This asset implements the same logic as your "savePipelineResults" using raw SQL
-    in psycopg3 executemany, fully aligned with the final migration schema:
+    in psycopg3 executemany, fully aligned with the final Drizzle migration schema:
 
-    - UsersMatch <-> User pivot: "_UserToUsersMatch"(A=User.id, B=UsersMatch.id)
-    - SerendipitousPath <-> Conversation pivot: "_ConversationToSerendipitousPath"(A=Conversation.id, B=SerendipitousPath.id)
-    - UserPath <-> Conversation pivot: "_ConversationToUserPath"(A=Conversation.id, B=UserPath.id)
+    - users_matches <-> users pivot: "users_to_users_matches"(user_id, users_match_id)
+    - serendipitous_paths <-> conversations pivot: "conversations_to_serendipitous_paths"(conversation_id, serendipitous_path_id)
+    - user_paths <-> conversations pivot: "conversations_to_user_paths"(conversation_id, user_path_id)
     """
     # current_user_id is typically stored in the partition key
     current_user_id = context.partition_key
@@ -103,25 +103,25 @@ def final(
             # -----------------------------------------------------------------
             if conversation_data:
                 insert_conv_sql = """
-                    INSERT INTO "Conversation"
-                        (id, title, summary, datetime, "userId", "updatedAt", "createdAt")
+                    INSERT INTO conversations
+                        (id, title, summary, datetime, user_id, updated_at, created_at)
                     VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
                     ON CONFLICT (id) DO NOTHING
                 """
                 cur.executemany(insert_conv_sql, conversation_data)
 
             # -----------------------------------------------------------------
-            # STEP 2 & 3: Find or create UsersMatch (M:N with "User")
-            #  Using pivot "_UserToUsersMatch"(A=userId, B=matchId)
+            # STEP 2 & 3: Find or create users_matches (M:N with "users")
+            #  Using pivot "users_to_users_matches"(user_id, users_match_id)
             # -----------------------------------------------------------------
             def find_existing_users_match(u1, u2):
                 sql = """
                     SELECT m.id, m.score
-                    FROM "UsersMatch" m
-                    JOIN "_UserToUsersMatch" j1 ON j1."B" = m.id
-                    JOIN "_UserToUsersMatch" j2 ON j2."B" = m.id
-                    WHERE j1."A" = %s
-                      AND j2."A" = %s
+                    FROM users_matches m
+                    JOIN users_to_users_matches j1 ON j1.users_match_id = m.id
+                    JOIN users_to_users_matches j2 ON j2.users_match_id = m.id
+                    WHERE j1.user_id = %s
+                      AND j2.user_id = %s
                     GROUP BY m.id
                 """
                 cur.execute(sql, (u1, u2))
@@ -133,9 +133,9 @@ def final(
                     existing_id = existing["id"]
                     _existing_score = existing["score"]
                     update_sql = """
-                        UPDATE "UsersMatch"
+                        UPDATE users_matches
                         SET score = %s,
-                            "updatedAt" = NOW()
+                            updated_at = NOW()
                         WHERE id = %s
                         RETURNING id
                     """
@@ -143,18 +143,18 @@ def final(
                     result = cur.fetchone()
                     if result is None:
                         cur.execute(
-                            'SELECT id FROM "UsersMatch" WHERE id = %s', (existing_id,)
+                            "SELECT id FROM users_matches WHERE id = %s", (existing_id,)
                         )
                         result = cur.fetchone()
                         if result is None:
                             raise Exception(
-                                f"Failed to update UsersMatch row for id {existing_id}"
+                                f"Failed to update users_matches row for id {existing_id}"
                             )
                     return result["id"]
                 else:
                     new_id = str(uuid.uuid4())
                     insert_sql = """
-                        INSERT INTO "UsersMatch" (id, score, "updatedAt", "createdAt")
+                        INSERT INTO users_matches (id, score, updated_at, created_at)
                         VALUES (%s, %s, NOW(), NOW())
                         RETURNING id
                     """
@@ -162,17 +162,17 @@ def final(
                     result = cur.fetchone()
                     if result is None:
                         cur.execute(
-                            'SELECT id FROM "UsersMatch" WHERE id = %s', (new_id,)
+                            "SELECT id FROM users_matches WHERE id = %s", (new_id,)
                         )
                         result = cur.fetchone()
                         if result is None:
                             raise Exception(
-                                f"Failed to insert new UsersMatch row for id {new_id}"
+                                f"Failed to insert new users_matches row for id {new_id}"
                             )
                     context.log.info(result)
                     new_id_returned = result["id"]
                     join_sql = """
-                        INSERT INTO "_UserToUsersMatch" ("A", "B")
+                        INSERT INTO users_to_users_matches (user_id, users_match_id)
                         VALUES (%s, %s), (%s, %s)
                     """
                     cur.execute(
@@ -203,7 +203,7 @@ def final(
                 match_group_to_usersmatch[mgid] = users_match_id
 
             # -----------------------------------------------------------------
-            # STEP 4,5,6: Upsert SerendipitousPath + UserPath
+            # STEP 4,5,6: Upsert serendipitous_paths + user_paths
             # -----------------------------------------------------------------
             for mgid, rows in match_groups.items():
                 users_match_id = match_group_to_usersmatch[mgid]
@@ -216,86 +216,86 @@ def final(
                         {
                             "id": row["path_id"],
                             "title": row["path_title"],
-                            "commonSummary": row["path_description"],
+                            "common_summary": row["path_description"],
                             "category": row["category"],
-                            "balanceScore": row["balance_score"],
-                            "isSensitive": row["is_sensitive"],
-                            "usersMatchId": users_match_id,
-                            "commonConversationIds": row["common_conversation_ids"],
+                            "balance_score": row["balance_score"],
+                            "is_sensitive": row["is_sensitive"],
+                            "users_match_id": users_match_id,
+                            "common_conversation_ids": row["common_conversation_ids"],
                         }
                     )
 
-                    # Generate UUIDs for UserPath records
+                    # Generate UUIDs for user_paths records
                     user_path_data.append(
                         {
                             "id": str(uuid.uuid4()),
-                            "userId": row["user1_id"],
-                            "pathId": row["path_id"],
-                            "uniqueSummary": row["user1_unique_branches"],
-                            "uniqueCallToAction": row["user1_call_to_action"],
-                            "uniqueConversationIds": row["user1_conversation_ids"],
+                            "user_id": row["user1_id"],
+                            "path_id": row["path_id"],
+                            "unique_summary": row["user1_unique_branches"],
+                            "unique_call_to_action": row["user1_call_to_action"],
+                            "unique_conversation_ids": row["user1_conversation_ids"],
                         }
                     )
                     user_path_data.append(
                         {
                             "id": str(uuid.uuid4()),
-                            "userId": row["user2_id"],
-                            "pathId": row["path_id"],
-                            "uniqueSummary": row["user2_unique_branches"],
-                            "uniqueCallToAction": row["user2_call_to_action"],
-                            "uniqueConversationIds": row["user2_conversation_ids"],
+                            "user_id": row["user2_id"],
+                            "path_id": row["path_id"],
+                            "unique_summary": row["user2_unique_branches"],
+                            "unique_call_to_action": row["user2_call_to_action"],
+                            "unique_conversation_ids": row["user2_conversation_ids"],
                         }
                     )
 
             # -----------------------------------------------------------------
-            # Upsert SerendipitousPath + link with Conversation in
-            # "_ConversationToSerendipitousPath"(A=conversationId,B=pathId)
+            # Upsert serendipitous_paths + link with conversations in
+            # "conversations_to_serendipitous_paths"(conversation_id, serendipitous_path_id)
             # -----------------------------------------------------------------
             def upsert_serendipitous_path(p):
                 upsert_sql = """
-                    INSERT INTO "SerendipitousPath"(
-                        id, title, "commonSummary", category,
-                        "balanceScore", "isSensitive", "usersMatchId", "createdAt", "updatedAt"
+                    INSERT INTO serendipitous_paths(
+                        id, title, common_summary, category,
+                        balance_score, is_sensitive, users_match_id, created_at, updated_at
                     )
                     VALUES (
-                        %(id)s, %(title)s, %(commonSummary)s, %(category)s,
-                        %(balanceScore)s, %(isSensitive)s, %(usersMatchId)s, NOW(), NOW()
+                        %(id)s, %(title)s, %(common_summary)s, %(category)s,
+                        %(balance_score)s, %(is_sensitive)s, %(users_match_id)s, NOW(), NOW()
                     )
                     ON CONFLICT (id)
                     DO UPDATE SET
                         title = EXCLUDED.title,
-                        "commonSummary" = EXCLUDED."commonSummary",
+                        common_summary = EXCLUDED.common_summary,
                         category = EXCLUDED.category,
-                        "balanceScore" = EXCLUDED."balanceScore",
-                        "isSensitive" = EXCLUDED."isSensitive",
-                        "usersMatchId" = EXCLUDED."usersMatchId",
-                        "updatedAt" = NOW()
+                        balance_score = EXCLUDED.balance_score,
+                        is_sensitive = EXCLUDED.is_sensitive,
+                        users_match_id = EXCLUDED.users_match_id,
+                        updated_at = NOW()
                     RETURNING id
                 """
                 cur.execute(upsert_sql, p)
                 result = cur.fetchone()
                 if result is None:
                     raise Exception(
-                        f"Failed to upsert serendipitous path for id {p['id']}"
+                        f"Failed to upsert serendipitous_paths for id {p['id']}"
                     )
                 path_id = result["id"]
 
                 # Remove existing conversation links for this path
                 delete_join_sql = """
-                    DELETE FROM "_ConversationToSerendipitousPath"
-                    WHERE "B" = %s
+                    DELETE FROM conversations_to_serendipitous_paths
+                    WHERE serendipitous_path_id = %s
                 """
                 cur.execute(delete_join_sql, (path_id,))
 
-                # Re-insert if any "commonConversationIds"
-                if p["commonConversationIds"]:
+                # Re-insert if any "common_conversation_ids"
+                if p["common_conversation_ids"]:
                     join_insert_sql = """
-                        INSERT INTO "_ConversationToSerendipitousPath" ("A","B")
+                        INSERT INTO conversations_to_serendipitous_paths (conversation_id, serendipitous_path_id)
                         VALUES (%s, %s)
                     """
-                    # "A"=Conversation.id, "B"=SerendipitousPath.id
+                    # conversation_id, serendipitous_path_id
                     join_values = [
-                        (conv_id, path_id) for conv_id in p["commonConversationIds"]
+                        (conv_id, path_id) for conv_id in p["common_conversation_ids"]
                     ]
                     cur.executemany(join_insert_sql, join_values)
 
@@ -303,51 +303,51 @@ def final(
                 upsert_serendipitous_path(p)
 
             # -----------------------------------------------------------------
-            # Upsert UserPath + link with Conversation in
-            # "_ConversationToUserPath"(A=conversationId,B=userPathId)
+            # Upsert user_paths + link with conversations in
+            # "conversations_to_user_paths"(conversation_id, user_path_id)
             # -----------------------------------------------------------------
             def upsert_user_path(up):
                 upsert_sql = """
-                    INSERT INTO "UserPath"(
-                        id, "userId", "pathId",
-                        "uniqueSummary", "uniqueCallToAction", "createdAt", "updatedAt"
+                    INSERT INTO user_paths(
+                        id, user_id, path_id,
+                        unique_summary, unique_call_to_action, created_at, updated_at
                     )
                     VALUES (
-                        %(id)s, %(userId)s, %(pathId)s,
-                        %(uniqueSummary)s, %(uniqueCallToAction)s, NOW(), NOW()
+                        %(id)s, %(user_id)s, %(path_id)s,
+                        %(unique_summary)s, %(unique_call_to_action)s, NOW(), NOW()
                     )
-                    ON CONFLICT ("userId","pathId")
+                    ON CONFLICT (user_id, path_id)
                     DO UPDATE SET
-                        "uniqueSummary" = EXCLUDED."uniqueSummary",
-                        "uniqueCallToAction" = EXCLUDED."uniqueCallToAction",
-                        "updatedAt" = NOW()
+                        unique_summary = EXCLUDED.unique_summary,
+                        unique_call_to_action = EXCLUDED.unique_call_to_action,
+                        updated_at = NOW()
                     RETURNING id
                 """
                 cur.execute(upsert_sql, up)
                 result = cur.fetchone()
                 if result is None:
                     raise Exception(
-                        f"Failed to upsert user path for userId {up['userId']} and pathId {up['pathId']}"
+                        f"Failed to upsert user_paths for user_id {up['user_id']} and path_id {up['path_id']}"
                     )
                 user_path_id = result["id"]
 
                 # Remove existing conversation links for this user_path
                 del_sql = """
-                    DELETE FROM "_ConversationToUserPath"
-                    WHERE "B" = %s
+                    DELETE FROM conversations_to_user_paths
+                    WHERE user_path_id = %s
                 """
                 cur.execute(del_sql, (user_path_id,))
 
-                # Re-insert if any "uniqueConversationIds"
-                if up["uniqueConversationIds"]:
+                # Re-insert if any "unique_conversation_ids"
+                if up["unique_conversation_ids"]:
                     join_insert_sql = """
-                        INSERT INTO "_ConversationToUserPath" ("A","B")
+                        INSERT INTO conversations_to_user_paths (conversation_id, user_path_id)
                         VALUES (%s, %s)
                     """
-                    # "A"=Conversation.id, "B"=UserPath.id
+                    # conversation_id, user_path_id
                     join_values = [
                         (conv_id, user_path_id)
-                        for conv_id in up["uniqueConversationIds"]
+                        for conv_id in up["unique_conversation_ids"]
                     ]
                     cur.executemany(join_insert_sql, join_values)
 
