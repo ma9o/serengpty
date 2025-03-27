@@ -1,1 +1,0 @@
-ALTER TABLE "conversations" ALTER COLUMN "embedding" SET DATA TYPE halfvec(3072);

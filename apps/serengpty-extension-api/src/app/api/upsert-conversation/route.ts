@@ -4,13 +4,13 @@ import { generateEmbedding } from '../../services/generateEmbedding';
 import { cosineDistance } from 'drizzle-orm';
 
 const TOP_K_CONVERSATIONS = 5;
-const MAX_DISTANCE = 0.2; //process.env.NODE_ENV === 'production' ? 0.2 : 1;
+const MAX_DISTANCE = 0.2;
 
 export async function POST(request: Request) {
-  const { userId, title, content, id: conversationId } = await request.json();
+  const { apiKey, title, content, id: conversationId } = await request.json();
 
   const user = await db.query.usersTable.findFirst({
-    where: eq(usersTable.id, userId),
+    where: eq(usersTable.extension_api_key, apiKey),
   });
 
   if (!user) {
@@ -20,8 +20,17 @@ export async function POST(request: Request) {
   // If the conversation content is the same as the existing conversation,
   // we don't need to insert or update it
   const existingConversation = await db.query.conversationsTable.findFirst({
-    where: eq(conversationsTable.id, conversationId),
+    where: and(
+      eq(conversationsTable.id, conversationId),
+      eq(conversationsTable.user_id, user.id)
+    ),
   });
+
+  if (!existingConversation) {
+    return new Response('Conversation not found or not owned by user', {
+      status: 404,
+    });
+  }
 
   let embedding: number[];
   if (
@@ -42,7 +51,7 @@ export async function POST(request: Request) {
         id: conversationId,
         title,
         content,
-        userId: user.id,
+        user_id: user.id,
         embedding,
       })
       .onConflictDoUpdate({
@@ -51,7 +60,7 @@ export async function POST(request: Request) {
           title,
           content,
           embedding,
-          updatedAt: new Date(),
+          updated_at: new Date(),
         },
       });
 
@@ -61,21 +70,20 @@ export async function POST(request: Request) {
       .select({
         id: conversationsTable.id,
         title: conversationsTable.title,
-        createdAt: conversationsTable.createdAt,
+        created_at: conversationsTable.created_at,
         distance,
-        userId: usersTable.id,
-        userName: usersTable.name,
-        meetsThreshold: lte(distance, MAX_DISTANCE), // Add boolean flag indicating if meets threshold
+        user_id: usersTable.id,
+        name: usersTable.name,
+        meets_threshold: lte(distance, MAX_DISTANCE), // Add boolean flag indicating if meets threshold
       })
       .from(conversationsTable)
-      .innerJoin(usersTable, eq(conversationsTable.userId, usersTable.id))
+      .innerJoin(usersTable, eq(conversationsTable.user_id, usersTable.id))
       .where(
         // Exclude the conversation we just inserted
         // and the user's own conversations
         and(
           not(eq(conversationsTable.id, conversationId)),
-          not(eq(usersTable.id, userId))
-          // Removed the distance filter: lte(distance, MAX_DISTANCE)
+          not(eq(usersTable.id, user.id))
         )
       )
       .orderBy(asc(distance))

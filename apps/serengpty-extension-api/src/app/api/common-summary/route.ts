@@ -1,15 +1,34 @@
 import { streamText } from 'ai';
-import { db, conversationsTable } from '@enclaveid/db';
-import { eq } from 'drizzle-orm';
+import { db, conversationsTable, usersTable } from '@enclaveid/db';
+import { eq, and } from 'drizzle-orm';
 import { azureAi } from '../../services/azureAi';
 
 export async function POST(req: Request) {
-  const { currentConversationId, otherConversationId } = await req.json();
+  const { apiKey, currentConversationId, otherConversationId } =
+    await req.json();
 
+  const user = await db.query.usersTable.findFirst({
+    where: eq(usersTable.extension_api_key, apiKey),
+  });
+
+  if (!user) {
+    return new Response('User not found', { status: 404 });
+  }
+
+  // Find conversation owned by the user
   const currentConversationContents =
     await db.query.conversationsTable.findFirst({
-      where: eq(conversationsTable.id, currentConversationId),
+      where: and(
+        eq(conversationsTable.id, currentConversationId),
+        eq(conversationsTable.user_id, user.id)
+      ),
     });
+
+  if (!currentConversationContents) {
+    return new Response('Current conversation not found or not owned by user', {
+      status: 404,
+    });
+  }
 
   const otherConversationContents = await db.query.conversationsTable.findFirst(
     {

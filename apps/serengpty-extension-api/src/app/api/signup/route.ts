@@ -3,6 +3,7 @@ import { db, usersTable } from '@enclaveid/db';
 import { generateUniqueUsername } from '@enclaveid/shared-utils';
 import { eq } from 'drizzle-orm';
 import { getStreamChatService } from '../../services/streamChat';
+import bcrypt from 'bcrypt';
 
 export async function POST() {
   try {
@@ -20,12 +21,14 @@ export async function POST() {
       });
     }
 
+    const randomPassword = Math.random().toString(36).substring(2, 15);
+
     // Create new user
     const results = await db
       .insert(usersTable)
       .values({
         name,
-        updatedAt: new Date(),
+        password_hash: await bcrypt.hash(randomPassword, 10), // Set random password hash that can be changed later
       })
       .returning({ id: usersTable.id, name: usersTable.name });
 
