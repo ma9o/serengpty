@@ -113,10 +113,10 @@ export function ConversationsList({
                   : 'No date available'}
               </p>
               <p>
-                {conversation.summary && conversation.user
+                {conversation.summary
                   ? processConversationSummary(
                       conversation.summary,
-                      conversation.user
+                      conversation.user || undefined
                     )
                   : 'No summary available'}
               </p>
