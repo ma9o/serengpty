@@ -1,6 +1,7 @@
 export interface UserData {
   userId: string;
   name: string;
+  extensionApiKey: string;
 }
 
 export const userDataStorage = storage.defineItem<UserData>('local:userData');

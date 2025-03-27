@@ -18,6 +18,7 @@ export function handleAuthentication() {
           await userDataStorage.setValue({
             userId: userData.userId,
             name: userData.name,
+            extensionApiKey: userData.apiKey,
           });
 
           console.log('User registered successfully:', userData.name);

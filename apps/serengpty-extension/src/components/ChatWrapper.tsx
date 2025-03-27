@@ -17,6 +17,7 @@ export function ChatWrapper({
   const [userData, setUserData] = useState<{
     userId: string;
     name: string;
+    extensionApiKey: string;
   } | null>(null);
   const [chatToken, setChatToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +44,7 @@ export function ChatWrapper({
         setUserData(storedUserData);
 
         // Get chat token for the user
-        const tokenResult = await getChatToken(storedUserData.userId);
+        const tokenResult = await getChatToken(storedUserData.extensionApiKey);
 
         if (tokenResult.error || !tokenResult.token) {
           setError(tokenResult.error || 'Failed to get chat token');

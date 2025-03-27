@@ -90,7 +90,7 @@ export function useProcessConversation(
         });
 
         const userData = await userDataStorage.getValue();
-        if (!userData?.userId) {
+        if (!userData?.userId || !userData?.extensionApiKey) {
           throw new Error('User not authenticated');
         }
 
@@ -101,7 +101,7 @@ export function useProcessConversation(
         const result = await upsertConversation({
           id: conversationId,
           title: title,
-          userId: userData.userId,
+          apiKey: userData.extensionApiKey,
           content: contentString,
         });
         // --- Success ---

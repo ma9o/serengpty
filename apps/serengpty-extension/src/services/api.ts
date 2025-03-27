@@ -2,7 +2,7 @@ import { SimilarUser } from '../utils/storage';
 
 // Using environment variable or default to localhost during development
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:3008/api';
+  import.meta.env.VITE_API_URL || 'http://localhost:3000/api/extension';
 
 // Ensure the URL doesn't end with a trailing slash
 function formatApiUrl(url: string): string {
@@ -31,17 +31,17 @@ export async function signUp() {
 
 /**
  * Get a chat token for Stream Chat
- * @param userId The user ID to generate a token for
+ * @param apiKey The extension API key for authentication
  * @returns Chat token and any error
  */
-export async function getChatToken(userId: string) {
+export async function getChatToken(apiKey: string) {
   try {
     const response = await fetch(`${formatApiUrl(API_BASE_URL)}/chat-token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ userId }),
+      body: JSON.stringify({ apiKey }),
     });
 
     if (!response.ok) {
@@ -63,7 +63,7 @@ export async function getChatToken(userId: string) {
 export interface UpsertConversationData {
   id: string;
   title: string;
-  userId: string;
+  apiKey: string;
   content: string; // Stringified messages array
 }
 
