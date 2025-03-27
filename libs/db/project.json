@@ -28,6 +28,13 @@
         "command": "drizzle-kit generate --config=drizzle.config.ts",
         "cwd": "libs/db"
       }
+    },
+    "push": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "drizzle-kit push --config=drizzle.config.ts",
+        "cwd": "libs/db"
+      }
     }
   }
 }

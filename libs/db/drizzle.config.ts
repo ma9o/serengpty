@@ -8,7 +8,7 @@ export default defineConfig({
   schema: './src/schema/index.ts',
   dialect: 'postgresql',
   dbCredentials: {
-    ssl: true,
+    ssl: process.env.NODE_ENV === 'production',
     host: dbUrl.hostname,
     port: parseInt(dbUrl.port),
     user: dbUrl.username,
