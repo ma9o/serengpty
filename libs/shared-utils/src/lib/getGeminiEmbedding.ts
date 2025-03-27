@@ -9,7 +9,7 @@ const endpoint = `projects/${project}/locations/${location}/publishers/google/mo
 const task = 'SEMANTIC_SIMILARITY';
 const outputDimensionality = 3072;
 
-export async function generateEmbedding(content: string): Promise<number[]> {
+export async function getGeminiEmbedding(content: string): Promise<number[]> {
   const request = {
     endpoint,
     instances: [helpers.toValue({ content: content, task_type: task })!],

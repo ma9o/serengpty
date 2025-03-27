@@ -1,7 +1,7 @@
 import { db, usersTable, conversationsTable } from '@enclaveid/db';
 import { and, asc, eq, lte, not } from 'drizzle-orm';
-import { generateEmbedding } from '../../../services/generateEmbedding';
 import { cosineDistance } from 'drizzle-orm';
+import { getGeminiEmbedding } from '@enclaveid/shared-utils';
 
 const TOP_K_CONVERSATIONS = 5;
 const MAX_DISTANCE = 0.2;
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   ) {
     embedding = existingConversation.embedding;
   } else {
-    embedding = await generateEmbedding(content);
+    embedding = await getGeminiEmbedding(content);
   }
 
   const mostSimilarConversations = await db.transaction(async (tx) => {
