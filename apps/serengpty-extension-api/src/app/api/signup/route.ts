@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '../../services/db';
-import { usersTable } from '../../services/db/schema';
+import { db, usersTable } from '@enclaveid/db';
 import { generateUniqueUsername } from '@enclaveid/shared-utils';
 import { eq } from 'drizzle-orm';
 import { getStreamChatService } from '../../services/streamChat';

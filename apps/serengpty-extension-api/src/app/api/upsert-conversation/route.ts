@@ -1,6 +1,5 @@
-import { db } from '../../services/db';
+import { db, usersTable, conversationsTable } from '@enclaveid/db';
 import { and, asc, eq, lte, not } from 'drizzle-orm';
-import { usersTable, conversationsTable } from '../../services/db/schema';
 import { generateEmbedding } from '../../services/generateEmbedding';
 import { cosineDistance } from 'drizzle-orm';
 
@@ -66,7 +65,7 @@ export async function POST(request: Request) {
         distance,
         userId: usersTable.id,
         userName: usersTable.name,
-        meetsThreshold: lte(distance, MAX_DISTANCE) // Add boolean flag indicating if meets threshold
+        meetsThreshold: lte(distance, MAX_DISTANCE), // Add boolean flag indicating if meets threshold
       })
       .from(conversationsTable)
       .innerJoin(usersTable, eq(conversationsTable.userId, usersTable.id))
