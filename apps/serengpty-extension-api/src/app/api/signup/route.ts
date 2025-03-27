@@ -28,7 +28,7 @@ export async function POST() {
       .insert(usersTable)
       .values({
         name,
-        password_hash: await bcrypt.hash(randomPassword, 10), // Set random password hash that can be changed later
+        passwordHash: await bcrypt.hash(randomPassword, 10), // Set random password hash that can be changed later
       })
       .returning({ id: usersTable.id, name: usersTable.name });
 

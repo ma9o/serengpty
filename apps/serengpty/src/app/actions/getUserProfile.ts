@@ -1,9 +1,10 @@
 'use server';
 
-import { getPrismaClient } from '../services/db/prisma';
 import { auth } from '../services/auth';
 import { generateUsername } from 'unique-username-generator';
 import { validateUsername } from './validateUsername';
+import { db, usersTable } from '@enclaveid/db';
+import { eq } from 'drizzle-orm';
 
 // Helper function to generate a unique username
 async function generateUniqueUsername() {
@@ -39,9 +40,9 @@ export async function getUserProfile() {
     const userId = session.user.id;
 
     // Fetch user data from database
-    const userData = await getPrismaClient()!.user.findUnique({
-      where: { id: userId },
-      select: {
+    const userData = await db.query.usersTable.findFirst({
+      where: eq(usersTable.id, userId),
+      columns: {
         name: true,
         country: true,
         sensitiveMatching: true,

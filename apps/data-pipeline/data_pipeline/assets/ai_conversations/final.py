@@ -26,7 +26,7 @@ def final(
 ) -> None:
     """
     This asset implements the same logic as your "savePipelineResults" using raw SQL
-    in psycopg3 executemany, fully aligned with the final Prisma migration schema:
+    in psycopg3 executemany, fully aligned with the final migration schema:
 
     - UsersMatch <-> User pivot: "_UserToUsersMatch"(A=User.id, B=UsersMatch.id)
     - SerendipitousPath <-> Conversation pivot: "_ConversationToSerendipitousPath"(A=Conversation.id, B=SerendipitousPath.id)

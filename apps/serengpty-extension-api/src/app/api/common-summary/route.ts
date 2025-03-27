@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     await req.json();
 
   const user = await db.query.usersTable.findFirst({
-    where: eq(usersTable.extension_api_key, apiKey),
+    where: eq(usersTable.extensionApiKey, apiKey),
   });
 
   if (!user) {
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     await db.query.conversationsTable.findFirst({
       where: and(
         eq(conversationsTable.id, currentConversationId),
-        eq(conversationsTable.user_id, user.id)
+        eq(conversationsTable.userId, user.id)
       ),
     });
 

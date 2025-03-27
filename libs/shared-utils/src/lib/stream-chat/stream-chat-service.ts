@@ -2,7 +2,7 @@
  * Stream Chat Service
  *
  * This service handles server-side Stream Chat functionality
- * and is platform-agnostic (no Next.js or Prisma dependencies).
+ * and is platform-agnostic
  */
 import { StreamChat } from 'stream-chat';
 import { ChatTokenResult, StreamChatConfig, StreamChatUserData } from './types';

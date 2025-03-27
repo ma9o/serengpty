@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as bcrypt from 'bcrypt';
-import { getPrismaClient } from '../../../services/db/prisma';
 import { getUniqueUsername } from '../../../actions/getUniqueUsername';
 import { validateUsername } from '../../../actions/validateUsername';
 import { usernameSchema } from '../../../schemas/validation';
@@ -8,6 +7,8 @@ import { signIn } from '../../../services/auth';
 import { upsertStreamChatUser } from '../../../utils/upsertStreamChatUser';
 import { getAzureContainerClient } from '../../../services/azure/storage';
 import { BlobSASPermissions } from '@azure/storage-blob';
+import { usersTable } from '@enclaveid/db';
+import { db } from '@enclaveid/db';
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -54,12 +55,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Create anonymous user with password hash and generated name
-    const user = await getPrismaClient()!.user.create({
-      data: {
-        passwordHash,
-        name,
-      },
-    });
+    const user = (
+      await db
+        .insert(usersTable)
+        .values({
+          passwordHash,
+          name,
+        })
+        .returning()
+    )[0];
 
     let uploadUrl: string | null = null;
 

@@ -2,13 +2,14 @@
 
 import { ChatProvider as SharedChatProvider } from '@enclaveid/ui-utils';
 import { env } from '../../constants/environment';
-import { User } from '@prisma/client';
+import { usersTable } from '@enclaveid/db';
+
 export function NextChatProvider({
   user,
   userToken,
   children,
 }: {
-  user: User;
+  user: typeof usersTable.$inferSelect;
   userToken: string;
   children: React.ReactNode;
 }) {

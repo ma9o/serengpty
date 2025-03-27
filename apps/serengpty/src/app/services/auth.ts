@@ -1,50 +1,29 @@
 import NextAuth, { CredentialsSignin } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@auth/prisma-adapter';
-import { getPrismaClient } from './db/prisma';
-import { PrismaClient } from '@prisma/client';
-import { Adapter } from 'next-auth/adapters';
+import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import * as bcrypt from 'bcrypt';
-import { env } from '../constants/environment';
-
-// fix: Record to delete does not exist. https://github.com/nextauthjs/next-auth/issues/4495
-function CustomPrismaAdapter(p: PrismaClient): Adapter {
-  const origin = PrismaAdapter(p);
-  return {
-    ...origin,
-    deleteSession: async (sessionToken: string) => {
-      try {
-        return await p.session.deleteMany({ where: { sessionToken } });
-      } catch (e) {
-        console.error('Failed to delete session', e);
-        return null;
-      }
-    },
-    // Override createUser to allow for anonymous users
-    createUser: async (user) => {
-      // User name will be assigned by the adapter
-
-      // Handle anonymous users without email
-      return await p.user.create({
-        data: {
-          ...user,
-          email: user.email || null, // Allow null emails
-        },
-      });
-    },
-  } as unknown as Adapter;
-}
-
+import {
+  db,
+  accountsTable,
+  sessionsTable,
+  usersTable,
+  verificationTokensTable,
+  authenticatorsTable,
+} from '@enclaveid/db';
+import { eq } from 'drizzle-orm';
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: env.DATABASE_URL
-    ? CustomPrismaAdapter(getPrismaClient()!)
-    : undefined,
+  adapter: DrizzleAdapter(db, {
+    accountsTable,
+    sessionsTable,
+    verificationTokensTable,
+    authenticatorsTable,
+    usersTable,
+  }),
   session: {
     strategy: 'jwt',
   },
   pages: {
     signIn: '/login',
-    // Add custom error page if needed
     error: '/auth/error',
   },
   providers: [
@@ -60,10 +39,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         // Find the user by username
-        const user = await getPrismaClient()!.user.findUnique({
-          where: {
-            name: credentials.username as string,
-          },
+        const user = await db.query.usersTable.findFirst({
+          where: eq(usersTable.name, credentials.username as string),
         });
 
         // If user is found, verify password
@@ -77,7 +54,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return {
               id: user.id,
               name: user.name,
-              email: user.email || null,
             };
           }
         }
@@ -91,9 +67,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        // Ensure name and email are properly handled for anonymous users
         token.name = user.name || null;
-        token.email = user.email || null;
       }
       return token;
     },
@@ -102,7 +76,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = token.id as string;
         // Ensure name and email are properly handled for anonymous users
         session.user.name = (token.name as string) || null;
-        session.user.email = (token.email as string) || null;
       }
       return session;
     },

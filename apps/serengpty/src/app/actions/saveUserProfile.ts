@@ -1,10 +1,11 @@
 'use server';
 
-import { getPrismaClient } from '../services/db/prisma';
 import { auth } from '../services/auth';
 import { revalidatePath } from 'next/cache';
 import { userProfileSchema, UserProfileFormData } from '../schemas/validation';
 import { upsertStreamChatUser } from '../utils/upsertStreamChatUser';
+import { db, usersTable } from '@enclaveid/db';
+import { eq } from 'drizzle-orm';
 
 /**
  * Saves the user profile data from the onboarding form
@@ -34,9 +35,11 @@ export async function saveUserProfile(
     const userId = session.user.id;
 
     // Check if name is already taken by another user
-    const existingUser = await getPrismaClient()!.user.findUnique({
-      where: { name: data.username },
-      select: { id: true },
+    const existingUser = await db.query.usersTable.findFirst({
+      where: eq(usersTable.name, data.username),
+      columns: {
+        id: true,
+      },
     });
 
     if (existingUser && existingUser.id !== userId) {
@@ -47,14 +50,17 @@ export async function saveUserProfile(
     }
 
     // Update or create the user profile
-    const user = await getPrismaClient()!.user.update({
-      where: { id: userId },
-      data: {
-        name: data.username,
-        country: data.country,
-        sensitiveMatching: data.sensitiveMatching,
-      },
-    });
+    const user = (
+      await db
+        .update(usersTable)
+        .set({
+          name: data.username,
+          country: data.country,
+          sensitiveMatching: data.sensitiveMatching,
+        })
+        .where(eq(usersTable.id, userId))
+        .returning()
+    )[0];
 
     // Update username on StreamChat
     await upsertStreamChatUser(user);

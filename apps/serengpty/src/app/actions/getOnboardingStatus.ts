@@ -1,7 +1,8 @@
 'use server';
 
-import { getPrismaClient } from '../services/db/prisma';
 import { getCurrentUser } from './getCurrentUser';
+import { db, userPathsTable, usersTable } from '@enclaveid/db';
+import { eq, isNull, asc } from 'drizzle-orm';
 
 // Each user's parallel portion, in minutes
 const PARALLEL_PORTION_MINUTES = 8;
@@ -34,9 +35,11 @@ export async function getOnboardingStatus(): Promise<{
     const userId = user.id;
 
     // 2. Check if user already has userPaths
-    const currentUser = await getPrismaClient()!.user.findUnique({
-      where: { id: userId },
-      include: { userPaths: true },
+    const currentUser = await db.query.usersTable.findFirst({
+      where: eq(usersTable.id, userId),
+      with: {
+        userPaths: true,
+      },
     });
 
     if (!currentUser) {
@@ -58,20 +61,15 @@ export async function getOnboardingStatus(): Promise<{
     }
 
     // 4. Find all users without userPaths, sorted by creation date
-    const usersInQueue = await getPrismaClient()!.user.findMany({
-      where: {
-        userPaths: {
-          none: {},
-        },
-      },
-      orderBy: {
-        createdAt: 'asc',
-      },
-      select: {
-        id: true,
-        createdAt: true,
-      },
-    });
+    const usersInQueue = await db
+      .select({
+        id: usersTable.id,
+        createdAt: usersTable.createdAt,
+      })
+      .from(usersTable)
+      .leftJoin(userPathsTable, eq(userPathsTable.userId, usersTable.id))
+      .where(isNull(userPathsTable.pathId))
+      .orderBy(asc(usersTable.createdAt));
 
     // 5. We'll loop to find:
     //    - queuePosition (index + 1)

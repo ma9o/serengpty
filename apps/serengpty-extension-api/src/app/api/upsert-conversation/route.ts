@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   const { apiKey, title, content, id: conversationId } = await request.json();
 
   const user = await db.query.usersTable.findFirst({
-    where: eq(usersTable.extension_api_key, apiKey),
+    where: eq(usersTable.extensionApiKey, apiKey),
   });
 
   if (!user) {
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   const existingConversation = await db.query.conversationsTable.findFirst({
     where: and(
       eq(conversationsTable.id, conversationId),
-      eq(conversationsTable.user_id, user.id)
+      eq(conversationsTable.userId, user.id)
     ),
   });
 
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         id: conversationId,
         title,
         content,
-        user_id: user.id,
+        userId: user.id,
         embedding,
       })
       .onConflictDoUpdate({
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
           title,
           content,
           embedding,
-          updated_at: new Date(),
+          updatedAt: new Date(),
         },
       });
 
@@ -70,14 +70,14 @@ export async function POST(request: Request) {
       .select({
         id: conversationsTable.id,
         title: conversationsTable.title,
-        created_at: conversationsTable.created_at,
+        createdAt: conversationsTable.createdAt,
         distance,
-        user_id: usersTable.id,
+        userId: usersTable.id,
         name: usersTable.name,
-        meets_threshold: lte(distance, MAX_DISTANCE), // Add boolean flag indicating if meets threshold
+        meetsThreshold: lte(distance, MAX_DISTANCE), // Add boolean flag indicating if meets threshold
       })
       .from(conversationsTable)
-      .innerJoin(usersTable, eq(conversationsTable.user_id, usersTable.id))
+      .innerJoin(usersTable, eq(conversationsTable.userId, usersTable.id))
       .where(
         // Exclude the conversation we just inserted
         // and the user's own conversations

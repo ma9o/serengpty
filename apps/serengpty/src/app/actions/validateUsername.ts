@@ -1,8 +1,10 @@
 'use server';
 
-import { getPrismaClient } from '../services/db/prisma';
+import { usersTable } from '@enclaveid/db';
+import { db } from '@enclaveid/db';
 import { getCurrentUser } from './getCurrentUser';
 import { validateUsername as validateUsernameUtil } from '@enclaveid/shared-utils';
+import { eq } from 'drizzle-orm';
 
 /**
  * Validates if a username is available
@@ -27,9 +29,11 @@ export async function validateUsername(username: string): Promise<{
     }
 
     // Check if username already exists in the database
-    const existingUser = await getPrismaClient()!.user.findUnique({
-      where: { name: username },
-      select: { id: true },
+    const existingUser = await db.query.usersTable.findFirst({
+      where: eq(usersTable.name, username),
+      columns: {
+        id: true,
+      },
     });
 
     if (existingUser) {
