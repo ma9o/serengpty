@@ -26,10 +26,11 @@ export async function POST(request: Request) {
     ),
   });
 
-  if (!existingConversation) {
-    return new Response('Conversation not found or not owned by user', {
-      status: 404,
-    });
+  if (existingConversation) {
+    // If the conversation exists, the user has to be the owner of the conversation
+    if (existingConversation.userId !== user.id) {
+      return new Response('Unauthorized', { status: 401 });
+    }
   }
 
   let embedding: number[];

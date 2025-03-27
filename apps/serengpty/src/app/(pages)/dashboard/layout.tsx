@@ -11,6 +11,7 @@ import { DashboardSidebar } from '../../components/dashboard-sidebar';
 import { getChatToken } from '../../actions/getChatToken';
 import { getCurrentUser } from '../../actions/getCurrentUser';
 import { NextChatProvider } from '../../components/chat/NextChatProvider';
+import { env } from '../../constants/environment';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,11 @@ export default async function Layout({
   return (
     <div className="h-full overflow-hidden">
       <UnviewedMatchesProvider>
-        <NextChatProvider user={user} userToken={streamChatToken.token!}>
+        <NextChatProvider
+          user={user}
+          userToken={streamChatToken.token!}
+          enabled={!env.DISABLE_CHAT}
+        >
           <DashboardLayout>{children}</DashboardLayout>
         </NextChatProvider>
       </UnviewedMatchesProvider>

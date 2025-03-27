@@ -19,6 +19,11 @@ export default defineConfig({
     version: '1.0.0',
     permissions: ['activeTab', 'storage', 'sidePanel', 'tabs', 'notifications'],
   },
+  dev: {
+    server: {
+      port: 3002,
+    },
+  },
   vite: () => ({
     root: __dirname,
 
@@ -42,7 +47,6 @@ export default defineConfig({
       fs: {
         cachedChecks: false,
       },
-      port: 3002,
     },
 
     build: {

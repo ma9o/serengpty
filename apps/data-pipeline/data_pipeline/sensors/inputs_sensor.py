@@ -16,7 +16,6 @@ from data_pipeline.constants.environments import (
     STORAGE_BUCKET,
 )
 from data_pipeline.partitions import user_partitions_def
-from data_pipeline.resources.postgres_resource import PostgresResource
 
 
 @sensor(
@@ -24,9 +23,7 @@ from data_pipeline.resources.postgres_resource import PostgresResource
     minimum_interval_seconds=30,
     default_status=DefaultSensorStatus.RUNNING,
 )
-def inputs_sensor(
-    context: SensorEvaluationContext, postgres: PostgresResource
-) -> SensorResult | SkipReason:
+def inputs_sensor(context: SensorEvaluationContext) -> SensorResult | SkipReason:
     """Polls the storage bucket for user folders.
 
     Adds or removes user partitions based on the presence of user folders. Note

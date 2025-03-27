@@ -8,13 +8,13 @@ import { replaceUserPlaceholders } from './user-placeholder-utils';
 interface ConversationsListProps {
   conversations?: Array<{
     id: string;
-    title?: string;
-    summary: string;
-    datetime: Date;
+    title: string | null;
+    summary: string | null;
+    datetime: Date | null;
     user?: {
       id: string;
       name: string;
-    };
+    } | null;
   }>;
   currentUserName?: string;
   matchedUserName?: string;
@@ -106,14 +106,19 @@ export function ConversationsList({
                 )}
               </div>
               <p className="text-sm text-muted-foreground mb-2">
-                {new Date(conversation.datetime).toLocaleDateString()} at{' '}
-                {new Date(conversation.datetime).toLocaleTimeString()}
+                {conversation.datetime
+                  ? new Date(conversation.datetime).toLocaleDateString() +
+                    ' at ' +
+                    new Date(conversation.datetime).toLocaleTimeString()
+                  : 'No date available'}
               </p>
               <p>
-                {processConversationSummary(
-                  conversation.summary,
-                  conversation.user
-                )}
+                {conversation.summary && conversation.user
+                  ? processConversationSummary(
+                      conversation.summary,
+                      conversation.user
+                    )
+                  : 'No summary available'}
               </p>
             </div>
           ))}

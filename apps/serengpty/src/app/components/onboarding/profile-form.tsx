@@ -10,9 +10,8 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { saveUserProfile } from '../../actions/saveUserProfile';
 import { UsernameStatus } from './username-status';
 import { getUserProfile } from '../../actions/getUserProfile';
-import { getIdenticon } from '../../utils/getIdenticon';
-import { userProfileSchema } from '../../schemas/validation';
-
+import { getIdenticon } from '@enclaveid/shared-utils';
+import { z } from 'zod';
 // UI Components
 import { Button } from '@enclaveid/ui/button';
 import { Input } from '@enclaveid/ui/input';
@@ -29,6 +28,7 @@ import {
   FormMessage,
 } from '@enclaveid/ui/form';
 import { ConditionalWrapper } from '../conditional-wrapper';
+import { userProfileSchema } from '../../schemas/validation';
 
 // Initialize the countries library
 countries.registerLocale(enLocale);

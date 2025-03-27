@@ -123,14 +123,14 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" className="w-full">
                     View your unique path (
-                    {currentUserPath.uniqueConversations.length})
+                    {currentUserPath.conversationsToUserPaths.length})
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
                   <DialogHeader>
                     <DialogTitle>
                       Your Unique Conversations (
-                      {currentUserPath.uniqueConversations.length})
+                      {currentUserPath.conversationsToUserPaths.length})
                     </DialogTitle>
                     <DialogDescription>
                       Conversations unique to your perspective
@@ -138,7 +138,9 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
                   </DialogHeader>
                   <div className="overflow-hidden">
                     <ConversationsList
-                      conversations={currentUserPath.uniqueConversations}
+                      conversations={currentUserPath.conversationsToUserPaths.map(
+                        (c) => c.conversation
+                      )}
                       currentUserName={currentUserName}
                       matchedUserName={matchedUser.name}
                       currentUserPath={currentUserPath}
@@ -162,14 +164,14 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" className="w-full">
                     View {matchedUser.name}&apos;s unique path (
-                    {matchedUserPath.uniqueConversations.length})
+                    {matchedUserPath.conversationsToUserPaths.length})
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
                   <DialogHeader>
                     <DialogTitle>
                       {matchedUser.name}&apos;s Unique Conversations (
-                      {matchedUserPath.uniqueConversations.length})
+                      {matchedUserPath.conversationsToUserPaths.length})
                     </DialogTitle>
                     <DialogDescription>
                       Conversations unique to {matchedUser.name}&apos;s
@@ -178,7 +180,9 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
                   </DialogHeader>
                   <div className="overflow-hidden">
                     <ConversationsList
-                      conversations={matchedUserPath.uniqueConversations}
+                      conversations={matchedUserPath.conversationsToUserPaths.map(
+                        (c) => c.conversation
+                      )}
                       currentUserName={currentUserName}
                       matchedUserName={matchedUser.name}
                       currentUserPath={currentUserPath}
@@ -212,13 +216,15 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="default" className="w-full">
-                    View common path ({path.commonConversations.length})
+                    View common path (
+                    {path.conversationsToSerendipitousPaths.length})
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                      Common Path ({path.commonConversations.length})
+                      Common Path (
+                      {path.conversationsToSerendipitousPaths.length})
                     </DialogTitle>
                     <DialogDescription>
                       Conversations shared between users in this path
@@ -226,7 +232,9 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
                   </DialogHeader>
                   <div className="overflow-hidden">
                     <ConversationsList
-                      conversations={path.commonConversations}
+                      conversations={path.conversationsToSerendipitousPaths.map(
+                        (c) => c.conversation
+                      )}
                       currentUserName={currentUserName}
                       matchedUserName={matchedUser.name}
                       currentUserPath={currentUserPath}
@@ -270,14 +278,14 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
                     View your unique path (
-                    {currentUserPath.uniqueConversations.length})
+                    {currentUserPath.conversationsToUserPaths.length})
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
                   <DialogHeader>
                     <DialogTitle>
                       Your Unique Conversations (
-                      {currentUserPath.uniqueConversations.length})
+                      {currentUserPath.conversationsToUserPaths.length})
                     </DialogTitle>
                     <DialogDescription>
                       Conversations unique to your perspective
@@ -285,7 +293,9 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
                   </DialogHeader>
                   <div className="overflow-hidden">
                     <ConversationsList
-                      conversations={currentUserPath.uniqueConversations}
+                      conversations={currentUserPath.conversationsToUserPaths.map(
+                        (c) => c.conversation
+                      )}
                       currentUserName={currentUserName}
                       matchedUserName={matchedUser.name}
                       currentUserPath={currentUserPath}
@@ -311,14 +321,14 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
                     View {matchedUser.name}&apos;s unique path (
-                    {matchedUserPath.uniqueConversations.length})
+                    {matchedUserPath.conversationsToUserPaths.length})
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
                   <DialogHeader>
                     <DialogTitle>
                       {matchedUser.name}&apos;s Unique Conversations (
-                      {matchedUserPath.uniqueConversations.length})
+                      {matchedUserPath.conversationsToUserPaths.length})
                     </DialogTitle>
                     <DialogDescription>
                       Conversations unique to {matchedUser.name}&apos;s
@@ -327,7 +337,9 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
                   </DialogHeader>
                   <div className="overflow-hidden">
                     <ConversationsList
-                      conversations={matchedUserPath.uniqueConversations}
+                      conversations={matchedUserPath.conversationsToUserPaths.map(
+                        (c) => c.conversation
+                      )}
                       currentUserName={currentUserName}
                       matchedUserName={matchedUser.name}
                       currentUserPath={currentUserPath}
@@ -362,13 +374,15 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" size="default">
-                  View common path ({path.commonConversations.length})
+                  View common path (
+                  {path.conversationsToSerendipitousPaths.length})
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[80vw] max-h-[80vh] overflow-hidden">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
-                    Common Path ({path.commonConversations.length})
+                    Common Path ({path.conversationsToSerendipitousPaths.length}
+                    )
                   </DialogTitle>
                   <DialogDescription>
                     Conversations shared between users in this path
@@ -376,7 +390,9 @@ export function PathDetails({ path, matchedUser }: PathDetailsProps) {
                 </DialogHeader>
                 <div className="overflow-hidden">
                   <ConversationsList
-                    conversations={path.commonConversations}
+                    conversations={path.conversationsToSerendipitousPaths.map(
+                      (c) => c.conversation
+                    )}
                     currentUserName={currentUserName}
                     matchedUserName={matchedUser.name}
                     currentUserPath={currentUserPath}

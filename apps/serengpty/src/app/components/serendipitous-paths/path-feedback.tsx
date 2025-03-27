@@ -10,10 +10,7 @@ interface PathFeedbackProps {
   existingFeedback?: number;
 }
 
-export function PathFeedback({
-  pathId,
-  existingFeedback,
-}: PathFeedbackProps) {
+export function PathFeedback({ pathId, existingFeedback }: PathFeedbackProps) {
   const [score, setScore] = useState<number | undefined>(existingFeedback);
   const [isSubmitting, setIsSubmitting] = useState(false);
 

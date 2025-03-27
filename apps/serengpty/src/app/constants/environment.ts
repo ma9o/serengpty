@@ -15,6 +15,7 @@ export const env = {
   // Stream Chat
   STREAM_CHAT_API_SECRET: process.env.STREAM_CHAT_API_SECRET,
   NEXT_PUBLIC_STREAM_CHAT_API_KEY: process.env.NEXT_PUBLIC_STREAM_CHAT_API_KEY,
+  DISABLE_CHAT: process.env.DISABLE_CHAT === 'true',
 
   // Pipeline
   PIPELINE_SECRET: process.env.PIPELINE_SECRET,

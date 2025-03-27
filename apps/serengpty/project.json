@@ -9,7 +9,6 @@
   "tags": [],
   "targets": {
     "dev": {
-      "executor": "@nx/next:dev",
       "options": {
         "port": 3000
       }

@@ -98,6 +98,10 @@ export async function getSerendipitousPaths() {
     const userMatchIdsSubquery = db
       .select({ matchId: usersMatchesTable.id }) // Select the foreign key pointing to usersMatchTable
       .from(usersToUsersMatchesTable)
+      .leftJoin(
+        usersMatchesTable,
+        eq(usersMatchesTable.id, usersToUsersMatchesTable.usersMatchId)
+      )
       .where(eq(usersToUsersMatchesTable.userId, currentUserId)); // Find entries for the current user
 
     const userMatches = await db.query.usersMatchesTable.findMany({
@@ -282,18 +286,21 @@ export async function setPathFeedback(pathId: string, score: 1 | -1 | 0) {
 
     if (existingFeedback) {
       // Update existing feedback
-      return await db
+      await db
         .update(pathFeedbackTable)
         .set({ score })
         .where(eq(pathFeedbackTable.id, existingFeedback.id));
     } else {
       // Create new feedback
-      return await db.insert(pathFeedbackTable).values({
+      await db.insert(pathFeedbackTable).values({
         score,
         userId,
         pathId,
       });
     }
+    
+    // Return a plain object instead of the Drizzle query result
+    return { success: true, pathId, score };
   } catch (error) {
     console.error('Error setting path feedback:', error);
     throw error;

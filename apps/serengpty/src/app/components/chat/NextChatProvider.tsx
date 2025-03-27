@@ -8,14 +8,14 @@ export function NextChatProvider({
   user,
   userToken,
   children,
+  enabled,
 }: {
   user: typeof usersTable.$inferSelect;
   userToken: string;
   children: React.ReactNode;
+  enabled?: boolean;
 }) {
-  console.log('user', user);
-
-  return (
+  return enabled ? (
     <SharedChatProvider
       userId={user.id}
       userName={user.name}
@@ -24,5 +24,7 @@ export function NextChatProvider({
     >
       {children}
     </SharedChatProvider>
+  ) : (
+    children
   );
 }
