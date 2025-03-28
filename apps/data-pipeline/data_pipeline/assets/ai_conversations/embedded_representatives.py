@@ -62,8 +62,10 @@ def embedded_representatives(
         )
 
         # Filter the DataFrame
+        # Convert UUIDs/objects in the set to strings for comparison with the string column
+        already_embedded_ids_str = list(map(str, already_embedded_ids))
         df_to_process = representatives_to_embed.filter(
-            ~pl.col("conversation_id").is_in(list(already_embedded_ids))
+            ~pl.col("conversation_id").is_in(already_embedded_ids_str)
         )
         logger.info(f"Need to embed {len(df_to_process)} new representatives.")
 
