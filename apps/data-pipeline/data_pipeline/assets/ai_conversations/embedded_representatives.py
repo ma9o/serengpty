@@ -14,7 +14,7 @@ from data_pipeline.resources import PostgresResource
 
 
 class EmbeddedRepresentativesConfig(Config):
-    db_insert_batch_size: int = 5
+    db_insert_batch_size: int = 50
     embedding_model: str = "text-embedding-large-exp-03-07"
     embedding_dimension: int = 3072
     embedding_task_type: str = "SEMANTIC_SIMILARITY"

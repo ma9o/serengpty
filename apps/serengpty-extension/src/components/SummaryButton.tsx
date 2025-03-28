@@ -1,7 +1,8 @@
 import { Button } from '@enclaveid/ui';
 import { useCompletion } from '@ai-sdk/react';
 import { API_BASE_URL } from '../services/api';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
+import { userDataStorage } from '../utils/storage';
 
 export function SummaryButton({
   currentConversationId,
@@ -12,9 +13,21 @@ export function SummaryButton({
   otherConversationId?: string;
   setCompletion?: (completion: string) => void;
 }) {
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Fetch the API key from storage
+    userDataStorage.getValue().then((userData) => {
+      if (userData) {
+        setApiKey(userData.extensionApiKey);
+      }
+    });
+  }, []);
+  
   const { completion, complete, isLoading } = useCompletion({
     api: `${API_BASE_URL}/common-summary`,
     body: {
+      apiKey,
       currentConversationId,
       otherConversationId,
     },
@@ -27,10 +40,10 @@ export function SummaryButton({
   }, [completion]);
 
   const onSubmit = useCallback(() => {
-    if (currentConversationId && otherConversationId) {
+    if (currentConversationId && otherConversationId && apiKey) {
       complete(''); // Empty since data is fetched server side
     }
-  }, [complete, currentConversationId, otherConversationId]);
+  }, [complete, currentConversationId, otherConversationId, apiKey]);
 
   return (
     <Button
@@ -38,7 +51,8 @@ export function SummaryButton({
         isLoading ||
         !!completion ||
         !currentConversationId ||
-        !otherConversationId
+        !otherConversationId ||
+        !apiKey
       }
       onClick={onSubmit}
       size="sm"
