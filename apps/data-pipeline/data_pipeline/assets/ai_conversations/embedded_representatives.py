@@ -44,7 +44,9 @@ def embedded_representatives(
         return
 
     # --- 1. Filter out already embedded conversations ---
-    if config.skip_existing:
+    if not config.skip_existing:
+        df_to_process = representatives_to_embed
+    else:
         conversation_ids_to_check = representatives_to_embed[
             "conversation_id"
         ].to_list()
