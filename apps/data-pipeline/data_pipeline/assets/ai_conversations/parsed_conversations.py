@@ -294,7 +294,7 @@ def parsed_conversations(
     result = postgres.execute_query(
         cast(
             LiteralString,
-            f'SELECT id FROM "Conversation" WHERE id IN ({formatted_ids})',
+            f'SELECT id FROM "conversations" WHERE id IN ({formatted_ids})',
         )
     )
 
