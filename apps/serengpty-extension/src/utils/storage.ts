@@ -17,7 +17,7 @@ export const userPreferencesStorage = storage.defineItem<UserPreferences>(
 
 export interface SimilarUser {
   userId: string;
-  userName: string;
+  name: string;
   id: string;
   title: string;
   distance: number;
@@ -108,14 +108,21 @@ export async function shouldProcessConversation(
 
   // Don't process if the last attempt for THIS hash resulted in an error
   if (state.status === 'error' && state.contentHash === currentContentHash) {
-      console.log(`[Storage] Skipping processing for ${conversationId} - hash ${currentContentHash} previously failed.`);
-      return false;
+    console.log(
+      `[Storage] Skipping processing for ${conversationId} - hash ${currentContentHash} previously failed.`
+    );
+    return false;
   }
 
   // Don't process if the content hash is the same as the last successfully completed one
-  if (state.status === 'completed' && state.contentHash === currentContentHash) {
-      console.log(`[Storage] Skipping processing for ${conversationId} - hash ${currentContentHash} already completed.`);
-      return false;
+  if (
+    state.status === 'completed' &&
+    state.contentHash === currentContentHash
+  ) {
+    console.log(
+      `[Storage] Skipping processing for ${conversationId} - hash ${currentContentHash} already completed.`
+    );
+    return false;
   }
 
   // Otherwise, okay to process (idle, or completed but hash changed, or error but hash changed)

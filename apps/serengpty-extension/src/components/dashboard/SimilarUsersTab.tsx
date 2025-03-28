@@ -176,7 +176,7 @@ export function SimilarUsersTab({
     if (!acc[userConv.userId]) {
       acc[userConv.userId] = {
         userId: userConv.userId,
-        userName: userConv.userName,
+        userName: userConv.name,
         conversations: [],
       };
     }

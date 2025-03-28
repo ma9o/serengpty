@@ -90,6 +90,6 @@ def representatives_to_embed(
         conversations_embeddings.filter(
             pl.col("conversation_id").is_in(representative_candidates)
         )
-        .select(["conversation_id", "datetime_conversations"])
+        .select(pl.all().exclude("embedding"))
         .rename({"datetime_conversations": "text_to_embed"})
     )
