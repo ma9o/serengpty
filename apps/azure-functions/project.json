@@ -10,7 +10,8 @@
     "start": {
       "executor": "@nxazure/func:start",
       "options": {
-        "port": 7071
+        "port": 7071,
+        "additionalFlags": "--verbose"
       }
     },
     "publish": {
