@@ -3,7 +3,7 @@ import os
 from typing import List, Tuple
 
 import polars as pl
-from dagster import AssetExecutionContext, AssetIn, asset, get_dagster_logger
+from dagster import AssetExecutionContext, AssetIn, Config, asset, get_dagster_logger
 from google import genai
 from google.genai.types import EmbedContentConfig
 from google.oauth2 import service_account
@@ -12,11 +12,13 @@ from json_repair import repair_json
 from data_pipeline.partitions import user_partitions_def
 from data_pipeline.resources import PostgresResource
 
-EMBEDDING_BATCH_SIZE = 1
-DB_INSERT_BATCH_SIZE = 5
-EMBEDDING_MODEL = "text-embedding-large-exp-03-07"
-EMBEDDING_DIMENSION = 3072
-EMBEDDING_TASK_TYPE = "SEMANTIC_SIMILARITY"
+
+class EmbeddedRepresentativesConfig(Config):
+    db_insert_batch_size: int = 5
+    embedding_model: str = "text-embedding-large-exp-03-07"
+    embedding_dimension: int = 3072
+    embedding_task_type: str = "SEMANTIC_SIMILARITY"
+    skip_existing: bool = True
 
 
 @asset(
@@ -30,6 +32,7 @@ def embedded_representatives(
     context: AssetExecutionContext,
     representatives_to_embed: pl.DataFrame,
     postgres: PostgresResource,
+    config: EmbeddedRepresentativesConfig,
 ):
     """
     Generates embeddings for representative conversations (one at a time via API)
@@ -42,41 +45,44 @@ def embedded_representatives(
         return
 
     # --- 1. Filter out already embedded conversations ---
-    conversation_ids_to_check = representatives_to_embed["conversation_id"].to_list()
-    try:
-        # Use parameterized query for safety with %(key_name)s syntax
-        query = """
-            SELECT id
-            FROM conversations
-            WHERE embedding IS NOT NULL
-            AND id = ANY(%(conversation_ids_to_check)s::uuid[])
-            """
-        # Keep params as a dictionary
-        already_embedded_result = postgres.execute_query(
-            query,
-            params={"conversation_ids_to_check": conversation_ids_to_check},
-        )
-        already_embedded_ids = {row["id"] for row in already_embedded_result}
-        logger.info(
-            f"Found {len(already_embedded_ids)} already embedded conversations."
-        )
+    if config.skip_existing:
+        conversation_ids_to_check = representatives_to_embed[
+            "conversation_id"
+        ].to_list()
+        try:
+            # Use parameterized query for safety with %(key_name)s syntax
+            query = """
+              SELECT id
+              FROM conversations
+              WHERE embedding IS NOT NULL
+              AND id = ANY(%(conversation_ids_to_check)s::uuid[])
+              """
+            # Keep params as a dictionary
+            already_embedded_result = postgres.execute_query(
+                query,
+                params={"conversation_ids_to_check": conversation_ids_to_check},
+            )
+            already_embedded_ids = {row["id"] for row in already_embedded_result}
+            logger.info(
+                f"Found {len(already_embedded_ids)} already embedded conversations."
+            )
 
-        # Filter the DataFrame
-        # Convert UUIDs/objects in the set to strings for comparison with the string column
-        already_embedded_ids_str = list(map(str, already_embedded_ids))
-        df_to_process = representatives_to_embed.filter(
-            ~pl.col("conversation_id").is_in(already_embedded_ids_str)
-        )
-        logger.info(f"Need to embed {len(df_to_process)} new representatives.")
+            # Filter the DataFrame
+            # Convert UUIDs/objects in the set to strings for comparison with the string column
+            already_embedded_ids_str = list(map(str, already_embedded_ids))
+            df_to_process = representatives_to_embed.filter(
+                ~pl.col("conversation_id").is_in(already_embedded_ids_str)
+            )
+            logger.info(f"Need to embed {len(df_to_process)} new representatives.")
 
-        if df_to_process.is_empty():
-            logger.info("All representatives are already embedded.")
-            return
+            if df_to_process.is_empty():
+                logger.info("All representatives are already embedded.")
+                return
 
-    except Exception as e:
-        logger.error(f"Error checking existing embeddings: {e}")
-        # Decide how to handle - maybe proceed with all? For now, re-raise.
-        raise
+        except Exception as e:
+            logger.error(f"Error checking existing embeddings: {e}")
+            # Decide how to handle - maybe proceed with all? For now, re-raise.
+            raise
 
     # --- 2. Initialize Embedding Client ---
     # Make sure authentication (e.g., gcloud ADC) is set up correctly
@@ -96,7 +102,9 @@ def embedded_representatives(
             location="us-central1",
             credentials=credentials,
         )
-        logger.info(f"Initialized Google GenAI client for model {EMBEDDING_MODEL}")
+        logger.info(
+            f"Initialized Google GenAI client for model {config.embedding_model}"
+        )
     except Exception as e:
         logger.error(f"Failed to initialize Google GenAI client: {e}")
         raise
@@ -123,11 +131,11 @@ def embedded_representatives(
                 try:
                     logger.debug(f"Embedding conversation {conversation_id}...")
                     response = embedding_client.models.embed_content(
-                        model=EMBEDDING_MODEL,
+                        model=config.embedding_model,
                         contents=[text_to_embed],  # API expects a list
                         config=EmbedContentConfig(
-                            task_type=EMBEDDING_TASK_TYPE,
-                            output_dimensionality=EMBEDDING_DIMENSION,
+                            task_type=config.embedding_task_type,
+                            output_dimensionality=config.embedding_dimension,
                         ),
                     )
 
@@ -170,7 +178,7 @@ def embedded_representatives(
                 total_processed += 1
 
                 # --- Insert batch if full ---
-                if len(batch_data_for_db) >= DB_INSERT_BATCH_SIZE:
+                if len(batch_data_for_db) >= config.db_insert_batch_size:
                     logger.info(
                         f"Inserting batch of {len(batch_data_for_db)} embeddings into DB..."
                     )
