@@ -54,7 +54,7 @@ export function UserCard({
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1">
-            <ScoreCircle percentage={score} size="xs" label="Match" />
+            <ScoreCircle percentage={score} size="xs" />
             <div className="text-xs text-muted-foreground">Match</div>
           </div>
         </div>
