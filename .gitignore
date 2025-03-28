@@ -80,3 +80,4 @@ docs/implementation-plans/*
 
 # Azure Functions
 apps/azure-functions/local.settings.json
+apps/azure-functions/bun.lockb

@@ -76,7 +76,7 @@ export async function processGeminiEmbeddings(
   }
 }
 
-app.storageQueue('process-gemini-embeddings', {
+app.storageQueue('processGeminiEmbeddings', {
   queueName: 'gemini-embedding-tasks',
   connection: 'AzureWebJobsStorage',
   handler: (queueItem: unknown, context: InvocationContext) =>

@@ -15,7 +15,10 @@
       }
     },
     "publish": {
-      "executor": "@nxazure/func:publish"
+      "executor": "@nxazure/func:publish",
+      "options": {
+        "name": "serengpty-functions"
+      }
     },
     "lint": {
       "executor": "@nx/eslint:lint",

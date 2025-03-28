@@ -15,7 +15,8 @@
     "next-auth": "5.0.0-beta.25",
     "@azure/storage-blob": "^12.26.0",
     "hyparquet": "^1.8.0",
-    "hyparquet-compressors": "^1.0.0"
+    "hyparquet-compressors": "^1.0.0",
+    "pg": "^8.14.1"
   },
   "devDependencies": {}
 }
