@@ -1,5 +1,5 @@
 import { app, InvocationContext } from '@azure/functions';
-import { getGeminiEmbedding } from '@enclaveid/shared-utils';
+import { getGeminiEmbedding } from '@enclaveid/shared-node';
 import { db, conversationsTable } from '@enclaveid/db';
 import { loadPipelineResults } from '../utils/loadPipelineResult';
 import { readParquet } from '../utils/readParquet';

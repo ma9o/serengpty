@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { usernameSchema, passwordSchema } from '@enclaveid/shared-utils';
+import { usernameSchema } from '@enclaveid/shared-browser';
 
 /**
  * Country code schema

@@ -7,10 +7,8 @@ import { upsertStreamChatUser } from '../../../utils/upsertStreamChatUser';
 import { BlobSASPermissions } from '@azure/storage-blob';
 import { usersTable } from '@enclaveid/db';
 import { db } from '@enclaveid/db';
-import {
-  getAzureContainerClient,
-  usernameSchema,
-} from '@enclaveid/shared-utils';
+import { getAzureContainerClient } from '@enclaveid/shared-node';
+import { usernameSchema } from '@enclaveid/shared-browser';
 
 export async function POST(request: NextRequest) {
   try {

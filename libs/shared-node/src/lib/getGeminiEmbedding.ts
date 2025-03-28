@@ -17,7 +17,7 @@ export async function getGeminiEmbedding(content: string): Promise<number[]> {
   };
 
   // Escape \n in the service account JSON
-  const escapedJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON!.replace(
+  const escapedJson = process.env['GOOGLE_SERVICE_ACCOUNT_JSON']!.replace(
     /\n/g,
     '\\n'
   );
@@ -33,8 +33,8 @@ export async function getGeminiEmbedding(content: string): Promise<number[]> {
     throw new Error('No prediction found');
   }
 
-  const embeddingsProto = prediction.structValue?.fields?.embeddings;
-  const valuesProto = embeddingsProto?.structValue?.fields?.values;
+  const embeddingsProto = prediction.structValue?.fields?.['embeddings'];
+  const valuesProto = embeddingsProto?.structValue?.fields?.['values'];
 
   const embedding = valuesProto?.listValue?.values?.map((v) => v.numberValue);
 

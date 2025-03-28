@@ -3,7 +3,7 @@
 import { usersTable } from '@enclaveid/db';
 import { db } from '@enclaveid/db';
 import { getCurrentUser } from './getCurrentUser';
-import { validateUsername as validateUsernameUtil } from '@enclaveid/shared-utils';
+import { validateUsername as validateUsernameUtil } from '@enclaveid/shared-browser';
 import { eq } from 'drizzle-orm';
 
 /**

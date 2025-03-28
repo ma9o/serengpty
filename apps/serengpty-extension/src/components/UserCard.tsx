@@ -1,4 +1,4 @@
-import { getIdenticon } from '@enclaveid/shared-utils';
+import { getIdenticon } from '@enclaveid/shared-browser';
 import { ScoreCircle } from '@enclaveid/ui/score-circle';
 
 export type User = {

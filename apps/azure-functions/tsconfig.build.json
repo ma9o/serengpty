@@ -8,7 +8,7 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "paths": {
-      "@enclaveid/shared-utils": ["../../libs/shared-utils/src/index.ts"],
+      "@enclaveid/shared-node": ["../../libs/shared-node/src/index.ts"],
       "@enclaveid/db": ["../../libs/db/src/index.ts"]
     }
   }

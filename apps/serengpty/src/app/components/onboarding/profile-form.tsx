@@ -10,7 +10,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { saveUserProfile } from '../../actions/saveUserProfile';
 import { UsernameStatus } from './username-status';
 import { getUserProfile } from '../../actions/getUserProfile';
-import { getIdenticon } from '@enclaveid/shared-utils';
+import { getIdenticon } from '@enclaveid/shared-browser';
 import { z } from 'zod';
 // UI Components
 import { Button } from '@enclaveid/ui/button';

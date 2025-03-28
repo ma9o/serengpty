@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db, usersTable } from '@enclaveid/db';
-import { generateUniqueUsername } from '@enclaveid/shared-utils';
+import { generateUniqueUsername } from '@enclaveid/shared-browser';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 import { upsertStreamChatUser } from '../../../utils/upsertStreamChatUser';

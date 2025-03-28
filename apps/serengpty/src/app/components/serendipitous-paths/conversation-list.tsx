@@ -2,7 +2,7 @@
 
 import { Avatar, AvatarImage, AvatarFallback } from '@enclaveid/ui/avatar';
 import { ScrollArea } from '@enclaveid/ui/scroll-area';
-import { getIdenticon } from '@enclaveid/shared-utils';
+import { getIdenticon } from '@enclaveid/shared-browser';
 import { replaceUserPlaceholders } from './user-placeholder-utils';
 
 interface ConversationsListProps {

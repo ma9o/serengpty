@@ -1,4 +1,4 @@
-import { ChatNotificationEvent } from '@enclaveid/shared-utils';
+import { ChatNotificationEvent } from '@enclaveid/shared-browser';
 
 /**
  * Show a browser notification for a new chat message
@@ -30,20 +30,20 @@ export function showChatNotification(notification: ChatNotificationEvent) {
  */
 function createNotification(data: ChatNotificationEvent) {
   const { messageText, senderName } = data;
-  
+
   if (!messageText || !senderName) return;
-  
+
   // Create notification
   const notification = new Notification('New message from SerenGPTy', {
     body: `${senderName}: ${messageText}`,
     icon: '/icon-128.png',
   });
-  
+
   // Close notification after 5 seconds
   setTimeout(() => {
     notification.close();
   }, 5000);
-  
+
   // Optional: handle notification click
   notification.onclick = () => {
     // This could open your extension's sidepanel or focus the tab

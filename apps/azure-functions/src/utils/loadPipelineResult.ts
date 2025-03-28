@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { getAzureContainerClient } from '@enclaveid/shared-utils';
+import { getAzureContainerClient } from '@enclaveid/shared-node';
+
 // Helper function to convert a ReadableStream to a Buffer
 async function streamToBuffer(
   readableStream: NodeJS.ReadableStream

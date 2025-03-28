@@ -1,4 +1,4 @@
-import { StreamChatUserData } from '@enclaveid/shared-utils';
+import { StreamChatUserData } from '@enclaveid/shared-browser';
 import { usersTable } from '@enclaveid/db';
 import { getStreamChatService } from '../services/streamChat';
 

@@ -35,7 +35,7 @@
     "../../libs/ui/src/logo.tsx",
     "../azure-functions/src/utils/readParquet.ts",
     "../azure-functions/src/utils/loadPipelineResult.ts",
-    "../../libs/shared-utils/src/lib/getAzureContainerClient.ts"
+    "../../libs/shared-node/src/lib/getAzureContainerClient.ts"
   ],
   "exclude": [
     "node_modules",

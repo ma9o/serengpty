@@ -1,5 +1,5 @@
 import { getCurrentUser } from './getCurrentUser';
-import { generateUniqueUsername } from '@enclaveid/shared-utils';
+import { generateUniqueUsername } from '@enclaveid/shared-browser';
 
 /**
  * Generates a unique username

@@ -1,4 +1,4 @@
-import { StreamChatService } from '@enclaveid/shared-utils';
+import { StreamChatService } from '@enclaveid/shared-browser';
 
 let streamChatService: StreamChatService;
 

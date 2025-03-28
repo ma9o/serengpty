@@ -2,7 +2,7 @@
 
 import { ChatInterface as SharedChatInterface } from '@enclaveid/ui';
 import { useIsMobile } from '@enclaveid/ui/hooks/use-mobile';
-import { getIdenticon } from '@enclaveid/shared-utils';
+import { getIdenticon } from '@enclaveid/shared-browser';
 
 interface ChatInterfaceProps {
   activeChannelId?: string;

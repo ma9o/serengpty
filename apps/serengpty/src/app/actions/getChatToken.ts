@@ -1,6 +1,6 @@
 'use server';
 
-import { StreamChatService, ChatTokenResult } from '@enclaveid/shared-utils';
+import { StreamChatService, ChatTokenResult } from '@enclaveid/shared-browser';
 import { getCurrentUser } from './getCurrentUser';
 import { env } from '../constants/environment';
 

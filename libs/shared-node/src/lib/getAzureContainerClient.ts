@@ -11,18 +11,18 @@ const globalForAzureStorage = globalThis as unknown as {
 
 export function getAzureContainerClient() {
   if (
-    !process.env.AZURE_STORAGE_ACCOUNT_NAME ||
-    !process.env.AZURE_STORAGE_ACCOUNT_KEY
+    !process.env['AZURE_STORAGE_ACCOUNT_NAME'] ||
+    !process.env['AZURE_STORAGE_ACCOUNT_KEY']
   ) {
     throw new Error('Azure storage account name or key is not set');
   }
 
   if (!globalForAzureStorage.azureBlobServiceClient) {
     globalForAzureStorage.azureBlobServiceClient = new BlobServiceClient(
-      `https://${process.env.AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net`,
+      `https://${process.env['AZURE_STORAGE_ACCOUNT_NAME']}.blob.core.windows.net`,
       new StorageSharedKeyCredential(
-        process.env.AZURE_STORAGE_ACCOUNT_NAME,
-        process.env.AZURE_STORAGE_ACCOUNT_KEY
+        process.env['AZURE_STORAGE_ACCOUNT_NAME']!,
+        process.env['AZURE_STORAGE_ACCOUNT_KEY']!
       )
     );
   }

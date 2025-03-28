@@ -1,4 +1,4 @@
-import { getIdenticon } from '@enclaveid/shared-utils';
+import { getIdenticon } from '@enclaveid/shared-browser';
 import { ChatInterface } from '@enclaveid/ui';
 
 export function ChatsTab() {

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useConversation } from '../../providers';
 import { Card, CardContent } from '@enclaveid/ui';
 import { ChatButton } from '@enclaveid/ui/stream-chat/chat-button';
-import { getIdenticon } from '@enclaveid/shared-utils';
+import { getIdenticon } from '@enclaveid/shared-browser';
 import { ScoreCircle } from '@enclaveid/ui/score-circle';
 import { RefreshCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { SummaryButton } from '../SummaryButton';

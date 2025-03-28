@@ -187,10 +187,7 @@
     "bcrypt",
     "dtrace-provider",
     "esbuild",
-    "nx",
-    "protobufjs",
-    "spawn-sync",
-    "azure-functions-core-tools"
+    "spawn-sync"
   ],
   "patchedDependencies": {
     "clarinet@0.12.6": "patches/clarinet@0.12.6.patch",

@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState, useCallback } from 'react';
 import { ChatProvider } from '@enclaveid/ui-utils';
-import { ChatNotificationEvent } from '@enclaveid/shared-utils';
+import { ChatNotificationEvent } from '@enclaveid/shared-browser';
 import { getChatToken } from '../services/api';
 import { userDataStorage } from '../utils/storage';
 import { showChatNotification } from '../utils/notifications';

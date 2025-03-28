@@ -1,7 +1,7 @@
 import { db, usersTable, conversationsTable } from '@enclaveid/db';
 import { and, asc, eq, lte, not } from 'drizzle-orm';
 import { cosineDistance } from 'drizzle-orm';
-import { getGeminiEmbedding } from '@enclaveid/shared-utils';
+import { getGeminiEmbedding } from '@enclaveid/shared-node';
 
 const TOP_K_CONVERSATIONS = 5;
 const MAX_DISTANCE = 0.2;

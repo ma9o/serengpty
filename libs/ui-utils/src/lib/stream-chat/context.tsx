@@ -18,7 +18,7 @@ import {
 import { Chat, useCreateChatClient } from 'stream-chat-react';
 import { StreamChat } from 'stream-chat';
 import 'stream-chat-react/dist/css/v2/index.css';
-import { ChatNotificationEvent } from '@enclaveid/shared-utils';
+import { ChatNotificationEvent } from '@enclaveid/shared-browser';
 
 interface ChatContextType {
   client: StreamChat | null;

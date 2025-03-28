@@ -25,7 +25,7 @@ import {
   CarouselContent,
   CarouselItem,
 } from '@enclaveid/ui/carousel';
-import { getIdenticon } from '@enclaveid/shared-utils';
+import { getIdenticon } from '@enclaveid/shared-browser';
 import Image from 'next/image';
 
 export function VerticalSerendipitousPaths({

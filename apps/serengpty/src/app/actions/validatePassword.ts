@@ -1,6 +1,6 @@
 'use server';
 
-import { validatePassword as validatePasswordUtil } from '@enclaveid/shared-utils';
+import { validatePassword as validatePasswordUtil } from '@enclaveid/shared-browser';
 
 /**
  * Validates if a password meets complexity requirements
