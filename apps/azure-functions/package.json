@@ -3,6 +3,14 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/apps/azure-functions/src/functions/*.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "clean": "rimraf dist",
+    "prestart": "bun run clean && bun run build",
+    "start": "func start",
+    "test": "echo \"No tests yet...\""
+  },
   "dependencies": {
     "@azure/functions": "^4.0.0",
     "tsconfig-paths": "^4.2.0",
@@ -10,7 +18,6 @@
     "stream-chat": "^8.57.2",
     "jdenticon": "^3.3.0",
     "@google-cloud/aiplatform": "^4.1.0",
-    "parse-json": "^8.2.0",
     "drizzle-orm": "0.40.1",
     "next-auth": "5.0.0-beta.25",
     "@azure/storage-blob": "^12.26.0",

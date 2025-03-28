@@ -1,5 +1,4 @@
 import { PredictionServiceClient, helpers } from '@google-cloud/aiplatform';
-import parseJson from 'parse-json';
 
 const apiEndpoint = 'us-central1-aiplatform.googleapis.com';
 const location = 'us-central1';
@@ -21,7 +20,7 @@ export async function getGeminiEmbedding(content: string): Promise<number[]> {
     /\n/g,
     '\\n'
   );
-  const credentials = parseJson(escapedJson);
+  const credentials = JSON.parse(escapedJson);
 
   const client = new PredictionServiceClient({ apiEndpoint, credentials });
 
