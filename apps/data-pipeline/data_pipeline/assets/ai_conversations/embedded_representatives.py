@@ -24,7 +24,6 @@ class EmbeddedRepresentativesConfig(Config):
 @asset(
     partitions_def=user_partitions_def,
     ins={
-        # IMPORTANT: This upstream asset MUST provide:
         "representatives_to_embed": AssetIn(key="representatives_to_embed"),
     },
 )
