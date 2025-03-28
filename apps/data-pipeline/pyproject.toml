@@ -41,6 +41,7 @@ openai = "^1.60.0"
 psycopg = { version = "^3.2.4", extras = ["binary"] }
 google-auth = "^2.38.0"
 hdbscan = "^0.8.40"
+google-genai = "^1.8.0"
 
 [tool.poetry.group.dev.dependencies]
 autopep8 = "^2.3.2"
