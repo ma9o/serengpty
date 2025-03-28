@@ -77,3 +77,6 @@ apps/serengpty-extension/.wxt/*
 **/repomix-output.xml
 
 docs/implementation-plans/*
+
+# Azure Functions
+apps/azure-functions/local.settings.json

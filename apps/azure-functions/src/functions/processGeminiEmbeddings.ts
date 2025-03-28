@@ -21,19 +21,17 @@ export async function processGeminiEmbeddings(
     );
 
     if (!conversation) {
-      context.error(
+      throw new Error(
         `Conversation ${queueItem.conversation_id} not found for user ${queueItem.user_id}`
       );
-      return;
     }
 
     const text = conversation.datetime_conversations as string;
 
     if (!text) {
-      context.error(
+      throw new Error(
         `Text for conversation ${queueItem.conversation_id} not found for user ${queueItem.user_id}`
       );
-      return;
     }
 
     const embedding = await getGeminiEmbedding(text);
