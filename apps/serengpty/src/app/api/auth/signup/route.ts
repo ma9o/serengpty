@@ -4,11 +4,13 @@ import { getUniqueUsername } from '../../../actions/getUniqueUsername';
 import { validateUsername } from '../../../actions/validateUsername';
 import { signIn } from '../../../services/auth';
 import { upsertStreamChatUser } from '../../../utils/upsertStreamChatUser';
-import { getAzureContainerClient } from '../../../services/azure/storage';
 import { BlobSASPermissions } from '@azure/storage-blob';
 import { usersTable } from '@enclaveid/db';
 import { db } from '@enclaveid/db';
-import { usernameSchema } from '@enclaveid/shared-utils';
+import {
+  getAzureContainerClient,
+  usernameSchema,
+} from '@enclaveid/shared-utils';
 
 export async function POST(request: NextRequest) {
   try {

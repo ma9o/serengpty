@@ -32,7 +32,10 @@
     ".next/types/**/*.ts",
     "../../libs/ui-utils/postcss.config.js",
     "postcss.config.js",
-    "../../libs/ui/src/logo.tsx"
+    "../../libs/ui/src/logo.tsx",
+    "../azure-functions/src/utils/readParquet.ts",
+    "../azure-functions/src/utils/loadPipelineResult.ts",
+    "../../libs/shared-utils/src/lib/getAzureContainerClient.ts"
   ],
   "exclude": [
     "node_modules",

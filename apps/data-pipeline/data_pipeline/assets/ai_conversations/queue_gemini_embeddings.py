@@ -30,8 +30,8 @@ async def queue_gemini_embeddings(
     tasks = []
     for row in representatives_to_embed.iter_rows(named=True):
         message = {
+            "user_id": context.partition_key,
             "conversation_id": row["conversation_id"],
-            "text": row["text_to_embed"],
         }
         tasks.append(azure_queue.send_message(message))
         num_queued += 1

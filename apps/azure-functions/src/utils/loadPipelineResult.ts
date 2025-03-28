@@ -1,8 +1,6 @@
-import path from 'path';
-import fs from 'fs';
-import { env } from '../../constants/environment';
-import { getAzureContainerClient } from './storage';
-
+import * as path from 'path';
+import * as fs from 'fs';
+import { getAzureContainerClient } from '@enclaveid/shared-utils';
 // Helper function to convert a ReadableStream to a Buffer
 async function streamToBuffer(
   readableStream: NodeJS.ReadableStream
@@ -20,7 +18,7 @@ async function streamToBuffer(
 }
 
 export async function loadPipelineResults(blobName: string): Promise<Buffer> {
-  if (env.IS_DEVELOPMENT) {
+  if (process.env.NODE_ENV === 'development') {
     const localPath = path.join(
       process.cwd(),
       '..',

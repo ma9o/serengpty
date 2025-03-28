@@ -13,8 +13,8 @@ export async function readParquet(
       file: arrayBuffer,
       compressors,
       rowFormat: 'object',
-      onComplete: (data) => {
-        resolve(data);
+      onComplete: (rows) => {
+        resolve(rows as unknown as Record<string, unknown>[]);
       },
     });
   });
