@@ -259,7 +259,7 @@ export function SimilarUsersTab({
                     <div className={`flex items-center justify-between gap-2`}>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">
-                          {conversation.title}
+                          {conversation.title || 'Untitled'}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-gray-500">
