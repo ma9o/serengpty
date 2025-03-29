@@ -225,7 +225,7 @@ export function SimilarUsersTab({
       <div className="space-y-3">
         {Object.values(userConversations).map((userData) => (
           <Card key={userData.userId} className="overflow-hidden">
-            <div className="flex px-6 py-4 items-center border-b gap-3">
+            <div className="flex px-6 py-4 items-center border-b gap-3 shadow-md">
               <div className="h-10 w-10 rounded-full overflow-hidden">
                 <img
                   src={getIdenticon(userData.userName)}
@@ -243,7 +243,7 @@ export function SimilarUsersTab({
               <ChatButton
                 otherUserId={userData.userId}
                 otherUserName={userData.userName}
-                variant="outline"
+                variant="default"
                 size="icon"
                 className="h-8 w-8 flex-shrink-0"
                 onError={(error) => console.error('Chat error:', error)}
@@ -295,7 +295,7 @@ export function SimilarUsersTab({
                       </div>
                       <div className="flex-shrink-0">
                         <ScoreCircle
-                          percentage={1 - conversation.distance}
+                          percentage={conversation.scaledSimilarity}
                           size="sm"
                         />
                       </div>

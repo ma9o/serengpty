@@ -20,7 +20,7 @@ export interface SimilarUser {
   name: string;
   id: string;
   title: string;
-  distance: number;
+  scaledSimilarity: number;
   createdAt: string;
   meetsThreshold: boolean; // Add flag indicating if meets threshold
 }

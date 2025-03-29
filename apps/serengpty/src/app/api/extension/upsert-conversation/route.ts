@@ -4,7 +4,18 @@ import { cosineDistance } from 'drizzle-orm';
 import { getGeminiEmbedding } from '@enclaveid/shared-node';
 
 const TOP_K_CONVERSATIONS = 5;
-const MAX_DISTANCE = 0.2;
+const MAX_DISTANCE = 0.2; // Corresponds to a minimum similarity of 0.8
+const MIN_RELEVANT_SIMILARITY = 0.5;
+
+function scaleSimilarity(distance: number) {
+  const similarity = 1 - distance;
+
+  if (similarity >= MIN_RELEVANT_SIMILARITY) {
+    return (similarity - MIN_RELEVANT_SIMILARITY) * 2;
+  } else {
+    return 0;
+  }
+}
 
 export async function POST(request: Request) {
   const { apiKey, title, content, id: conversationId } = await request.json();
@@ -17,8 +28,6 @@ export async function POST(request: Request) {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  // If the conversation content is the same as the existing conversation,
-  // we don't need to insert or update it
   const existingConversation = await db.query.conversationsTable.findFirst({
     where: and(
       eq(conversationsTable.id, conversationId),
@@ -27,7 +36,6 @@ export async function POST(request: Request) {
   });
 
   if (existingConversation) {
-    // If the conversation exists, the user has to be the owner of the conversation
     if (existingConversation.userId !== user.id) {
       return new Response('Unauthorized', { status: 401 });
     }
@@ -44,8 +52,8 @@ export async function POST(request: Request) {
     embedding = await getGeminiEmbedding(content);
   }
 
-  const mostSimilarConversations = await db.transaction(async (tx) => {
-    // Insert or update the conversation
+  const rawResults = await db.transaction(async (tx) => {
+    // Renamed variable
     await tx
       .insert(conversationsTable)
       .values({
@@ -67,6 +75,7 @@ export async function POST(request: Request) {
 
     const distance = cosineDistance(conversationsTable.embedding, embedding);
 
+    // Fetch raw results including distance
     const result = await tx
       .select({
         id: conversationsTable.id,
@@ -75,13 +84,11 @@ export async function POST(request: Request) {
         distance,
         userId: usersTable.id,
         name: usersTable.name,
-        meetsThreshold: lte(distance, MAX_DISTANCE), // Add boolean flag indicating if meets threshold
+        meetsThreshold: lte(distance, MAX_DISTANCE),
       })
       .from(conversationsTable)
       .innerJoin(usersTable, eq(conversationsTable.userId, usersTable.id))
       .where(
-        // Exclude the conversation we just inserted
-        // and the user's own conversations
         and(
           not(eq(conversationsTable.id, conversationId)),
           not(eq(usersTable.id, user.id))
@@ -93,7 +100,26 @@ export async function POST(request: Request) {
     return result;
   });
 
-  return new Response(JSON.stringify(mostSimilarConversations), {
+  // --- Scaling Step ---
+  const scaledResults = rawResults.map((result) => {
+    const scaledSimilarity = scaleSimilarity(result.distance as number);
+    return {
+      ...result,
+      scaledSimilarity: scaledSimilarity,
+    };
+  });
+
+  // If the result set is mixed (some meet threshold, some don't),
+  // we need to filter out the ones that don't meet the threshold
+  let filteredResults = scaledResults;
+  if (
+    scaledResults.some((result) => result.meetsThreshold) &&
+    scaledResults.some((result) => !result.meetsThreshold)
+  ) {
+    filteredResults = scaledResults.filter((result) => result.meetsThreshold);
+  }
+
+  return new Response(JSON.stringify(filteredResults), {
     status: 201,
     headers: {
       'Content-Type': 'application/json',
