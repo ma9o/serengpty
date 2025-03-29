@@ -4,7 +4,7 @@ import { ContentButton } from '../components/ContentButton';
  * Mounts a round button before the selected div using XPath for element selection.
  * The function targets a specific element in the DOM hierarchy
  */
-export function mountButton(): void {
+export function mountButton(firstTime: boolean): void {
   const composerBackground = document.querySelector(
     '[data-type="unified-composer"]'
   );
@@ -35,5 +35,5 @@ export function mountButton(): void {
   targetElement.parentNode?.insertBefore(reactContainer, targetElement);
 
   const root = createRoot(reactContainer);
-  root.render(<ContentButton />);
+  root.render(<ContentButton peekExpand={firstTime} />);
 }
