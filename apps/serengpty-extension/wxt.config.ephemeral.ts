@@ -11,13 +11,16 @@ export default defineConfig({
   publicDir: 'src/assets',
   entrypointsDir: 'entrypoints',
   extensionApi: 'chrome',
-  modules: ['@wxt-dev/module-react'],
+  modules: ['@wxt-dev/module-react', '@wxt-dev/auto-icons'],
 
   manifest: {
     name: 'SerenGPTy',
     description: 'Find ChatGPT and Claude users who think like you',
     version: '1.0.0',
-    permissions: ['activeTab', 'storage', 'sidePanel', 'tabs', 'notifications'],
+    permissions: ['storage', 'sidePanel', 'tabs', 'notifications'],
+    action: {
+      default_title: 'SerenGPTy',
+    },
   },
   dev: {
     server: {
