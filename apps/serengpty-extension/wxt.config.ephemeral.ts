@@ -14,8 +14,8 @@ export default defineConfig({
   modules: ['@wxt-dev/module-react', '@wxt-dev/auto-icons'],
 
   manifest: {
-    name: 'SerenGPTy',
-    description: 'Find ChatGPT and Claude users who think like you',
+    name: 'SerenGPTy: Find similar ChatGPT users',
+    description: 'SerenGPTy: Find similar ChatGPT users',
     version: '1.0.0',
     permissions: ['storage', 'sidePanel', 'tabs', 'notifications'],
     action: {
@@ -29,7 +29,7 @@ export default defineConfig({
             // Allows connections to:
             // - 'self' (extension's origin)
             // - Stream Chat servers (HTTPS and WSS)
-            // - Your API server (https://serengpty.com)
+            // - API server (https://serengpty.com)
             extension_pages: `script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' https://*.stream-io-api.com wss://*.stream-io-api.com https://serengpty.com ;`,
           },
         }),
@@ -47,19 +47,14 @@ export default defineConfig({
     cacheDir: '../../node_modules/.vite/apps/serengpty-extension',
     plugins: [
       nxViteTsPaths(),
-      // nxCopyAssetsPlugin(['*.md']),
       visualizer({
-        filename: '../../dist/apps/serengpty-extension/stats.html', // Output file name
-        gzipSize: true, // Show gzip size
-        brotliSize: true, // Show brotli size
-        sourcemap: false, // Use source maps
+        filename: '../../dist/apps/serengpty-extension/stats.html',
+        gzipSize: true,
+        brotliSize: true,
+        sourcemap: true,
       }),
     ],
 
-    // Uncomment this if you are using workers.
-    // worker: {
-    //  plugins: [ nxViteTsPaths() ],
-    // },
     server: {
       fs: {
         cachedChecks: false,
