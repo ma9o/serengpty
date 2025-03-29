@@ -21,6 +21,20 @@ export default defineConfig({
     action: {
       default_title: 'SerenGPTy',
     },
+    host_permissions: ['https://serengpty.com/*'],
+    ...(process.env.NODE_ENV === 'development'
+      ? {}
+      : {
+          content_security_policy: {
+            // Allows connections to:
+            // - 'self' (extension's origin)
+            // - Stream Chat servers (HTTPS and WSS)
+            // - Your API server (https://serengpty.com)
+            extension_pages: `script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' https://*.stream-io-api.com wss://*.stream-io-api.com https://serengpty.com ;`,
+          },
+        }),
+    author: { email: 'contact@serengpty.com' },
+    homepage_url: 'https://serengpty.com',
   },
   dev: {
     server: {
