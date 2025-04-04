@@ -102,7 +102,7 @@ export function ContentButton({ peekExpand = false }: ContentButtonProps) {
       >
         Find Similar Users
       </span>
-      <div className="flex-shrink-0 w-9 h-9 flex items-center justify-center p-1">
+      <div className="min-w-9 w-9 h-9 flex items-center justify-center p-1">
         <img
           src={isDarkMode ? logoLight : logoDark}
           alt="Find Similar Users"
