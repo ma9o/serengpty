@@ -15,7 +15,7 @@ export default defineConfig({
 
   manifest: {
     name: 'SerenGPTy: Find similar ChatGPT users',
-    version: '1.0.0',
+    version: '1.0.1',
     permissions: ['storage', 'sidePanel', 'notifications'],
     action: {
       default_title: 'SerenGPTy',
