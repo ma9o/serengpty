@@ -1,0 +1,37 @@
+/* Auto-showing tooltip animation with gentle float and dismiss */
+.tooltip-auto {
+  opacity: 0;
+  transform: translate(-50%, 0) scale(0.95);
+  animation: 
+    fadeInTooltip 0.3s ease 1s forwards, 
+    gentleFloat 2s ease-in-out 1s 5 both,
+    fadeOutTooltip 0.5s ease 11s forwards;
+  transform-origin: center;
+}
+
+@keyframes fadeInTooltip {
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@keyframes fadeOutTooltip {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -10px) scale(0.95);
+    visibility: hidden;
+  }
+}
+
+@keyframes gentleFloat {
+  0% {
+    transform: translate(-50%, 0);
+  }
+  50% {
+    transform: translate(-50%, -4px);
+  }
+  100% {
+    transform: translate(-50%, 0);
+  }
+}

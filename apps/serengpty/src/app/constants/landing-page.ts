@@ -3,6 +3,9 @@ export const HEADER = {
   COMPANY_NAME: 'SerenGPTy',
   DISCORD_LINK: 'https://discord.gg/BftCHbV4TW',
   GITHUB_LINK: 'https://github.com/ma9o/serengpty',
+  EXTENSION_LINK:
+    'https://chromewebstore.google.com/detail/gegdmemlodiipfblgkmhdjciiejbgemn/',
+  EXTENSION_TOOLTIP: "It's easier with the Chrome extension!",
   LOGIN_BUTTON_TEXT: 'Login',
 };
 

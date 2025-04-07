@@ -11,6 +11,7 @@ import {
   COLLABORATIVE,
 } from './constants/landing-page';
 import { LandingButton } from './components/landing-button';
+import { Badge } from '@enclaveid/ui/badge';
 
 export default function Index() {
   return (
@@ -42,6 +43,51 @@ function Header() {
 
           {/* Navigation / Social Icons */}
           <nav className="flex gap-2 sm:gap-4 items-center">
+            {/* Desktop version with static tooltip that has animation classes */}
+            <div className="hidden sm:block relative">
+              <a
+                href={HEADER.EXTENSION_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-content-secondary hover:text-content-primary py-1"
+              >
+                <Badge
+                  variant="default"
+                  className="text-white mr-2 pointer-events-none"
+                >
+                  NEW!
+                </Badge>
+                <Icon
+                  icon="simple-icons:googlechrome"
+                  className="w-5 h-5 mr-1"
+                />
+                <span>Extension</span>
+              </a>
+              <div className="tooltip-auto absolute z-50 bg-popover text-popover-foreground p-2 rounded-md shadow-md text-sm left-1/2 -translate-x-1/2 top-full mt-1 w-max whitespace-nowrap border">
+                {HEADER.EXTENSION_TOOLTIP}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-45 w-2 h-2 bg-popover border border-b-0 border-r-0"></div>
+              </div>
+            </div>
+
+            {/* Mobile version - only Chrome icon shown at smaller screens */}
+            <div className="flex sm:hidden relative">
+              <a
+                href={HEADER.EXTENSION_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center"
+              >
+                <Icon
+                  icon="simple-icons:googlechrome"
+                  className="w-[18px] h-[18px]"
+                />
+              </a>
+              <div className="tooltip-auto absolute z-50 bg-popover text-popover-foreground p-2 rounded-md shadow-md text-sm left-1/2 -translate-x-1/2 top-full mt-3 w-max whitespace-nowrap border">
+                {HEADER.EXTENSION_TOOLTIP}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-45 w-2 h-2 bg-popover border border-b-0 border-r-0"></div>
+              </div>
+            </div>
+
             <a
               href={HEADER.DISCORD_LINK}
               target="_blank"
