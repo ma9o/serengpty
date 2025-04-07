@@ -5,7 +5,7 @@ export const HEADER = {
   GITHUB_LINK: 'https://github.com/ma9o/serengpty',
   EXTENSION_LINK:
     'https://chromewebstore.google.com/detail/gegdmemlodiipfblgkmhdjciiejbgemn/',
-  EXTENSION_TOOLTIP: "It's easier with the Chrome extension!",
+  EXTENSION_TOOLTIP: 'Use the Chrome extension\n for better privacy!',
   LOGIN_BUTTON_TEXT: 'Login',
 };
 

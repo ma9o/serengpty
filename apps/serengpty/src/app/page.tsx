@@ -63,7 +63,7 @@ function Header() {
                 />
                 <span>Extension</span>
               </a>
-              <div className="tooltip-auto absolute z-50 bg-popover text-popover-foreground p-2 rounded-md shadow-md text-sm left-1/2 -translate-x-1/2 top-full mt-1 w-max whitespace-nowrap border">
+              <div className="tooltip-auto absolute z-50 bg-popover text-popover-foreground p-2 rounded-md shadow-md text-sm left-1/2 -translate-x-1/2 top-full mt-1 w-max whitespace-pre-line text-center border">
                 {HEADER.EXTENSION_TOOLTIP}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-45 w-2 h-2 bg-popover border border-b-0 border-r-0"></div>
               </div>
@@ -82,7 +82,7 @@ function Header() {
                   className="w-[18px] h-[18px]"
                 />
               </a>
-              <div className="tooltip-auto absolute z-50 bg-popover text-popover-foreground p-2 rounded-md shadow-md text-sm left-1/2 -translate-x-1/2 top-full mt-3 w-max whitespace-nowrap border">
+              <div className="tooltip-auto absolute z-50 bg-popover text-popover-foreground p-2 rounded-md shadow-md text-sm left-1/2 -translate-x-1/2 top-full mt-3 w-max whitespace-pre-line text-center border">
                 {HEADER.EXTENSION_TOOLTIP}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-45 w-2 h-2 bg-popover border border-b-0 border-r-0"></div>
               </div>
